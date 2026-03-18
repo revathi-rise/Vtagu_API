@@ -4,10 +4,10 @@ import { Movie } from './movie.entity';
 
 @Controller('movies')
 export class MoviesController {
-  constructor(private moviesService: MoviesService) {}
+  constructor(private moviesService: MoviesService) { }
 
   // GET /api/movies/home?limit=6
-  @Get('home')
+  @Get('trending')
   getForHome(@Query('limit') limit?: string) {
     const l = limit ? parseInt(limit, 10) : 10;
     return this.moviesService.findForHome(l);
