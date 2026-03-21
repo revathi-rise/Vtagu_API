@@ -8,15 +8,15 @@ export class MoviesService {
   constructor(
     @InjectRepository(Movie)
     private moviesRepo: Repository<Movie>,
-  ) {}
+  ) { }
 
   findAll(): Promise<Movie[]> {
-    return this.moviesRepo.find({ order: { id: 'DESC' } });
+    return this.moviesRepo.find({ order: { movie_id: 'DESC' } });
   }
 
   // Provide a small set for the homepage (e.g., top 10 latest)
   findForHome(limit = 10): Promise<Movie[]> {
-    return this.moviesRepo.find({ order: { id: 'DESC' }, take: limit });
+    return this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit });
   }
 
   create(data: Partial<Movie>) {
