@@ -12,6 +12,7 @@ export class PostersService {
 
   async findAll(limit?: number): Promise<Poster[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
+      .where('posters.status = :status', { status: 'A' })
       .orderBy('posters.poster_id', 'DESC');
 
     if (limit) {

@@ -1,29 +1,26 @@
 import { Controller, Get, Query, Post, Body, MethodNotAllowedException } from '@nestjs/common';
-import { MoviesService } from './movies.service';
-import { Movie } from './movie.entity';
+import { InteractiveMoviesService } from './interactive-movies.service';
 
-@Controller('movies')
-export class MoviesController {
-  constructor(private moviesService: MoviesService) { }
+@Controller('interactive-movies')
+export class InteractiveMoviesController {
+  constructor(private service: InteractiveMoviesService) { }
 
-  // GET /api/movies/home?limit=6
   @Get('trending')
   async getForHome(@Query('limit') limit?: string) {
     try {
       const l = limit ? parseInt(limit, 10) : 10;
-      const data = await this.moviesService.findForHome(l);
-      return { status: true, message: 'Movies fetched successfully', data };
+      const data = await this.service.findForHome(l);
+      return { status: true, message: 'Interactive movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }
   }
 
-  // generic endpoints
   @Get()
   async getAll() {
     try {
-      const data = await this.moviesService.findAll();
-      return { status: true, message: 'Movies fetched successfully', data };
+      const data = await this.service.findAll();
+      return { status: true, message: 'Interactive movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }

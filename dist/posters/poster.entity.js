@@ -15,26 +15,26 @@ let Poster = class Poster {
 };
 exports.Poster = Poster;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    (0, typeorm_1.PrimaryGeneratedColumn)({ name: 'poster_id' }),
     __metadata("design:type", Number)
-], Poster.prototype, "id", void 0);
+], Poster.prototype, "poster_id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ length: 250 }),
     __metadata("design:type", String)
-], Poster.prototype, "title", void 0);
+], Poster.prototype, "path", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ length: 250, nullable: true }),
     __metadata("design:type", String)
-], Poster.prototype, "imageUrl", void 0);
+], Poster.prototype, "link", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'char', length: 2, default: 'A' }),
     __metadata("design:type", String)
-], Poster.prototype, "description", void 0);
+], Poster.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.Column)({ type: 'datetime', name: 'createdon', nullable: true }),
     __metadata("design:type", Date)
-], Poster.prototype, "createdAt", void 0);
+], Poster.prototype, "createdon", void 0);
 exports.Poster = Poster = __decorate([
-    (0, typeorm_1.Entity)()
+    (0, typeorm_1.Entity)('posters')
 ], Poster);
 //# sourceMappingURL=poster.entity.js.map

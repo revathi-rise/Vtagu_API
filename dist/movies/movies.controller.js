@@ -32,7 +32,7 @@ let MoviesController = class MoviesController {
 };
 exports.MoviesController = MoviesController;
 __decorate([
-    (0, common_1.Get)('home'),
+    (0, common_1.Get)('trending'),
     __param(0, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
