@@ -1,26 +1,23 @@
-import { Controller, Get, Query, Post, Body, MethodNotAllowedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, Query } from '@nestjs/common';
 import { MoviesService } from './movies.service';
-import { Movie } from './movie.entity';
+import { CreateMovieDto, UpdateMovieDto, MovieResponseDto } from './movies.dto';
 
 @Controller('movies')
 export class MoviesController {
-  constructor(private moviesService: MoviesService) { }
+  constructor(private readonly moviesService: MoviesService) { }
 
-  // GET /api/movies/home?limit=6
-  @Get('trending')
-  async getForHome(@Query('limit') limit?: string) {
+  @Post()
+  async create(@Body() createMovieDto: CreateMovieDto): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
-      const l = limit ? parseInt(limit, 10) : 10;
-      const data = await this.moviesService.findForHome(l);
-      return { status: true, message: 'Movies fetched successfully', data };
+      const data = await this.moviesService.create(createMovieDto);
+      return { status: true, message: 'Movie created successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }
   }
 
-  // generic endpoints
   @Get()
-  async getAll() {
+  async findAll(): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
       const data = await this.moviesService.findAll();
       return { status: true, message: 'Movies fetched successfully', data };
@@ -29,10 +26,42 @@ export class MoviesController {
     }
   }
 
-  @Post()
-  create() {
+  @Get('trending')
+  async getTrending(@Query('limit') limit?: string) {
     try {
-      throw new MethodNotAllowedException('Write operations are disabled');
+      const l = limit ? parseInt(limit, 10) : 10;
+      const data = await this.moviesService.findForHome(l);
+      return { status: true, message: 'Trending movies fetched successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Get(':slug')
+  async findOne(@Param('slug') slug: string): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
+    try {
+      const data = await this.moviesService.findOneBySlug(slug);
+      return { status: true, message: 'Movie fetched successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
+    try {
+      const data = await this.moviesService.update(+id, updateMovieDto);
+      return { status: true, message: 'Movie updated successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string): Promise<{ status: boolean; message: string; data: null }> {
+    try {
+      await this.moviesService.remove(+id);
+      return { status: true, message: 'Movie deleted successfully', data: null };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }

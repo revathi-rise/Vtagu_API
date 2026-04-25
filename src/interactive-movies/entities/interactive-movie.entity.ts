@@ -1,16 +1,16 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity('interactive_movie')
+@Entity('interactive_movies')
 export class InteractiveMovie {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'interactive_movie_id' })
   interactive_movie_id: number;
 
-  @Column({ length: 150 })
+  @Column()
   title: string;
 
-  @Column({ type: 'text' })
+  @Column('text')
   description: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

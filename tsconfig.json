@@ -10,7 +10,9 @@
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "lib": ["es2017"],
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }
