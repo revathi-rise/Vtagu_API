@@ -22,6 +22,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { Subscription } from './subscriptions/entities/subscription.entity';
 import { UserDevicesModule } from './user-devices/user-devices.module';
 import { UserDevice } from './user-devices/entities/user-device.entity';
+import { WatchProgressModule } from './watch-progress/watch-progress.module';
+import { WatchProgress } from './watch-progress/entities/watch-progress.entity';
 
 @Module({
   imports: [
@@ -31,7 +33,7 @@ import { UserDevice } from './user-devices/entities/user-device.entity';
       port: parseInt(process.env.DB_PORT || '3306'),
       username: process.env.DB_USER || 'root',
       password: process.env.DB_PASS || '',
-      database: process.env.DB_NAME || 'vtagu',
+      database: process.env.DB_NAME || 'vtaqu',
       entities: [
         Movie,
         Poster,
@@ -44,6 +46,7 @@ import { UserDevice } from './user-devices/entities/user-device.entity';
         User,
         Subscription,
         UserDevice,
+        WatchProgress,
       ],
       synchronize: false,
     }),
@@ -58,6 +61,7 @@ import { UserDevice } from './user-devices/entities/user-device.entity';
     UsersModule,
     SubscriptionsModule,
     UserDevicesModule,
+    WatchProgressModule,
   ],
 })
 export class AppModule {}

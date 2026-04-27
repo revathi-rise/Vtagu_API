@@ -17,23 +17,23 @@ export class CreateSubscriptionDto {
   @IsOptional()
   payment_details?: string;
 
-  @IsDateString()
+  @IsInt()
   @IsNotEmpty()
-  timestamp_from: string;
+  timestamp_from: number;
 
-  @IsDateString()
+  @IsInt()
   @IsNotEmpty()
-  timestamp_to: string;
+  timestamp_to: number;
 }
 
 export class UpdateSubscriptionDto {
-  @IsString()
+  @IsInt()
   @IsOptional()
-  status?: string;
+  status?: number;
 
-  @IsString()
+  @IsInt()
   @IsOptional()
-  payment_status?: string;
+  payment_status?: number;
 
   @IsString()
   @IsOptional()
@@ -44,10 +44,10 @@ export class SubscriptionResponseDto {
   subscriptionId: number;
   userId: number;
   planId: number;
-  status: string;
-  payment_status: string;
-  timestamp_from: Date;
-  timestamp_to: Date;
+  status: number;
+  payment_status: number;
+  timestamp_from: number;
+  timestamp_to: number;
   payment_method: string;
   price_amount: number;
   paid_amount: number;

@@ -16,42 +16,42 @@ export class Subscription {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ nullable: true, name: 'txn_id' })
+  @Column({ nullable: true, name: 'txn_id', length: 100 })
   txnId: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'float' })
   price_amount: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'float' })
   paid_amount: number;
 
-  @Column()
-  timestamp_from: Date;
+  @Column({ type: 'int' })
+  timestamp_from: number;
 
-  @Column()
-  timestamp_to: Date;
+  @Column({ type: 'int' })
+  timestamp_to: number;
 
-  @Column()
-  payment_method: string; // 'credit_card', 'upi', 'wallet'
+  @Column({ length: 255, nullable: true })
+  payment_method: string;
 
-  @Column({ nullable: true, type: 'longtext' })
+  @Column({ type: 'text', nullable: true })
   payment_details: string;
 
-  @Column({ default: 'pending' })
-  payment_status: string; // 'pending', 'success', 'failed'
+  @Column({ type: 'int', default: 1 })
+  payment_status: number; // 1- Pending / 2 - Success / 3 - Failed
 
-  @Column({ nullable: true })
-  payment_timestamp: Date;
+  @Column({ type: 'int', nullable: true })
+  payment_timestamp: number;
 
-  @Column({ default: 'active' })
-  status: string; // 'active', 'inactive', 'expired', 'cancelled'
+  @Column({ type: 'int', default: 1 })
+  status: number; // 1 active, 0 cancelled
 
-  @Column({ default: 'INR' })
+  @Column({ length: 20 })
   currency: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'updated_at' })
   updated_at: Date;
 }

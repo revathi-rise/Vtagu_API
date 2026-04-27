@@ -23,6 +23,7 @@ let PostersService = class PostersService {
     }
     async findAll(limit) {
         const query = this.postersRepo.createQueryBuilder('posters')
+            .where('posters.status = :status', { status: 'A' })
             .orderBy('posters.poster_id', 'DESC');
         if (limit) {
             query.take(limit);

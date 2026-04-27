@@ -17,8 +17,8 @@ export class SubscriptionsService {
   async create(createSubscriptionDto: CreateSubscriptionDto): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto }> {
     try {
       const subscription = this.subscriptionRepository.create(createSubscriptionDto);
-      subscription.payment_status = 'pending';
-      subscription.status = 'active';
+      subscription.payment_status = 1; // Pending
+      subscription.status = 1; // Active
       subscription.created_at = new Date();
 
       const savedSubscription = await this.subscriptionRepository.save(subscription);
@@ -79,7 +79,7 @@ export class SubscriptionsService {
   async getActiveSubscription(userId: number): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto | null }> {
     try {
       const subscription = await this.subscriptionRepository.findOne({
-        where: { userId, status: 'active' },
+        where: { userId, status: 1 },
         relations: ['user'],
       });
 
@@ -116,8 +116,8 @@ export class SubscriptionsService {
       Object.assign(subscription, updateSubscriptionDto);
       subscription.updated_at = new Date();
 
-      if (updateSubscriptionDto.payment_status === 'success') {
-        subscription.payment_timestamp = new Date();
+      if (updateSubscriptionDto.payment_status === 2) { // Success
+        subscription.payment_timestamp = Math.floor(Date.now() / 1000);
       }
 
       const updatedSubscription = await this.subscriptionRepository.save(subscription);
@@ -143,7 +143,7 @@ export class SubscriptionsService {
         throw new NotFoundException('Subscription not found');
       }
 
-      subscription.status = 'cancelled';
+      subscription.status = 0; // Cancelled
       subscription.updated_at = new Date();
       await this.subscriptionRepository.save(subscription);
 

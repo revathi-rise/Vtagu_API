@@ -71,6 +71,15 @@ export class UsersController {
   }
 
   /**
+   * Get user profile (Alias)
+   * GET /users/get-profile/:id
+   */
+  @Get('get-profile/:id')
+  async getProfile(@Param('id') id: string) {
+    return this.usersService.getUserProfile(Number(id));
+  }
+
+  /**
    * Update user profile
    * PATCH /users/:id
    */

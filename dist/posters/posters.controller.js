@@ -19,9 +19,15 @@ let PostersController = class PostersController {
     constructor(postersService) {
         this.postersService = postersService;
     }
-    getAll(limit) {
-        const l = limit ? parseInt(limit, 10) : undefined;
-        return this.postersService.findAll(l);
+    async getAll(limit) {
+        try {
+            const l = limit ? parseInt(limit, 10) : undefined;
+            const data = await this.postersService.findAll(l);
+            return { status: true, message: 'Posters fetched successfully', data };
+        }
+        catch (error) {
+            return { status: false, message: error.message || 'An error occurred', data: null };
+        }
     }
 };
 exports.PostersController = PostersController;
@@ -30,7 +36,7 @@ __decorate([
     __param(0, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], PostersController.prototype, "getAll", null);
 exports.PostersController = PostersController = __decorate([
     (0, common_1.Controller)('posters'),

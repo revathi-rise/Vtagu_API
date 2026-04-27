@@ -20,8 +20,8 @@ export class User {
   @Column({ nullable: true })
   otp: string;
 
-  @Column({ default: false })
-  otp_verified: boolean;
+  @Column({ default: 'N' })
+  otp_verified: string; // 'Y' or 'N'
 
   @Column({ nullable: true, name: 'login_oauth_uid' })
   loginOauthUid: string;
