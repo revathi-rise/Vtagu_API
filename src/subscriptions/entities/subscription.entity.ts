@@ -48,10 +48,4 @@ export class Subscription {
 
   @Column({ length: 20 })
   currency: string;
-
-  @CreateDateColumn({ name: 'created_at' })
-  created_at: Date;
-
-  @Column({ nullable: true, name: 'updated_at' })
-  updated_at: Date;
 }

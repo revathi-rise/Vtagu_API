@@ -19,7 +19,6 @@ export class SubscriptionsService {
       const subscription = this.subscriptionRepository.create(createSubscriptionDto);
       subscription.payment_status = 1; // Pending
       subscription.status = 1; // Active
-      subscription.created_at = new Date();
 
       const savedSubscription = await this.subscriptionRepository.save(subscription);
       return {
@@ -114,7 +113,6 @@ export class SubscriptionsService {
       }
 
       Object.assign(subscription, updateSubscriptionDto);
-      subscription.updated_at = new Date();
 
       if (updateSubscriptionDto.payment_status === 2) { // Success
         subscription.payment_timestamp = Math.floor(Date.now() / 1000);
@@ -144,7 +142,6 @@ export class SubscriptionsService {
       }
 
       subscription.status = 0; // Cancelled
-      subscription.updated_at = new Date();
       await this.subscriptionRepository.save(subscription);
 
       return { status: true, message: 'Subscription cancelled successfully' };
@@ -161,7 +158,7 @@ export class SubscriptionsService {
       const subscriptions = await this.subscriptionRepository.find({
         where: { userId },
         relations: ['user'],
-        order: { created_at: 'DESC' },
+        order: { subscriptionId: 'DESC' },
       });
 
       return {

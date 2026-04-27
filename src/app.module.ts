@@ -24,6 +24,8 @@ import { UserDevicesModule } from './user-devices/user-devices.module';
 import { UserDevice } from './user-devices/entities/user-device.entity';
 import { WatchProgressModule } from './watch-progress/watch-progress.module';
 import { WatchProgress } from './watch-progress/entities/watch-progress.entity';
+import { PlansModule } from './plans/plans.module';
+import { Plan } from './plans/entities/plan.entity';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { WatchProgress } from './watch-progress/entities/watch-progress.entity';
         Subscription,
         UserDevice,
         WatchProgress,
+        Plan,
       ],
       synchronize: false,
     }),
@@ -62,6 +65,7 @@ import { WatchProgress } from './watch-progress/entities/watch-progress.entity';
     SubscriptionsModule,
     UserDevicesModule,
     WatchProgressModule,
+    PlansModule,
   ],
 })
 export class AppModule {}
