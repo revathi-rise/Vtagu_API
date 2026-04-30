@@ -95,6 +95,13 @@ export class User {
   @Column({ nullable: true })
   last_login_ip_address: string;
 
+  @Column({ default: 'user' })
+  role: string;
+
+  get is_admin(): boolean {
+    return String(this.type) === '1' || this.role === 'admin';
+  }
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

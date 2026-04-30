@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto } from './dto/user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -30,8 +30,18 @@ export class UsersController {
    */
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Request() req) {
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = this.getIpAddress(req);
     return this.usersService.login(loginDto, ipAddress);
+  }
+
+  /**
+   * Admin Login - Only for admin users
+   * POST /users/admin/login
+   */
+  @Post('admin/login')
+  async adminLogin(@Body() adminLoginDto: AdminLoginDto, @Request() req) {
+    const ipAddress = this.getIpAddress(req);
+    return this.usersService.adminLogin(adminLoginDto, ipAddress);
   }
 
   /**
@@ -86,5 +96,16 @@ export class UsersController {
   @Patch(':id')
   async updateUserProfile(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.updateUserProfile(Number(id), updateUserDto);
+  }
+
+  /**
+   * Helper: Get client IP address
+   */
+  private getIpAddress(req: any): string {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded 
+      ? forwarded.split(',')[0].trim() 
+      : req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+    return ip;
   }
 }

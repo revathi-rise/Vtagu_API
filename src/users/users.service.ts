@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
-import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -30,9 +30,10 @@ export class UsersService {
         user_name: registerDto.user_name,
         password: hashedPassword,
         mobile: registerDto.mobile || null,
-        type: registerDto.type || 'email',
+        type: registerDto.type || 'U',
+        role: registerDto.type === '1' ? 'admin' : 'user',
         otp,
-        status: 'active',
+        status: '1', // default active status
         register_step: 1,
       });
 
@@ -113,6 +114,58 @@ export class UsersService {
         token: updatedUser.user_session,
       };
     } catch (error) {
+      throw new UnauthorizedException(error.message);
+    }
+  }
+
+  /**
+   * Admin Login - Only users with type = 1 can login via this endpoint
+   */
+  async adminLogin(adminLoginDto: AdminLoginDto, ipAddress: string): Promise<{ status: boolean; message: string; data: AdminResponseDto; token: string }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { email: adminLoginDto.email } });
+      if (!user) {
+        console.log(`[ADMIN LOGIN] User not found: ${adminLoginDto.email}`);
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      console.log(`[ADMIN LOGIN] User found: ${user.email}, type: ${user.type}, status: ${user.status}`);
+
+      // Check if user is admin (type 1 or role admin)
+      if (String(user.type) !== '1' && user.role !== 'admin') {
+        console.log(`[ADMIN LOGIN] User is not admin. Type: ${user.type}, Role: ${user.role}`);
+        throw new UnauthorizedException('Only administrators can access this endpoint');
+      }
+
+      // Check if user account is active (status = 1 or 'active')
+      if (String(user.status) !== '1' && user.status !== 'active') {
+        console.log(`[ADMIN LOGIN] Admin account not active. Status: ${user.status}`);
+        throw new UnauthorizedException('Admin account is not active');
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(adminLoginDto.password, user.password);
+      console.log(`[ADMIN LOGIN] Password valid: ${isPasswordValid}`);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Update login information
+      user.logged_in = true;
+      user.log_count = (user.log_count || 0) + 1;
+      user.last_login_ip_address = ipAddress;
+      user.user_session = this.generateSessionToken();
+
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Admin login successful',
+        data: this.mapAdminToResponse(updatedUser),
+        token: updatedUser.user_session,
+      };
+    } catch (error) {
+      console.log(`[ADMIN LOGIN] Error: ${error.message}`);
       throw new UnauthorizedException(error.message);
     }
   }
@@ -214,6 +267,12 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
+      // Handle snake_case to camelCase mapping for specific fields
+      if (updateUserDto.login_oauth_uid) {
+        user.loginOauthUid = updateUserDto.login_oauth_uid;
+        delete updateUserDto.login_oauth_uid;
+      }
+
       Object.assign(user, updateUserDto);
       const updatedUser = await this.usersRepository.save(user);
 
@@ -266,10 +325,28 @@ export class UsersService {
       profile_picture: user.profile_picture,
       status: user.status,
       plan: user.plan,
+      role: user.role,
+      type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    };
+  }
+
+  /**
+   * Helper: Map user entity to admin response DTO
+   */
+  private mapAdminToResponse(user: User): AdminResponseDto {
+    return {
+      userId: user.userId,
+      email: user.email,
+      user_name: user.user_name,
+      role: user.role,
+      status: user.status,
+      logged_in: user.logged_in,
+      last_login_ip_address: user.last_login_ip_address,
+      createdAt: user.createdAt,
     };
   }
 }
