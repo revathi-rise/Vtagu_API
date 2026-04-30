@@ -16,6 +16,15 @@ export class UsersController {
   }
 
   /**
+   * Get all users (Admin)
+   * GET /users
+   */
+  @Get()
+  async findAll() {
+    return this.usersService.findAll();
+  }
+
+  /**
    * Verify OTP
    * POST /users/verify-otp
    */
@@ -96,6 +105,15 @@ export class UsersController {
   @Patch(':id')
   async updateUserProfile(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.updateUserProfile(Number(id), updateUserDto);
+  }
+
+  /**
+   * Delete user (Admin)
+   * DELETE /users/:id
+   */
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.usersService.remove(Number(id));
   }
 
   /**

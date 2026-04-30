@@ -122,6 +122,41 @@ export class CreateMovieDto {
   @IsString()
   @IsOptional()
   interactive_map?: string;
+  @IsString()
+  @IsOptional()
+  movie_name?: string;
+
+  @IsString()
+  @IsOptional()
+  movie_desc?: string;
+
+  @IsString()
+  @IsOptional()
+  movie_poster?: string;
+
+  @IsString()
+  @IsOptional()
+  movie_trailer?: string;
+
+  @IsString()
+  @IsOptional()
+  movie_video?: string;
+
+  @IsString()
+  @IsOptional()
+  genre?: string;
+
+  @IsString()
+  @IsOptional()
+  cast_name?: string;
+
+  @IsString()
+  @IsOptional()
+  director_name?: string;
+
+  @IsString()
+  @IsOptional()
+  release_date?: string;
 }
 
 export class UpdateMovieDto extends CreateMovieDto {}
@@ -155,6 +190,15 @@ export class MovieResponseDto {
   viewCount: number;
   isInteractive: boolean;
   interactiveMap: string;
+  movie_name: string;
+  movie_poster: string;
+  movie_desc: string;
+  movie_trailer: string;
+  movie_video: string;
+  cast_name: string;
+  director_name: string;
+  release_date: string;
+  genre_name: string;
   createdAt: Date;
   updatedAt: Date;
 }

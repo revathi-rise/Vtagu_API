@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Post, MethodNotAllowedException } from '@nestjs/common';
+import { Controller, Get, Query, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { GenresService } from './genres.service';
 
 @Controller('genres')
@@ -27,9 +27,30 @@ export class GenresController {
   }
 
   @Post()
-  create() {
+  async create(@Body() data: any) {
     try {
-      throw new MethodNotAllowedException('Write operations are disabled');
+      const result = await this.service.create(data);
+      return { status: true, message: 'Genre created successfully', data: result };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() data: any) {
+    try {
+      const result = await this.service.update(+id, data);
+      return { status: true, message: 'Genre updated successfully', data: result };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    try {
+      await this.service.remove(+id);
+      return { status: true, message: 'Genre deleted successfully', data: null };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }

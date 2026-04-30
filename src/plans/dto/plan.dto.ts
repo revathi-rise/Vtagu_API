@@ -40,6 +40,22 @@ export class CreatePlanDto {
   @IsInt()
   @IsOptional()
   status?: number;
+
+  @IsString()
+  @IsOptional()
+  plan_name?: string;
+
+  @IsNumber()
+  @IsOptional()
+  plan_price?: number;
+
+  @IsString()
+  @IsOptional()
+  plan_duration?: string;
+
+  @IsString()
+  @IsOptional()
+  plan_description?: string;
 }
 
 export class UpdatePlanDto {
@@ -82,6 +98,22 @@ export class UpdatePlanDto {
   @IsInt()
   @IsOptional()
   status?: number;
+
+  @IsString()
+  @IsOptional()
+  plan_name?: string;
+
+  @IsNumber()
+  @IsOptional()
+  plan_price?: number;
+
+  @IsString()
+  @IsOptional()
+  plan_duration?: string;
+
+  @IsString()
+  @IsOptional()
+  plan_description?: string;
 }
 
 export class PlanResponseDto {
@@ -96,4 +128,8 @@ export class PlanResponseDto {
   discount: number;
   validity: string;
   status: number;
+  id: number;
+  plan_name: string;
+  plan_price: number;
+  plan_duration: string;
 }

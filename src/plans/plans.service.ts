@@ -59,7 +59,12 @@ export class PlansService {
    */
   async create(createPlanDto: CreatePlanDto): Promise<{ status: boolean; message: string; data: PlanResponseDto }> {
     try {
-      const plan = this.planRepository.create(createPlanDto);
+      const planData: import('typeorm').DeepPartial<Plan> = { ...createPlanDto };
+      if (createPlanDto.plan_name) planData.name = createPlanDto.plan_name;
+      if (createPlanDto.plan_price) planData.price = createPlanDto.plan_price;
+      if (createPlanDto.plan_duration) planData.validity = createPlanDto.plan_duration;
+      
+      const plan = this.planRepository.create(planData);
       const savedPlan = await this.planRepository.save(plan);
 
       return {
@@ -67,7 +72,7 @@ export class PlansService {
         message: 'Plan created successfully',
         data: this.mapToResponse(savedPlan),
       };
-    } catch (error) {
+    } catch (error) { 
       throw new BadRequestException(error.message);
     }
   }
@@ -85,7 +90,12 @@ export class PlansService {
         throw new NotFoundException(`Plan with ID ${id} not found`);
       }
 
-      Object.assign(plan, updatePlanDto);
+      const updateData: import('typeorm').DeepPartial<Plan> = { ...updatePlanDto };
+      if (updatePlanDto.plan_name) updateData.name = updatePlanDto.plan_name;
+      if (updatePlanDto.plan_price) updateData.price = updatePlanDto.plan_price;
+      if (updatePlanDto.plan_duration) updateData.validity = updatePlanDto.plan_duration;
+
+      Object.assign(plan, updateData);
       const updatedPlan = await this.planRepository.save(plan);
 
       return {
@@ -129,15 +139,19 @@ export class PlansService {
   private mapToResponse(plan: Plan): PlanResponseDto {
     return {
       planId: plan.planId,
+      id: plan.planId,
       name: plan.name,
+      plan_name: plan.name,
       screens: plan.screens,
       quality: plan.quality,
       compatibility: plan.compatibility,
       unlimited: plan.unlimited,
       cancellation: plan.cancellation,
       price: plan.price,
+      plan_price: plan.price,
       discount: plan.discount,
       validity: plan.validity,
+      plan_duration: plan.validity,
       status: plan.status,
     };
   }

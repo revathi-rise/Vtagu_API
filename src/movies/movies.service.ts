@@ -50,8 +50,22 @@ export class MoviesService {
   }
 
   private mapFromDto(dto: CreateMovieDto): Partial<Movie> {
-    const { media, ...rest } = dto;
+    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, cast_name, director_name, rating, duration, release_date, ...rest } = dto;
     const movie: Partial<Movie> = { ...rest };
+
+    if (movie_name) movie.title = movie_name;
+    if (movie_desc) movie.description_short = movie_desc;
+    if (movie_poster) movie.movie_image = movie_poster;
+    if (movie_trailer) movie.trailer_url = movie_trailer;
+    if (movie_video) movie.url = movie_video;
+    if (cast_name) movie.actors = cast_name;
+    if (director_name) movie.director = director_name;
+    if (rating) movie.rating = typeof rating === 'string' ? parseFloat(rating) : rating;
+    if (duration) movie.duration = duration;
+    if (release_date) {
+      const year = new Date(release_date).getFullYear();
+      if (!isNaN(year)) movie.year = year;
+    }
 
     if (media) {
       if (media.image) {
@@ -71,16 +85,22 @@ export class MoviesService {
     return {
       id: m.movie_id,
       title: m.title,
+      movie_name: m.title,
       slug: m.slug,
       shortDescription: m.description_short,
+      movie_desc: m.description_short,
       longDescription: m.description_long,
       releaseYear: m.year,
+      release_date: m.year ? `${m.year}-01-01` : null,
       countryId: m.country_id,
       rating: m.rating ? parseFloat(m.rating.toString()) : null,
       genreId: m.genre_id,
+      genre_name: '', // Should be fetched from relation if available
       ageGroup: m.age_group,
       actors: m.actors,
+      cast_name: m.actors,
       director: m.director,
+      director_name: m.director,
       isFeatured: m.featured,
       isFree: m.free,
       movieType: m.movie_type,
@@ -88,9 +108,12 @@ export class MoviesService {
       ageRestriction: m.age_restriction,
       kidsRestriction: m.kids_restriction,
       videoUrl: m.url,
+      movie_video: m.url,
       trailerUrl: m.trailer_url,
+      movie_trailer: m.trailer_url,
       trailerAlt: m.trailer_alt,
       posterImage: m.movie_image,
+      movie_poster: m.movie_image,
       posterAlt: m.poster_alt,
       duration: m.duration,
       languages: m.languages,

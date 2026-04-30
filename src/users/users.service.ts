@@ -238,6 +238,22 @@ export class UsersService {
   }
 
   /**
+   * Get all users
+   */
+  async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
+    try {
+      const users = await this.usersRepository.find();
+      return {
+        status: true,
+        message: 'Users fetched successfully',
+        data: users.map(user => this.mapAdminToResponse(user)),
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
    * Get user profile
    */
   async getUserProfile(userId: number): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
@@ -281,6 +297,22 @@ export class UsersService {
         message: 'User profile updated successfully',
         data: this.mapUserToResponse(updatedUser),
       };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Remove user
+   */
+  async remove(userId: number): Promise<{ status: boolean; message: string }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      await this.usersRepository.remove(user);
+      return { status: true, message: 'User deleted successfully' };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
