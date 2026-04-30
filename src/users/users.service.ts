@@ -240,7 +240,7 @@ export class UsersService {
   /**
    * Get all users
    */
-  async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
+  async findAll(): Promise<{ status: boolean; message: string; data: AdminResponseDto[] }> {
     try {
       const users = await this.usersRepository.find();
       return {
