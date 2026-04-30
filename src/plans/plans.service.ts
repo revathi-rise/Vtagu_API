@@ -136,7 +136,8 @@ export class PlansService {
   /**
    * Helper: Map entity to response DTO
    */
-  private mapToResponse(plan: Plan): PlanResponseDto {
+  private mapToResponse(plan: Plan | null): PlanResponseDto | null {
+    if (!plan) return null;
     return {
       planId: plan.planId,
       id: plan.planId,
