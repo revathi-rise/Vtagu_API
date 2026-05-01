@@ -32,8 +32,8 @@ export class User {
   @Column({ nullable: true })
   dob: string;
 
-  @Column({ nullable: true })
-  type: string; // 'email', 'phone', 'oauth'
+  @Column({ nullable: true, default: 'U' })
+  type: string; // '1' = admin, 'U' = user
 
   @Column({ nullable: true })
   gender: string;

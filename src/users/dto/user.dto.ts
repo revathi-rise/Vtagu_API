@@ -20,7 +20,7 @@ export class RegisterDto {
 
   @IsString()
   @IsOptional()
-  type?: string; // 'email', 'phone'
+  type?: string; // '1' = admin, 'U' = user (default)
 }
 
 export class LoginDto {

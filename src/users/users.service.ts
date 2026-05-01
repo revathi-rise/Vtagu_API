@@ -31,7 +31,6 @@ export class UsersService {
         password: hashedPassword,
         mobile: registerDto.mobile || null,
         type: registerDto.type || 'U',
-        role: registerDto.type === '1' ? 'admin' : 'user',
         otp,
         status: '1', // default active status
         register_step: 1,
