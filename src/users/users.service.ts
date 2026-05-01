@@ -240,13 +240,13 @@ export class UsersService {
   /**
    * Get all users
    */
-  async findAll(): Promise<{ status: boolean; message: string; data: AdminResponseDto[] }> {
+  async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
     try {
       const users = await this.usersRepository.find();
       return {
         status: true,
         message: 'Users fetched successfully',
-        data: users.map(user => this.mapAdminToResponse(user)),
+        data: users.map(user => this.mapUserToResponse(user)),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
