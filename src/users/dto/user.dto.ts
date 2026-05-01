@@ -163,7 +163,6 @@ export class UserResponseDto {
   logged_in: boolean;
   last_login_ip_address: string;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export class AdminLoginDto {

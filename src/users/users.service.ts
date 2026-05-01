@@ -360,7 +360,6 @@ export class UsersService {
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     };
   }
 
