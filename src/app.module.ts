@@ -26,6 +26,18 @@ import { WatchProgressModule } from './watch-progress/watch-progress.module';
 import { WatchProgress } from './watch-progress/entities/watch-progress.entity';
 import { PlansModule } from './plans/plans.module';
 import { Plan } from './plans/entities/plan.entity';
+import { ActorsModule } from './actors/actors.module';
+import { Actor } from './actors/entities/actor.entity';
+import { DirectorsModule } from './directors/directors.module';
+import { Director } from './directors/entities/director.entity';
+import { FaqsModule } from './faqs/faqs.module';
+import { Faq } from './faqs/entities/faq.entity';
+import { TransactionsModule } from './transactions/transactions.module';
+import { Transaction } from './transactions/entities/transaction.entity';
+import { SeriesModule } from './series/series.module';
+import { Series } from './series/entities/series.entity';
+import { NewsModule } from './news/news.module';
+import { News } from './news/entities/news.entity';
 
 @Module({
   imports: [
@@ -50,6 +62,12 @@ import { Plan } from './plans/entities/plan.entity';
         UserDevice,
         WatchProgress,
         Plan,
+        Actor,
+        Director,
+        Faq,
+        Transaction,
+        Series,
+        News,
       ],
       synchronize: false,
     }),
@@ -66,6 +84,12 @@ import { Plan } from './plans/entities/plan.entity';
     UserDevicesModule,
     WatchProgressModule,
     PlansModule,
+    ActorsModule,
+    DirectorsModule,
+    FaqsModule,
+    TransactionsModule,
+    SeriesModule,
+    NewsModule,
   ],
 })
 export class AppModule {}

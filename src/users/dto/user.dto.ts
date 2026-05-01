@@ -92,9 +92,6 @@ export class UpdateUserDto {
   @IsOptional()
   type?: string;
 
-  @IsString()
-  @IsOptional()
-  role?: string;
 
   @IsString()
   @IsOptional()
@@ -162,7 +159,6 @@ export class UserResponseDto {
   profile_picture: string;
   status: string;
   plan: string;
-  role: string;
   type: string;
   logged_in: boolean;
   last_login_ip_address: string;
@@ -184,7 +180,6 @@ export class AdminResponseDto {
   userId: number;
   email: string;
   user_name: string;
-  role: string;
   status: string;
   logged_in: boolean;
   last_login_ip_address: string;

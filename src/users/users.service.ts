@@ -130,9 +130,9 @@ export class UsersService {
 
       console.log(`[ADMIN LOGIN] User found: ${user.email}, type: ${user.type}, status: ${user.status}`);
 
-      // Check if user is admin (type 1 or role admin)
-      if (String(user.type) !== '1' && user.role !== 'admin') {
-        console.log(`[ADMIN LOGIN] User is not admin. Type: ${user.type}, Role: ${user.role}`);
+      // Check if user is admin (type 1)
+      if (String(user.type) !== '1') {
+        console.log(`[ADMIN LOGIN] User is not admin. Type: ${user.type}`);
         throw new UnauthorizedException('Only administrators can access this endpoint');
       }
 
@@ -356,7 +356,6 @@ export class UsersService {
       profile_picture: user.profile_picture,
       status: user.status,
       plan: user.plan,
-      role: user.role,
       type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
@@ -373,7 +372,6 @@ export class UsersService {
       userId: user.userId,
       email: user.email,
       user_name: user.user_name,
-      role: user.role,
       status: user.status,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
