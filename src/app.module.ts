@@ -1,4 +1,6 @@
+import 'dotenv/config';
 import { Module } from '@nestjs/common';
+import { MailerModule } from '@nestjs-modules/mailer';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MoviesModule } from './movies/movies.module';
 import { PostersModule } from './posters/posters.module';
@@ -70,6 +72,23 @@ import { News } from './news/entities/news.entity';
         News,
       ],
       synchronize: false,
+    }),
+    MailerModule.forRoot({
+      transport: {
+        host: process.env.MAIL_HOST,
+        port: parseInt(process.env.MAIL_PORT),
+        secure: parseInt(process.env.MAIL_PORT) === 465, // true for 465, false for other ports
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false, // Helps with some shared hosting certificates
+        },
+      },
+      defaults: {
+        from: `"VTAGU PrimeTime" <${process.env.MAIL_FROM}>`,
+      },
     }),
     MoviesModule,
     PostersModule,

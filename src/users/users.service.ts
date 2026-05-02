@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -10,6 +11,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private readonly mailerService: MailerService,
   ) { }
 
   /**
@@ -38,7 +40,8 @@ export class UsersService {
 
       const savedUser = await this.usersRepository.save(user);
 
-      // TODO: Send OTP via email
+      // Send OTP via email
+      await this.sendOtpEmail(registerDto.email, otp);
       console.log(`OTP for ${registerDto.email}: ${otp}`);
 
       return {
@@ -61,7 +64,7 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      if (user.otp !== verifyOtpDto.otp && verifyOtpDto.otp !== '123456') {
+      if (user.otp !== verifyOtpDto.otp) {
         throw new BadRequestException('Invalid OTP');
       }
 
@@ -203,7 +206,8 @@ export class UsersService {
       user.forgot_otp = otp;
       await this.usersRepository.save(user);
 
-      // TODO: Send OTP via email
+      // Send OTP via email
+      await this.sendOtpEmail(forgotPasswordDto.email, otp);
       console.log(`Forgot Password OTP for ${forgotPasswordDto.email}: ${otp}`);
 
       return { status: true, message: 'OTP sent to email' };
@@ -222,7 +226,7 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
-      if (user.forgot_otp !== resetPasswordDto.otp && resetPasswordDto.otp !== '123456') {
+      if (user.forgot_otp !== resetPasswordDto.otp) {
         throw new BadRequestException('Invalid OTP');
       }
 
@@ -326,13 +330,86 @@ export class UsersService {
 
   /**
    * Helper: Generate OTP
-   * For development: returns fixed OTP "123456"
-   * For production: should generate random OTP
    */
   private generateOtp(): string {
     // Generate random 6-digit OTP
-    // return Math.floor(100000 + Math.random() * 900000).toString();
-    return '123456';
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  /**
+   * Helper: Send OTP via email
+   */
+  private async sendOtpEmail(email: string, otp: string): Promise<void> {
+    // Skip if mailer is not configured or using placeholder
+    if (!process.env.MAIL_HOST || process.env.MAIL_HOST === 'smtp.example.com') {
+      console.log('--- DEVELOPMENT MODE: EMAIL NOT SENT ---');
+      console.log(`To: ${email}`);
+      console.log(`OTP: ${otp}`);
+      console.log('---------------------------------------');
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `${otp} is your VTAGU verification code`,
+        text: `Your verification code is: ${otp}. This code will expire in 10 minutes.`,
+        html: `
+          <div style="background-color: #0c0816; padding: 60px 20px; font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff;">
+            <div style="max-width: 600px; margin: 0 auto; background: #1a1329; border: 1px solid rgba(178, 140, 255, 0.2); border-radius: 32px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6);">
+              
+              <!-- Header with Large Logo -->
+              <div style="padding: 50px 0; text-align: center; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent);">
+                <img src="cid:vtagu_logo" alt="VTAGU Logo" style="height: 120px; width: auto; display: block; margin: 0 auto;" />
+              </div>
+
+              <!-- Content Body -->
+              <div style="padding: 0 50px 50px; text-align: center;">
+                <div style="display: inline-block; padding: 8px 16px; background: rgba(178, 140, 255, 0.1); border-radius: 100px; margin-bottom: 24px;">
+                   <span style="font-size: 11px; font-weight: 800; letter-spacing: 2px; color: #b28cff; text-transform: uppercase;">Security Verification</span>
+                </div>
+                
+                <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 700; letter-spacing: -1px; color: #ffffff; line-height: 1.2;">Verify Your Identity</h1>
+                <p style="margin: 0 0 40px; font-size: 17px; line-height: 1.6; color: rgba(255, 255, 255, 0.7);">
+                  We received a request to access your account. Use the following dynamic code to complete your verification.
+                </p>
+
+                <!-- Premium OTP Display -->
+                <div style="padding: 3px; border-radius: 24px; background: linear-gradient(135deg, #3299ff 0%, #9248ff 100%); display: inline-block; box-shadow: 0 15px 30px rgba(50, 153, 255, 0.3);">
+                  <div style="background: #0B0914; padding: 24px 50px; border-radius: 21px;">
+                    <span style="font-size: 52px; font-weight: 800; letter-spacing: 12px; color: #ffffff; text-shadow: 0 0 15px rgba(178, 140, 255, 0.4);">${otp}</span>
+                  </div>
+                </div>
+
+                <div style="margin-top: 40px; padding: 20px; background: rgba(255, 255, 255, 0.02); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <p style="margin: 0; font-size: 14px; color: rgba(255, 255, 255, 0.5);">
+                    <strong>Security Tip:</strong> Never share this code with anyone. VTAGU staff will never ask for your verification code.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div style="padding: 40px; text-align: center; background: #0c0816; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                <p style="margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.4); line-height: 1.8;">
+                  © 2026 VTAGU PrimeTime. All rights reserved.<br>
+                  <span style="color: rgba(255, 255, 255, 0.2);">This is an automated security notification.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: 'vtagu_logo.png',
+            path: require('path').join(__dirname, 'vtagu_logo.png'),
+            cid: 'vtagu_logo'
+          }
+        ]
+      });
+      console.log(`Email sent successfully to ${email}`);
+    } catch (error) {
+      console.error(`Failed to send email to ${email}:`, error.message);
+    }
   }
 
   /**
