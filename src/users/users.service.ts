@@ -401,7 +401,7 @@ export class UsersService {
         attachments: [
           {
             filename: 'vtagu_logo.png',
-            path: require('path').join(__dirname, 'vtagu_logo.png'),
+            path: require('path').join(__dirname, '..', 'assets', 'vtagu_logo.png'),
             cid: 'vtagu_logo'
           }
         ]
