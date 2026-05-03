@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto } from './dto/user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -34,6 +34,15 @@ export class UsersController {
   }
 
   /**
+   * Resend OTP
+   * POST /users/resend-otp
+   */
+  @Post('resend-otp')
+  async resendOtp(@Body() resendOtpDto: ResendOtpDto) {
+    return this.usersService.resendOtp(resendOtpDto);
+  }
+
+  /**
    * Login
    * POST /users/login
    */
@@ -41,6 +50,16 @@ export class UsersController {
   async login(@Body() loginDto: LoginDto, @Request() req) {
     const ipAddress = this.getIpAddress(req);
     return this.usersService.login(loginDto, ipAddress);
+  }
+
+  /**
+   * Google Login/Register
+   * POST /users/google-login
+   */
+  @Post('google-login')
+  async googleLogin(@Body() googleLoginDto: GoogleLoginDto, @Request() req) {
+    const ipAddress = this.getIpAddress(req);
+    return this.usersService.googleLogin(googleLoginDto, ipAddress);
   }
 
   /**

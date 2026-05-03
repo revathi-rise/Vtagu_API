@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
-import { RegisterDto, LoginDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -84,6 +84,36 @@ export class UsersService {
   }
 
   /**
+   * Resend OTP for Verification
+   */
+  async resendOtp(resendOtpDto: ResendOtpDto): Promise<{ status: boolean; message: string }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { email: resendOtpDto.email } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.otp_verified === 'Y') {
+        throw new BadRequestException('User is already verified');
+      }
+
+      const otp = this.generateOtp();
+      user.otp = otp;
+      await this.usersRepository.save(user);
+
+      await this.sendOtpEmail(resendOtpDto.email, otp);
+      console.log(`Resent OTP for ${resendOtpDto.email}: ${otp}`);
+
+      return {
+        status: true,
+        message: 'OTP resent successfully to email.',
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
    * Login user
    */
   async login(loginDto: LoginDto, ipAddress: string): Promise<{ status: boolean; message: string; data: UserResponseDto; token: string }> {
@@ -117,6 +147,54 @@ export class UsersService {
       };
     } catch (error) {
       throw new UnauthorizedException(error.message);
+    }
+  }
+
+  /**
+   * Google Login/Register
+   */
+  async googleLogin(googleLoginDto: GoogleLoginDto, ipAddress: string): Promise<{ status: boolean; message: string; data: UserResponseDto; token: string }> {
+    try {
+      let user = await this.usersRepository.findOne({ where: { email: googleLoginDto.email } });
+
+      if (!user) {
+        // Create new user since they don't exist
+        const randomPassword = await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 10);
+        user = this.usersRepository.create({
+          email: googleLoginDto.email,
+          user_name: googleLoginDto.user_name,
+          password: randomPassword,
+          type: 'U',
+          status: 'active',
+          otp_verified: 'Y', // Google verifies email
+          loginOauthUid: googleLoginDto.login_oauth_uid,
+          profile_picture: googleLoginDto.profile_picture || null,
+          register_step: 2,
+        });
+      } else {
+        // Update OAuth UID and Profile Picture if missing or updated
+        user.loginOauthUid = googleLoginDto.login_oauth_uid;
+        if (googleLoginDto.profile_picture) {
+          user.profile_picture = googleLoginDto.profile_picture;
+        }
+      }
+
+      // Log the user in
+      user.logged_in = true;
+      user.log_count = (user.log_count || 0) + 1;
+      user.last_login_ip_address = ipAddress;
+      user.user_session = this.generateSessionToken();
+
+      const savedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Google login successful',
+        data: this.mapUserToResponse(savedUser),
+        token: savedUser.user_session,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -200,6 +278,11 @@ export class UsersService {
       const user = await this.usersRepository.findOne({ where: { email: forgotPasswordDto.email } });
       if (!user) {
         throw new NotFoundException('User not found');
+      }
+
+      // Prevent password reset for Google Auth users
+      if (user.loginOauthUid) {
+        throw new BadRequestException('You registered using Google Authentication. Please log in using your Google account.');
       }
 
       const otp = this.generateOtp();

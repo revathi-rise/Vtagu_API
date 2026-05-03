@@ -33,6 +33,24 @@ export class LoginDto {
   password: string;
 }
 
+export class GoogleLoginDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  user_name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  login_oauth_uid: string;
+
+  @IsString()
+  @IsOptional()
+  profile_picture?: string;
+}
+
 export class VerifyOtpDto {
   @IsEmail()
   @IsNotEmpty()
@@ -62,6 +80,12 @@ export class ResetPasswordDto {
   @IsNotEmpty()
   @MinLength(8)
   new_password: string;
+}
+
+export class ResendOtpDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
 }
 
 export class UpdateUserDto {
