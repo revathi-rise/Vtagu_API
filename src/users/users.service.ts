@@ -359,7 +359,7 @@ export class UsersService {
             <div style="max-width: 600px; margin: 0 auto; background: #1a1329; border: 1px solid rgba(178, 140, 255, 0.2); border-radius: 32px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6);">
               
               <!-- Header with Large Logo -->
-              <div style="padding: 50px 0; text-align: center; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent);">
+              <div style="padding: 50px 0 20px; text-align: center; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent);">
                 <img src="cid:vtagu_logo" alt="VTAGU Logo" style="height: 120px; width: auto; display: block; margin: 0 auto;" />
               </div>
 
