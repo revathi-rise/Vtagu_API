@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
@@ -30,6 +30,37 @@ export class TransactionsController {
     try {
       const data = await this.service.findOne(+id);
       return { status: true, message: 'Transaction fetched successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Post('create-order')
+  async createOrder(@Body() body: { userId: number; amount: number }) {
+    try {
+      const data = await this.service.createOrder(Number(body.userId), Number(body.amount));
+      return { status: true, message: 'Razorpay order created successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Post('verify-payment')
+  async verifyPayment(
+    @Body()
+    body: {
+      razorpayOrderId: string;
+      razorpayPaymentId: string;
+      signature: string;
+    },
+  ) {
+    try {
+      const data = await this.service.verifyPayment(
+        body.razorpayOrderId,
+        body.razorpayPaymentId,
+        body.signature,
+      );
+      return { status: true, message: data.message, data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
     }
