@@ -208,3 +208,21 @@ export class AdminResponseDto {
   last_login_ip_address: string;
   createdAt: Date;
 }
+
+export class MobileLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  mobile: string;
+}
+
+export class VerifyMobileOtpDto {
+  @IsString()
+  @IsNotEmpty()
+  mobile: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+

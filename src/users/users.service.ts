@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
-import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -500,6 +500,146 @@ export class UsersService {
    */
   private generateSessionToken(): string {
     return require('crypto').randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Request OTP for Mobile Login
+   */
+  async sendMobileOtp(mobileLoginDto: MobileLoginDto): Promise<{ status: boolean; message: string }> {
+    try {
+      const { mobile } = mobileLoginDto;
+
+      // Basic mobile validation (ensure it has country code if needed, but we'll take what user gives)
+      if (!mobile || mobile.length < 10) {
+        throw new BadRequestException('Invalid mobile number');
+      }
+
+      let user = await this.usersRepository.findOne({ where: { mobile } });
+
+      if (!user) {
+        // Automatically create a new user for mobile login if they don't exist
+        const randomPassword = await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 10);
+        user = this.usersRepository.create({
+          mobile,
+          user_name: `User_${mobile.slice(-4)}`,
+          email: `${mobile}@vtagu.temporary`, // Temporary email since email is unique and required
+          password: randomPassword,
+          type: 'U',
+          status: 'active',
+          otp_verified: 'Y', // Mobile verification will happen via OTP
+          register_step: 2,
+        });
+        user = await this.usersRepository.save(user);
+      }
+
+      const otp = this.generateOtp();
+      user.login_otp = otp;
+      await this.usersRepository.save(user);
+
+      // Send OTP via SMS
+      await this.sendSms(mobile, otp);
+      console.log(`Mobile Login OTP for ${mobile}: ${otp}`);
+
+      return {
+        status: true,
+        message: 'OTP sent successfully to mobile number',
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Verify Mobile OTP and Login
+   */
+  async verifyMobileLogin(verifyDto: VerifyMobileOtpDto, ipAddress: string): Promise<{ status: boolean; message: string; data: UserResponseDto; token: string }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { mobile: verifyDto.mobile } });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (!user.login_otp || user.login_otp !== verifyDto.otp) {
+        throw new BadRequestException('Invalid OTP');
+      }
+
+      // Clear OTP and log user in
+      user.login_otp = null;
+      user.logged_in = true;
+      user.log_count = (user.log_count || 0) + 1;
+      user.last_login_ip_address = ipAddress;
+      user.user_session = this.generateSessionToken();
+
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Login successful',
+        data: this.mapUserToResponse(updatedUser),
+        token: updatedUser.user_session,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Helper: Send SMS via Ping4SMS
+   */
+  private async sendSms(mobile: string, otp: string): Promise<void> {
+    const apiKey = process.env.SMS_API_KEY || '44d753832f414d90e28b69cee1b9f24e';
+    const sender = process.env.SMS_SENDER || 'VTAGU';
+    const route = process.env.SMS_ROUTE || '4';
+    const templateid = process.env.SMS_TEMPLATE_ID || '1207161832333779530';
+
+    // Use mobile as is, but ensure no non-numeric characters
+    let formattedMobile = mobile.replace(/\D/g, '');
+
+    // Add 91 prefix for 10-digit Indian numbers
+    if (formattedMobile.length === 10) {
+      formattedMobile = '91' + formattedMobile;
+    }
+
+    // EXACT DLT template match (from Jio TrueConnect):
+    // Welcome to www.vtagu.in your login otp is {#var#}
+    const message = `Welcome to www.vtagu.in your login otp is ${otp}`;
+
+    // Use '+' for spaces as per Ping4SMS dashboard requirements
+    const encodedMessage = encodeURIComponent(message).replace(/%20/g, '+');
+
+    const url = `https://site.ping4sms.com/api/smsapi?key=${apiKey}&route=${route}&sender=${sender}&number=${formattedMobile}&sms=${encodedMessage}&templateid=${templateid}`;
+
+    const https = require('https');
+    const http = require('http');
+
+    return new Promise((resolve, reject) => {
+      console.log(`Sending SMS to ${formattedMobile} using route ${route}...`);
+
+      const request = https.get(url, (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          console.log(`SMS Gateway Response for ${formattedMobile}: ${data}`);
+          resolve();
+        });
+      });
+
+      request.on('error', (err) => {
+        console.error(`HTTPS SMS failed, trying HTTP fallback for ${formattedMobile}:`, err.message);
+        const httpUrl = url.replace('https://', 'http://');
+        http.get(httpUrl, (res) => {
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => {
+            console.log(`SMS Gateway (HTTP Fallback) Response for ${formattedMobile}: ${data}`);
+            resolve();
+          });
+        }).on('error', (httpErr) => {
+          console.error(`Critical: SMS failed to ${formattedMobile}:`, httpErr.message);
+          resolve();
+        });
+      });
+    });
   }
 
   /**

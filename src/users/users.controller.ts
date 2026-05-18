@@ -1,10 +1,10 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   /**
    * Register a new user
@@ -70,6 +70,25 @@ export class UsersController {
   async adminLogin(@Body() adminLoginDto: AdminLoginDto, @Request() req) {
     const ipAddress = this.getIpAddress(req);
     return this.usersService.adminLogin(adminLoginDto, ipAddress);
+  }
+
+  /**
+   * Mobile Login - Request OTP
+   * POST /users/mobile-login
+   */
+  @Post('mobile-login')
+  async mobileLogin(@Body() mobileLoginDto: MobileLoginDto) {
+    return this.usersService.sendMobileOtp(mobileLoginDto);
+  }
+
+  /**
+   * Verify Mobile Login - Verify OTP and Login
+   * POST /users/verify-mobile-login
+   */
+  @Post('verify-mobile-login')
+  async verifyMobileLogin(@Body() verifyDto: VerifyMobileOtpDto, @Request() req) {
+    const ipAddress = this.getIpAddress(req);
+    return this.usersService.verifyMobileLogin(verifyDto, ipAddress);
   }
 
   /**
@@ -140,8 +159,8 @@ export class UsersController {
    */
   private getIpAddress(req: any): string {
     const forwarded = req.headers['x-forwarded-for'];
-    const ip = forwarded 
-      ? forwarded.split(',')[0].trim() 
+    const ip = forwarded
+      ? forwarded.split(',')[0].trim()
       : req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
     return ip;
   }

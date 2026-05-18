@@ -40,6 +40,7 @@ import { SeriesModule } from './series/series.module';
 import { Series } from './series/entities/series.entity';
 import { NewsModule } from './news/news.module';
 import { News } from './news/entities/news.entity';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { News } from './news/entities/news.entity';
     TransactionsModule,
     SeriesModule,
     NewsModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}
