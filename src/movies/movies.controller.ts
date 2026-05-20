@@ -17,9 +17,9 @@ export class MoviesController {
   }
 
   @Get()
-  async findAll(): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
+  async findAll(@Query('language') language?: string): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
-      const data = await this.moviesService.findAll();
+      const data = await this.moviesService.findAll(language);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Movie } from './movie.entity';
 import { CreateMovieDto, MovieResponseDto, UpdateMovieDto } from './movies.dto';
 
@@ -11,8 +11,18 @@ export class MoviesService {
     private moviesRepo: Repository<Movie>,
   ) { }
 
-  async findAll(): Promise<MovieResponseDto[]> {
-    const movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
+  async findAll(languageSlug?: string): Promise<MovieResponseDto[]> {
+    let movies: Movie[];
+    if (languageSlug) {
+      movies = await this.moviesRepo.find({
+        where: {
+          languages: Like(`%${languageSlug}%`),
+        },
+        order: { movie_id: 'DESC' },
+      });
+    } else {
+      movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
+    }
     return movies.map(m => this.mapToResponse(m));
   }
 
@@ -81,7 +91,7 @@ export class MoviesService {
     return movie;
   }
 
-  private mapToResponse(m: Movie): MovieResponseDto {
+  public mapToResponse(m: Movie): MovieResponseDto {
     return {
       id: m.movie_id,
       title: m.title,

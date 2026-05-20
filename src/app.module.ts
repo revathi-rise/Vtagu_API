@@ -41,6 +41,8 @@ import { Series } from './series/entities/series.entity';
 import { NewsModule } from './news/news.module';
 import { News } from './news/entities/news.entity';
 import { UploadsModule } from './uploads/uploads.module';
+import { LanguagesModule } from './languages/languages.module';
+import { Language } from './languages/language.entity';
 
 @Module({
   imports: [
@@ -71,6 +73,7 @@ import { UploadsModule } from './uploads/uploads.module';
         Transaction,
         Series,
         News,
+        Language,
       ],
       synchronize: false,
     }),
@@ -111,6 +114,7 @@ import { UploadsModule } from './uploads/uploads.module';
     SeriesModule,
     NewsModule,
     UploadsModule,
+    LanguagesModule,
   ],
 })
 export class AppModule {}
