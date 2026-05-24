@@ -35,8 +35,13 @@ export class EpisodesService {
     return episodes.map(e => this.mapToResponse(e));
   }
 
-  async findOne(id: number): Promise<EpisodeResponseDto> {
-    const episode = await this.episodeRepository.findOneBy({ episode_id: id });
+  async findOne(idOrSlug: string | number): Promise<EpisodeResponseDto> {
+    let episode: Episode;
+    if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
+      episode = await this.episodeRepository.findOneBy({ episode_id: Number(idOrSlug) });
+    } else {
+      episode = await this.episodeRepository.findOneBy({ slug: String(idOrSlug) });
+    }
     if (!episode) throw new NotFoundException('Episode not found');
     return this.mapToResponse(episode);
   }

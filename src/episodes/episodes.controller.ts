@@ -24,9 +24,9 @@ export class EpisodesController {
     return { status: true, message: 'Episodes fetched successfully', data };
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const data = await this.episodesService.findOne(Number(id));
+  @Get(':idOrSlug')
+  async findOne(@Param('idOrSlug') idOrSlug: string) {
+    const data = await this.episodesService.findOne(idOrSlug);
     return { status: true, message: 'Episode fetched successfully', data };
   }
 
