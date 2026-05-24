@@ -55,8 +55,8 @@ export class WatchProgressService {
           });
         } else if (p.contentType === ContentType.EPISODE) {
           contentInfo = await this.episodesRepository.findOne({
-            where: { episodeId: p.contentId },
-            select: ['episodeId', 'title', 'image'],
+            where: { episode_id: p.contentId },
+            select: ['episode_id', 'title', 'image'],
           });
         }
 
