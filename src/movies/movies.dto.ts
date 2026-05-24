@@ -21,12 +21,19 @@ class VideoMediaDto {
 
 class MediaDto {
   @ValidateNested()
+  @IsOptional()
   @Type(() => ImageMediaDto)
-  image: ImageMediaDto;
+  image?: ImageMediaDto;
 
   @ValidateNested()
+  @IsOptional()
+  @Type(() => ImageMediaDto)
+  card_image?: ImageMediaDto;
+
+  @ValidateNested()
+  @IsOptional()
   @Type(() => VideoMediaDto)
-  video: VideoMediaDto;
+  video?: VideoMediaDto;
 }
 
 export class CreateMovieDto {
@@ -111,6 +118,10 @@ export class CreateMovieDto {
   @IsOptional()
   languages?: string;
 
+  @IsString()
+  @IsOptional()
+  card_image?: string;
+
   @IsNumber()
   @IsOptional()
   view_count?: number;
@@ -164,41 +175,39 @@ export class UpdateMovieDto extends CreateMovieDto {}
 export class MovieResponseDto {
   id: number;
   title: string;
+  movie_name: string;
   slug: string;
   shortDescription: string;
+  movie_desc: string;
   longDescription: string;
   releaseYear: number;
+  release_date: string;
   countryId: number;
   rating: number;
   genreId: number;
+  genre_name: string;
   ageGroup: string;
   actors: string;
+  cast_name: string;
   director: string;
+  director_name: string;
   isFeatured: boolean;
   isFree: boolean;
   movieType: string;
   contentType: string;
   ageRestriction: string;
   kidsRestriction: boolean;
-  videoUrl: string;
-  trailerUrl: string;
-  trailerAlt: string;
-  posterImage: string;
-  posterAlt: string;
   duration: string;
   languages: string;
   viewCount: number;
   isInteractive: boolean;
   interactiveMap: string;
-  movie_name: string;
-  movie_poster: string;
-  movie_desc: string;
-  movie_trailer: string;
-  movie_video: string;
-  cast_name: string;
-  director_name: string;
-  release_date: string;
-  genre_name: string;
+  media: {
+    image: { url: string; alt: string };
+    card_image: { url: string; alt: string };
+    video: { url: string; alt: string };
+    trailer: { url: string; alt: string };
+  };
   createdAt: Date;
   updatedAt: Date;
 }

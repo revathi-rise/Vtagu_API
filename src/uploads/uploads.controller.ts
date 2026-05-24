@@ -13,7 +13,7 @@ import { UploadsService } from './uploads.service';
 
 @Controller()
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) {}
+  constructor(private readonly uploadsService: UploadsService) { }
 
   /**
    * Universal upload-image endpoint: POST /upload-image

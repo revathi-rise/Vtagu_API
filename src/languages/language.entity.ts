@@ -14,6 +14,9 @@ export class Language {
   @Column({ length: 255, unique: true })
   slug: string;
 
+  @Column({ type: 'tinyint', default: 1 })
+  is_visible: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

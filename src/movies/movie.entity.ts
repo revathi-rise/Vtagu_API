@@ -71,6 +71,9 @@ export class Movie {
   @Column({ name: 'poster_alt', nullable: true })
   poster_alt: string;
 
+  @Column({ name: 'card_image', nullable: true })
+  card_image: string;
+
   @Column({ nullable: true })
   duration: string;
 

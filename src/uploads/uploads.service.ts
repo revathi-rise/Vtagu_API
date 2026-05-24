@@ -71,7 +71,7 @@ export class UploadsService {
   private saveLocally(buffer: Buffer, fileName: string, requestHostUrl?: string): string {
     const filePath = path.join(this.localUploadDir, fileName);
     fs.writeFileSync(filePath, buffer);
-    
+
     const host = requestHostUrl || 'http://localhost:3000';
     return `${host}/public/images/${fileName}`;
   }
@@ -90,8 +90,8 @@ export class UploadsService {
     }
 
     // Determine storage endpoint hostname
-    const hostname = region === 'de' || region === '' 
-      ? 'storage.bunnycdn.com' 
+    const hostname = region === 'de' || region === ''
+      ? 'storage.bunnycdn.com'
       : `${region}.storage.bunnycdn.com`;
 
     // Path in storage: /<storage_zone>/images/<filename>
@@ -100,7 +100,7 @@ export class UploadsService {
 
     return new Promise((resolve, reject) => {
       const parsedUrl = new URL(url);
-      
+
       const options: https.RequestOptions = {
         hostname: parsedUrl.hostname,
         path: parsedUrl.pathname,

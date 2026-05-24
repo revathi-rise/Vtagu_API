@@ -77,10 +77,15 @@ export class MoviesService {
       if (!isNaN(year)) movie.year = year;
     }
 
+    if (dto.card_image) movie.card_image = dto.card_image;
+
     if (media) {
       if (media.image) {
         movie.movie_image = media.image.url;
         movie.poster_alt = media.image.alt;
+      }
+      if (media.card_image) {
+        movie.card_image = media.card_image.url;
       }
       if (media.video) {
         movie.trailer_url = media.video.url;
@@ -105,7 +110,7 @@ export class MoviesService {
       countryId: m.country_id,
       rating: m.rating ? parseFloat(m.rating.toString()) : null,
       genreId: m.genre_id,
-      genre_name: '', // Should be fetched from relation if available
+      genre_name: '',
       ageGroup: m.age_group,
       actors: m.actors,
       cast_name: m.actors,
@@ -117,19 +122,17 @@ export class MoviesService {
       contentType: m.type,
       ageRestriction: m.age_restriction,
       kidsRestriction: m.kids_restriction,
-      videoUrl: m.url,
-      movie_video: m.url,
-      trailerUrl: m.trailer_url,
-      movie_trailer: m.trailer_url,
-      trailerAlt: m.trailer_alt,
-      posterImage: m.movie_image,
-      movie_poster: m.movie_image,
-      posterAlt: m.poster_alt,
       duration: m.duration,
       languages: m.languages,
       viewCount: m.view_count,
       isInteractive: m.is_interactive,
       interactiveMap: m.interactive_map,
+      media: {
+        image: { url: m.movie_image || '', alt: m.poster_alt || '' },
+        card_image: { url: m.card_image || '', alt: '' },
+        video: { url: m.url || '', alt: '' },
+        trailer: { url: m.trailer_url || '', alt: m.trailer_alt || '' },
+      },
       createdAt: m.created_at,
       updatedAt: m.updated_at,
     };

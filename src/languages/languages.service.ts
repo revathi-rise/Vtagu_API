@@ -15,13 +15,50 @@ export class LanguagesService {
     private readonly moviesService: MoviesService,
   ) {}
 
-  async findAll() {
-    const languages = await this.languagesRepo.find({ order: { id: 'ASC' } });
+  async findAll(includeHidden = false) {
+    const where = includeHidden ? {} : { is_visible: true };
+    const languages = await this.languagesRepo.find({ where, order: { id: 'ASC' } });
     return languages.map(l => ({
+      id: l.id,
       name: l.name,
       code: l.code,
       slug: l.slug,
+      is_visible: l.is_visible,
     }));
+  }
+
+  async create(dto: { name: string; code: string; slug?: string; is_visible?: boolean }) {
+    const slug = dto.slug || dto.name.toLowerCase().trim().replace(/\s+/g, '-');
+    const language = this.languagesRepo.create({
+      name: dto.name,
+      code: dto.code,
+      slug,
+      is_visible: dto.is_visible !== undefined ? dto.is_visible : true,
+    });
+    return this.languagesRepo.save(language);
+  }
+
+  async update(id: number, dto: { name?: string; code?: string; slug?: string; is_visible?: boolean }) {
+    const language = await this.languagesRepo.findOne({ where: { id } });
+    if (!language) {
+      throw new NotFoundException(`Language with ID ${id} not found`);
+    }
+
+    if (dto.slug === undefined && dto.name !== undefined) {
+      dto.slug = dto.name.toLowerCase().trim().replace(/\s+/g, '-');
+    }
+
+    Object.assign(language, dto);
+    return this.languagesRepo.save(language);
+  }
+
+  async remove(id: number) {
+    const language = await this.languagesRepo.findOne({ where: { id } });
+    if (!language) {
+      throw new NotFoundException(`Language with ID ${id} not found`);
+    }
+    await this.languagesRepo.remove(language);
+    return { status: true, message: 'Language deleted successfully' };
   }
 
   async getMovies(slug: string) {
