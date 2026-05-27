@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Scene } from './entities/scene.entity';
+import { Choice } from '../choices/entities/choice.entity';
+import { CreateSceneDto, UpdateSceneDto } from './dto/scene.dto';
 
 @Injectable()
 export class ScenesService {
   constructor(
     @InjectRepository(Scene)
     private scenesRepository: Repository<Scene>,
+    @InjectRepository(Choice)
+    private choicesRepository: Repository<Choice>,
   ) {}
 
   async findByMovieId(movieId: number): Promise<any[]> {
@@ -31,5 +35,56 @@ export class ScenesService {
         next_scene_id: choice.target_scene,
       })),
     }));
+  }
+
+  async findOne(id: number): Promise<any> {
+    const scene = await this.scenesRepository.findOne({
+      where: { scene_id: id },
+      relations: ['choices'],
+    });
+    if (!scene) {
+      throw new NotFoundException(`Scene with ID ${id} not found`);
+    }
+    return {
+      scene_id: scene.scene_id,
+      movie_id: scene.movie_id,
+      scene_text: scene.scene_name,
+      poster_url: scene.scene_url,
+      choices: scene.choices.map((choice) => ({
+        choice_id: choice.choice_id,
+        choice_text: choice.button_text,
+        next_scene_id: choice.target_scene,
+      })),
+    };
+  }
+
+  async create(dto: CreateSceneDto): Promise<any> {
+    const scene = this.scenesRepository.create({
+      movie_id: dto.movie_id,
+      scene_name: dto.scene_name,
+      scene_url: dto.scene_url,
+    });
+    const saved = await this.scenesRepository.save(scene);
+    return this.findOne(saved.scene_id);
+  }
+
+  async update(id: number, dto: UpdateSceneDto): Promise<any> {
+    await this.scenesRepository.update(id, {
+      ...(dto.scene_name && { scene_name: dto.scene_name }),
+      ...(dto.scene_url && { scene_url: dto.scene_url }),
+    });
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<void> {
+    // Delete choices in the scene first to avoid foreign key constraints
+    await this.choicesRepository.delete({ scene_id: id });
+    // Set target_scene reference to null for choices pointing to this scene
+    await this.choicesRepository.update({ target_scene: id }, { target_scene: null });
+
+    const result = await this.scenesRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Scene with ID ${id} not found`);
+    }
   }
 }

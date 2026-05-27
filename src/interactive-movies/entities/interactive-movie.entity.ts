@@ -11,6 +11,15 @@ export class InteractiveMovie {
   @Column('text')
   description: string;
 
+  @Column({ name: 'banner_image', nullable: true })
+  banner_image: string;
+
+  @Column({ name: 'card_image', nullable: true })
+  card_image: string;
+
+  @Column({ name: 'trailer_video_url', nullable: true })
+  trailer_video_url: string;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }
