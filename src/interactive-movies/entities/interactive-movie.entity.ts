@@ -20,6 +20,9 @@ export class InteractiveMovie {
   @Column({ name: 'trailer_video_url', nullable: true })
   trailer_video_url: string;
 
+  @Column({ type: 'text', nullable: true })
+  languages: string;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

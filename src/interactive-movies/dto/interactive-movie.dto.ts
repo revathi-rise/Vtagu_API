@@ -19,6 +19,10 @@ export class CreateInteractiveMovieDto {
   @IsString()
   @IsOptional()
   trailer_video_url?: string;
+
+  @IsString()
+  @IsOptional()
+  languages?: string;
 }
 
 export class UpdateInteractiveMovieDto {
@@ -41,4 +45,8 @@ export class UpdateInteractiveMovieDto {
   @IsString()
   @IsOptional()
   trailer_video_url?: string;
+
+  @IsString()
+  @IsOptional()
+  languages?: string;
 }
