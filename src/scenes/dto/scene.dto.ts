@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateSceneDto {
   @IsInt()
@@ -12,6 +12,14 @@ export class CreateSceneDto {
   @IsString()
   @IsNotEmpty()
   scene_url: string;
+
+  @IsBoolean()
+  @IsOptional()
+  is_ending?: boolean;
+
+  @IsString()
+  @IsOptional()
+  show_choices_on?: string;
 }
 
 export class UpdateSceneDto {
@@ -22,4 +30,12 @@ export class UpdateSceneDto {
   @IsString()
   @IsOptional()
   scene_url?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  is_ending?: boolean;
+
+  @IsString()
+  @IsOptional()
+  show_choices_on?: string;
 }

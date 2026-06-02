@@ -29,6 +29,8 @@ export class ScenesService {
       movie_id: scene.movie_id,
       scene_text: scene.scene_name,
       poster_url: scene.scene_url,
+      is_ending: Boolean(scene.is_ending),
+      show_choices_on: scene.show_choices_on,
       choices: scene.choices.map((choice) => ({
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
@@ -50,6 +52,8 @@ export class ScenesService {
       movie_id: scene.movie_id,
       scene_text: scene.scene_name,
       poster_url: scene.scene_url,
+      is_ending: Boolean(scene.is_ending),
+      show_choices_on: scene.show_choices_on,
       choices: scene.choices.map((choice) => ({
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
@@ -63,6 +67,8 @@ export class ScenesService {
       movie_id: dto.movie_id,
       scene_name: dto.scene_name,
       scene_url: dto.scene_url,
+      is_ending: dto.is_ending,
+      show_choices_on: dto.show_choices_on,
     });
     const saved = await this.scenesRepository.save(scene);
     return this.findOne(saved.scene_id);
@@ -70,8 +76,10 @@ export class ScenesService {
 
   async update(id: number, dto: UpdateSceneDto): Promise<any> {
     await this.scenesRepository.update(id, {
-      ...(dto.scene_name && { scene_name: dto.scene_name }),
-      ...(dto.scene_url && { scene_url: dto.scene_url }),
+      ...(dto.scene_name !== undefined && { scene_name: dto.scene_name }),
+      ...(dto.scene_url !== undefined && { scene_url: dto.scene_url }),
+      ...(dto.is_ending !== undefined && { is_ending: dto.is_ending }),
+      ...(dto.show_choices_on !== undefined && { show_choices_on: dto.show_choices_on }),
     });
     return this.findOne(id);
   }

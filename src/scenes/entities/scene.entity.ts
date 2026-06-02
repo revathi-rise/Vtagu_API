@@ -16,6 +16,12 @@ export class Scene {
   @Column({ name: 'scence_url' }) // Mapping the typo from DB
   scene_url: string;
 
+  @Column({ name: 'is_ending', type: 'boolean', default: false, nullable: true })
+  is_ending: boolean;
+
+  @Column({ name: 'show_choices_on', type: 'time', nullable: true })
+  show_choices_on: string;
+
   @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movie_id' })
   movie: Movie;

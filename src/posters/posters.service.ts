@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Poster } from './poster.entity';
+import { CreatePosterDto, UpdatePosterDto } from './dto/poster.dto';
 
 @Injectable()
 export class PostersService {
@@ -10,15 +11,48 @@ export class PostersService {
     private postersRepo: Repository<Poster>,
   ) { }
 
-  async findAll(limit?: number): Promise<Poster[]> {
+  async findAll(limit?: number, pageType?: string, language?: string): Promise<Poster[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
-      .where('posters.status = :status', { status: 'A' })
-      .orderBy('posters.poster_id', 'DESC');
+      .where('posters.status = :status', { status: 'A' });
+
+    if (pageType) {
+      query.andWhere('posters.page_type = :pageType', { pageType });
+    }
+
+    if (language) {
+      query.andWhere('posters.languages LIKE :language', { language: `%${language}%` });
+    }
+
+    query.orderBy('posters.poster_id', 'DESC');
 
     if (limit) {
       query.take(limit);
     }
 
     return query.getMany();
+  }
+
+  async findOne(id: number): Promise<Poster> {
+    const poster = await this.postersRepo.findOne({ where: { poster_id: id } });
+    if (!poster) {
+      throw new NotFoundException(`Poster with ID ${id} not found`);
+    }
+    return poster;
+  }
+
+  async create(dto: CreatePosterDto): Promise<Poster> {
+    const poster = this.postersRepo.create(dto);
+    return this.postersRepo.save(poster);
+  }
+
+  async update(id: number, dto: UpdatePosterDto): Promise<Poster> {
+    const poster = await this.findOne(id);
+    Object.assign(poster, dto);
+    return this.postersRepo.save(poster);
+  }
+
+  async remove(id: number): Promise<void> {
+    const poster = await this.findOne(id);
+    await this.postersRepo.remove(poster);
   }
 }

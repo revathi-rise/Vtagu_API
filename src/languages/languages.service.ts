@@ -4,6 +4,9 @@ import { Repository, Like } from 'typeorm';
 import { Language } from './language.entity';
 import { Movie } from '../movies/movie.entity';
 import { MoviesService } from '../movies/movies.service';
+import { Episode } from '../episodes/episode.entity';
+import { EpisodesService } from '../episodes/episodes.service';
+import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
 
 @Injectable()
 export class LanguagesService {
@@ -12,7 +15,12 @@ export class LanguagesService {
     private readonly languagesRepo: Repository<Language>,
     @InjectRepository(Movie)
     private readonly moviesRepo: Repository<Movie>,
+    @InjectRepository(Episode)
+    private readonly episodesRepo: Repository<Episode>,
+    @InjectRepository(InteractiveMovie)
+    private readonly interactiveMoviesRepo: Repository<InteractiveMovie>,
     private readonly moviesService: MoviesService,
+    private readonly episodesService: EpisodesService,
   ) {}
 
   async findAll(includeHidden = false) {
@@ -68,7 +76,7 @@ export class LanguagesService {
       throw new NotFoundException(`Language with slug "${slug}" not found`);
     }
 
-    // Query movies that match the language name in their comma-separated languages field
+    // 1. Query standard movies that match the language name
     const movies = await this.moviesRepo.find({
       where: {
         languages: Like(`%${language.name}%`),
@@ -78,9 +86,35 @@ export class LanguagesService {
       },
     });
 
+    // 2. Query interactive movies that match the language name
+    const interactiveMovies = await this.interactiveMoviesRepo.find({
+      where: {
+        languages: Like(`%${language.name}%`),
+      },
+      order: {
+        interactive_movie_id: 'DESC',
+      },
+    });
+
+    // 3. Query episodes that match the language name
+    const episodes = await this.episodesRepo.find({
+      where: {
+        languages: Like(`%${language.name}%`),
+      },
+      order: {
+        episode_id: 'DESC',
+      },
+    });
+
     return {
-      language: language.name,
-      movies: movies.map(m => this.moviesService.mapToResponse(m)),
+      status: true,
+      message: 'Movies, interactive movies and episodes fetched successfully',
+      data: {
+        language: language.name,
+        movies: movies.map(m => this.moviesService.mapToResponse(m)),
+        Interactive: interactiveMovies,
+        episodes: episodes.map(e => this.episodesService.mapToResponse(e)),
+      }
     };
   }
 }
