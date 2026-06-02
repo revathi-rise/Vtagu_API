@@ -154,6 +154,7 @@ export class PlansService {
       validity: plan.validity,
       plan_duration: plan.validity,
       status: plan.status,
+      currency: plan.currency || 'USD',
     };
   }
 }

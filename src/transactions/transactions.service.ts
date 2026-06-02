@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
+import { CreateTransactionDto, UpdateTransactionDto } from './dto/transaction.dto';
 import * as crypto from 'crypto';
 const Razorpay = require('razorpay');
 
@@ -36,6 +37,35 @@ export class TransactionsService {
     return transaction;
   }
 
+  async create(dto: CreateTransactionDto): Promise<Transaction> {
+    try {
+      const transaction = this.repository.create(dto);
+      return await this.repository.save(transaction);
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async update(id: number, dto: UpdateTransactionDto): Promise<Transaction> {
+    try {
+      const transaction = await this.findOne(id);
+      Object.assign(transaction, dto);
+      return await this.repository.save(transaction);
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async remove(id: number): Promise<{ status: boolean; message: string }> {
+    try {
+      const transaction = await this.findOne(id);
+      await this.repository.remove(transaction);
+      return { status: true, message: 'Transaction deleted successfully' };
+    } catch (error: any) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
   async createOrder(userId: number, amount: number) {
     const options = {
       amount: Math.round(amount * 100), // amount in the smallest currency unit (paisa)
@@ -46,7 +76,6 @@ export class TransactionsService {
       const order = await this.razorpay.orders.create(options);
       console.log('[DEBUG] Razorpay order created:', order);
 
-      
       const newTransaction = this.repository.create({
         txn_id: order.id,
         user_id: userId,

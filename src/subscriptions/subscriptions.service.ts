@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Subscription } from './entities/subscription.entity';
 import { CreateSubscriptionDto, UpdateSubscriptionDto, SubscriptionResponseDto } from './dto/subscription.dto';
+import { Plan } from '../plans/entities/plan.entity';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
   ) {}
 
   /**
@@ -19,6 +22,28 @@ export class SubscriptionsService {
       const subscription = this.subscriptionRepository.create(createSubscriptionDto);
       subscription.payment_status = 1; // Pending
       subscription.status = 1; // Active
+
+      // Resolve price, discount, and currency from the Plan if not provided
+      let planPrice = 0;
+      let planDiscount = 0;
+
+      const plan = await this.planRepository.findOne({
+        where: { planId: createSubscriptionDto.planId }
+      });
+      if (plan) {
+        planPrice = plan.price;
+        planDiscount = plan.discount;
+      }
+
+      subscription.price_amount = createSubscriptionDto.price_amount !== undefined
+        ? createSubscriptionDto.price_amount
+        : planPrice;
+
+      subscription.paid_amount = createSubscriptionDto.paid_amount !== undefined
+        ? createSubscriptionDto.paid_amount
+        : (planPrice - planDiscount);
+
+      subscription.currency = createSubscriptionDto.currency || 'INR';
 
       const savedSubscription = await this.subscriptionRepository.save(subscription);
       return {

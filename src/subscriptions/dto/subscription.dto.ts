@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsInt()
@@ -24,6 +24,18 @@ export class CreateSubscriptionDto {
   @IsInt()
   @IsNotEmpty()
   timestamp_to: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsNumber()
+  @IsOptional()
+  price_amount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  paid_amount?: number;
 }
 
 export class UpdateSubscriptionDto {
@@ -38,6 +50,18 @@ export class UpdateSubscriptionDto {
   @IsString()
   @IsOptional()
   txnId?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsNumber()
+  @IsOptional()
+  price_amount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  paid_amount?: number;
 }
 
 export class SubscriptionResponseDto {

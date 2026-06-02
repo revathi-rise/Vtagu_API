@@ -34,4 +34,7 @@ export class Plan {
 
   @Column({ type: 'int', default: 1 })
   status: number; // 1 active, 0 inactive
+
+  @Column({ length: 255, default: 'USD' })
+  currency: string;
 }

@@ -56,6 +56,10 @@ export class CreatePlanDto {
   @IsString()
   @IsOptional()
   plan_description?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
 
 export class UpdatePlanDto {
@@ -114,6 +118,10 @@ export class UpdatePlanDto {
   @IsString()
   @IsOptional()
   plan_description?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
 
 export class PlanResponseDto {
@@ -132,4 +140,5 @@ export class PlanResponseDto {
   plan_name: string;
   plan_price: number;
   plan_duration: string;
+  currency: string;
 }

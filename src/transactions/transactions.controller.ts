@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
+import { CreateTransactionDto, UpdateTransactionDto } from './dto/transaction.dto';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -32,6 +33,35 @@ export class TransactionsController {
       return { status: true, message: 'Transaction fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Post()
+  async create(@Body() createTransactionDto: CreateTransactionDto) {
+    try {
+      const data = await this.service.create(createTransactionDto);
+      return { status: true, message: 'Transaction created successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
+    try {
+      const data = await this.service.update(+id, updateTransactionDto);
+      return { status: true, message: 'Transaction updated successfully', data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    try {
+      return await this.service.remove(+id);
+    } catch (error) {
+      return { status: false, message: error.message };
     }
   }
 
