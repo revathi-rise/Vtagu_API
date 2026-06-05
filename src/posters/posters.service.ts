@@ -13,7 +13,7 @@ export class PostersService {
 
   async findAll(limit?: number, pageType?: string, language?: string): Promise<Poster[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
-      .where('posters.status = :status', { status: 'A' });
+      .where('1=1');
 
     if (pageType) {
       query.andWhere('posters.page_type = :pageType', { pageType });
@@ -32,6 +32,19 @@ export class PostersService {
     return query.getMany();
   }
 
+  async findByPageType(pageType: string, language?: string): Promise<Poster[]> {
+    const query = this.postersRepo.createQueryBuilder('posters')
+      .where('posters.page_type = :pageType', { pageType })
+      .andWhere('posters.status = :status', { status: 'A' });
+
+    if (language) {
+      query.andWhere('posters.languages LIKE :language', { language: `%${language}%` });
+    }
+
+    query.orderBy('posters.poster_id', 'DESC');
+    return query.getMany();
+  }
+
   async findOne(id: number): Promise<Poster> {
     const poster = await this.postersRepo.findOne({ where: { poster_id: id } });
     if (!poster) {
@@ -41,12 +54,18 @@ export class PostersService {
   }
 
   async create(dto: CreatePosterDto): Promise<Poster> {
+    if (dto.reference_type === 'none') {
+      dto.reference_id = null as any;
+    }
     const poster = this.postersRepo.create(dto);
     return this.postersRepo.save(poster);
   }
 
   async update(id: number, dto: UpdatePosterDto): Promise<Poster> {
     const poster = await this.findOne(id);
+    if (dto.reference_type === 'none') {
+      dto.reference_id = null as any;
+    }
     Object.assign(poster, dto);
     return this.postersRepo.save(poster);
   }

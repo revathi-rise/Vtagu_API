@@ -21,11 +21,20 @@ export class PostersController {
     }
   }
 
-  @Get(':id')
-  async getOne(@Param('id', ParseIntPipe) id: number) {
+  @Get(':slug')
+  async getBySlug(
+    @Param('slug') slug: string,
+    @Query('language') language?: string,
+  ) {
     try {
-      const data = await this.postersService.findOne(id);
-      return { status: true, message: 'Poster fetched successfully', data };
+      const id = parseInt(slug, 10);
+      if (!isNaN(id) && /^\d+$/.test(slug)) {
+        const data = await this.postersService.findOne(id);
+        return { status: true, message: 'Poster fetched successfully', data };
+      } else {
+        const data = await this.postersService.findByPageType(slug, language);
+        return { status: true, message: 'Posters fetched successfully', data };
+      }
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
     }
