@@ -88,8 +88,11 @@ export class MoviesService {
         movie.card_image = media.card_image.url;
       }
       if (media.video) {
-        movie.trailer_url = media.video.url;
-        movie.trailer_alt = media.video.alt;
+        movie.url = media.video.url;
+      }
+      if (media.trailer) {
+        movie.trailer_url = media.trailer.url;
+        movie.trailer_alt = media.trailer.alt;
       }
     }
 

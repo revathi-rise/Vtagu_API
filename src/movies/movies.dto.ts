@@ -34,6 +34,11 @@ class MediaDto {
   @IsOptional()
   @Type(() => VideoMediaDto)
   video?: VideoMediaDto;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => VideoMediaDto)
+  trailer?: VideoMediaDto;
 }
 
 export class CreateMovieDto {

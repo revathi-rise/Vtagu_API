@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
+import { Plan } from '../plans/entities/plan.entity';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 @Injectable()
@@ -11,6 +12,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
     private readonly mailerService: MailerService,
   ) { }
 
@@ -329,10 +332,13 @@ export class UsersService {
   async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
     try {
       const users = await this.usersRepository.find();
+      const plans = await this.planRepository.find();
+      const planMap = new Map(plans.map(p => [p.planId.toString(), p.price]));
+
       return {
         status: true,
         message: 'Users fetched successfully',
-        data: users.map(user => this.mapUserToResponse(user)),
+        data: users.map(user => this.mapUserToResponse(user, user.plan ? planMap.get(user.plan) : undefined)),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -349,10 +355,16 @@ export class UsersService {
         throw new NotFoundException('User not found');
       }
 
+      let planPrice: number | undefined;
+      if (user.plan) {
+        const plan = await this.planRepository.findOne({ where: { planId: Number(user.plan) } });
+        if (plan) planPrice = plan.price;
+      }
+
       return {
         status: true,
         message: 'User profile fetched successfully',
-        data: this.mapUserToResponse(user),
+        data: this.mapUserToResponse(user, planPrice),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -378,10 +390,16 @@ export class UsersService {
       Object.assign(user, updateUserDto);
       const updatedUser = await this.usersRepository.save(user);
 
+      let planPrice: number | undefined;
+      if (updatedUser.plan) {
+        const plan = await this.planRepository.findOne({ where: { planId: Number(updatedUser.plan) } });
+        if (plan) planPrice = plan.price;
+      }
+
       return {
         status: true,
         message: 'User profile updated successfully',
-        data: this.mapUserToResponse(updatedUser),
+        data: this.mapUserToResponse(updatedUser, planPrice),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -645,7 +663,7 @@ export class UsersService {
   /**
    * Helper: Map user entity to response DTO
    */
-  private mapUserToResponse(user: User): UserResponseDto {
+  private mapUserToResponse(user: User, planPrice?: number): UserResponseDto {
     return {
       userId: user.userId,
       email: user.email,
@@ -656,6 +674,7 @@ export class UsersService {
       profile_picture: user.profile_picture,
       status: user.status,
       plan: user.plan,
+      plan_price: planPrice,
       type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,

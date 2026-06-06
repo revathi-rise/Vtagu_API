@@ -183,6 +183,7 @@ export class UserResponseDto {
   profile_picture: string;
   status: string;
   plan: string;
+  plan_price?: number;
   type: string;
   logged_in: boolean;
   last_login_ip_address: string;
