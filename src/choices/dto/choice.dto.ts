@@ -12,6 +12,10 @@ export class CreateChoiceDto {
   @IsInt()
   @IsOptional()
   target_scene?: number;
+
+  @IsString()
+  @IsOptional()
+  button_color?: string;
 }
 
 export class UpdateChoiceDto {
@@ -26,4 +30,8 @@ export class UpdateChoiceDto {
   @IsInt()
   @IsOptional()
   target_scene?: number;
+
+  @IsString()
+  @IsOptional()
+  button_color?: string;
 }

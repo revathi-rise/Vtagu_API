@@ -15,6 +15,9 @@ export class Choice {
   @Column({ nullable: true })
   target_scene: number;
 
+  @Column({ name: 'button_color', length: 50, nullable: true })
+  button_color?: string;
+
   @ManyToOne(() => Scene, (scene) => scene.choices)
   @JoinColumn({ name: 'scene_id' })
   scene: Scene;

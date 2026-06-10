@@ -35,6 +35,7 @@ export class ScenesService {
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
         next_scene_id: choice.target_scene,
+        button_color: choice.button_color,
       })),
     }));
   }
@@ -58,6 +59,7 @@ export class ScenesService {
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
         next_scene_id: choice.target_scene,
+        button_color: choice.button_color,
       })),
     };
   }
