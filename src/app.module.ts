@@ -45,6 +45,7 @@ import { LanguagesModule } from './languages/languages.module';
 import { Language } from './languages/language.entity';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { Currency } from './currencies/entities/currency.entity';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -119,6 +120,7 @@ import { Currency } from './currencies/entities/currency.entity';
     UploadsModule,
     LanguagesModule,
     CurrenciesModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
