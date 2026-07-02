@@ -77,43 +77,72 @@ export class LanguagesService {
     }
 
     // 1. Query standard movies that match the language name
-    const movies = await this.moviesRepo.find({
-      where: {
-        languages: Like(`%${language.name}%`),
-      },
-      order: {
-        movie_id: 'DESC',
-      },
-    });
+    let movies: Movie[] = [];
+    try {
+      movies = await this.moviesRepo.find({
+        where: {
+          languages: Like(`%${language.name}%`),
+        },
+        order: {
+          movie_id: 'DESC',
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching movies by language:', error);
+    }
 
     // 2. Query interactive movies that match the language name
-    const interactiveMovies = await this.interactiveMoviesRepo.find({
-      where: {
-        languages: Like(`%${language.name}%`),
-      },
-      order: {
-        interactive_movie_id: 'DESC',
-      },
-    });
+    let interactiveMovies: InteractiveMovie[] = [];
+    try {
+      interactiveMovies = await this.interactiveMoviesRepo.find({
+        where: {
+          languages: Like(`%${language.name}%`),
+        },
+        order: {
+          interactive_movie_id: 'DESC',
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching interactive movies by language:', error);
+    }
 
     // 3. Query episodes that match the language name
-    const episodes = await this.episodesRepo.find({
-      where: {
-        languages: Like(`%${language.name}%`),
-      },
-      order: {
-        episode_id: 'DESC',
-      },
-    });
+    let episodes: Episode[] = [];
+    try {
+      episodes = await this.episodesRepo.find({
+        where: {
+          languages: Like(`%${language.name}%`),
+        },
+        order: {
+          episode_id: 'DESC',
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching episodes by language:', error);
+    }
+
+    let mappedMovies = [];
+    try {
+      mappedMovies = movies.map(m => this.moviesService.mapToResponse(m));
+    } catch (error) {
+      console.error('Error mapping movies to response:', error);
+    }
+
+    let mappedEpisodes = [];
+    try {
+      mappedEpisodes = episodes.map(e => this.episodesService.mapToResponse(e));
+    } catch (error) {
+      console.error('Error mapping episodes to response:', error);
+    }
 
     return {
       status: true,
       message: 'Movies, interactive movies and episodes fetched successfully',
       data: {
         language: language.name,
-        movies: movies.map(m => this.moviesService.mapToResponse(m)),
+        movies: mappedMovies,
         Interactive: interactiveMovies,
-        episodes: episodes.map(e => this.episodesService.mapToResponse(e)),
+        episodes: mappedEpisodes,
       }
     };
   }
