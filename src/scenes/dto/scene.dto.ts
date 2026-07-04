@@ -19,6 +19,10 @@ export class CreateSceneDto {
 
   @IsString()
   @IsOptional()
+  end_text?: string;
+
+  @IsString()
+  @IsOptional()
   show_choices_on?: string;
 }
 
@@ -34,6 +38,10 @@ export class UpdateSceneDto {
   @IsBoolean()
   @IsOptional()
   is_ending?: boolean;
+
+  @IsString()
+  @IsOptional()
+  end_text?: string;
 
   @IsString()
   @IsOptional()

@@ -19,6 +19,9 @@ export class Scene {
   @Column({ name: 'is_ending', type: 'boolean', default: false, nullable: true })
   is_ending: boolean;
 
+  @Column({ name: 'end_text', type: 'varchar', length: 255, nullable: true })
+  end_text: string | null;
+
   @Column({ name: 'show_choices_on', type: 'time', nullable: true })
   show_choices_on: string;
 
