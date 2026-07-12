@@ -69,4 +69,39 @@ export class WatchProgressService {
 
     return result.filter((item) => item.content !== null);
   }
+
+  /**
+   * Get watch progress for a specific content item
+   */
+  async getContentProgress(
+    userId: number,
+    contentId: number,
+    contentType?: ContentType,
+  ): Promise<WatchProgress | null> {
+    const where: any = { userId, contentId };
+    if (contentType) {
+      where.contentType = contentType;
+    }
+    return this.watchProgressRepository.findOne({
+      where,
+      order: { lastWatchedAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Delete watch progress record by ID
+   */
+  async deleteProgress(id: number): Promise<void> {
+    const result = await this.watchProgressRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Watch progress with ID ${id} not found`);
+    }
+  }
+
+  /**
+   * Clear all watch progress for a user
+   */
+  async clearUserProgress(userId: number): Promise<void> {
+    await this.watchProgressRepository.delete({ userId });
+  }
 }
