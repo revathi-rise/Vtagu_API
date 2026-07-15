@@ -23,6 +23,16 @@ export class InteractiveMovie {
   @Column({ type: 'text', nullable: true })
   languages: string;
 
+  @Column({ type: 'tinyint', default: 0, name: 'is_free' })
+  is_free: number;
+
+  @Column({ type: 'float', default: 0.0, name: 'price' })
+  price: number;
+
+  @Column({ length: 10, default: 'INR', name: 'currency' })
+  currency: string;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }
+

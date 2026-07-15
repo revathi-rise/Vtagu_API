@@ -37,4 +37,8 @@ export class Plan {
 
   @Column({ length: 255, default: 'USD' })
   currency: string;
+
+  @Column({ type: 'tinyint', default: 0, name: 'is_interactive_included' })
+  isInteractiveIncluded: number;
 }
+

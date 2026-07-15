@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { InteractiveMoviesService } from './interactive-movies.service';
 import { CreateInteractiveMovieDto, UpdateInteractiveMovieDto } from './dto/interactive-movie.dto';
 
@@ -23,8 +23,54 @@ export class InteractiveMoviesController {
     }
   }
 
+  @Get(':id/check-access')
+  async checkAccess(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId') userId?: string,
+  ) {
+    try {
+      const parsedUserId = userId ? Number(userId) : undefined;
+      const access = await this.moviesService.checkMovieAccess(id, parsedUserId);
+      return {
+        status: 'success',
+        data: access,
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message,
+      };
+    }
+  }
+
+  @Post(':id/purchase')
+  async purchase(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { userId: number; txnId: string; paidAmount: number; currency: string },
+  ) {
+    try {
+      const purchase = await this.moviesService.purchaseMovie(
+        id,
+        body.userId,
+        body.txnId,
+        body.paidAmount,
+        body.currency,
+      );
+      return {
+        status: 'success',
+        data: purchase,
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        message: error.message,
+      };
+    }
+  }
+
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
+
     try {
       const movie = await this.moviesService.findOne(id);
       return {

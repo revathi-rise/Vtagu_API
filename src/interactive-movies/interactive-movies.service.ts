@@ -5,6 +5,9 @@ import { InteractiveMovie } from './entities/interactive-movie.entity';
 import { Scene } from '../scenes/entities/scene.entity';
 import { Choice } from '../choices/entities/choice.entity';
 import { CreateInteractiveMovieDto, UpdateInteractiveMovieDto } from './dto/interactive-movie.dto';
+import { UserInteractiveMoviePurchase } from './entities/user-purchase.entity';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Plan } from '../plans/entities/plan.entity';
 
 @Injectable()
 export class InteractiveMoviesService {
@@ -15,7 +18,14 @@ export class InteractiveMoviesService {
     private scenesRepository: Repository<Scene>,
     @InjectRepository(Choice)
     private choicesRepository: Repository<Choice>,
+    @InjectRepository(UserInteractiveMoviePurchase)
+    private purchaseRepository: Repository<UserInteractiveMoviePurchase>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
   ) {}
+
 
   async findAll(): Promise<InteractiveMovie[]> {
     return this.moviesRepository.find({
@@ -69,4 +79,104 @@ export class InteractiveMoviesService {
       throw new NotFoundException(`Interactive movie with ID ${id} not found`);
     }
   }
+
+  async checkMovieAccess(movieId: number, userId?: number): Promise<{
+    hasAccess: boolean;
+    reason: 'free' | 'subscription' | 'single_purchase' | 'none';
+    price: number;
+    currency: string;
+  }> {
+    const movie = await this.moviesRepository.findOne({
+      where: { interactive_movie_id: movieId },
+    });
+    if (!movie) {
+      throw new NotFoundException(`Interactive movie with ID ${movieId} not found`);
+    }
+
+    // 1. If movie is free, allow access
+    if (movie.is_free === 1) {
+      return {
+        hasAccess: true,
+        reason: 'free',
+        price: 0,
+        currency: movie.currency,
+      };
+    }
+
+    // If no user is logged in, they can't access paid interactive movies
+    if (!userId) {
+      return {
+        hasAccess: false,
+        reason: 'none',
+        price: movie.price,
+        currency: movie.currency,
+      };
+    }
+
+    // 2. Check if the user has an active subscription that includes interactive movies
+    const activeSub = await this.subscriptionRepository.findOne({
+      where: { userId, status: 1 },
+    });
+    if (activeSub) {
+      const plan = await this.planRepository.findOne({
+        where: { planId: activeSub.planId },
+      });
+      if (plan && plan.isInteractiveIncluded === 1) {
+        return {
+          hasAccess: true,
+          reason: 'subscription',
+          price: movie.price,
+          currency: movie.currency,
+        };
+      }
+    }
+
+    // 3. Check if the user has purchased this movie individually
+    const singlePurchase = await this.purchaseRepository.findOne({
+      where: { userId, interactiveMovieId: movieId, status: 1 },
+    });
+    if (singlePurchase) {
+      return {
+        hasAccess: true,
+        reason: 'single_purchase',
+        price: movie.price,
+        currency: movie.currency,
+      };
+    }
+
+    // 4. Default: No access
+    return {
+      hasAccess: false,
+      reason: 'none',
+      price: movie.price,
+      currency: movie.currency,
+    };
+  }
+
+  async purchaseMovie(
+    movieId: number,
+    userId: number,
+    txnId: string,
+    paidAmount: number,
+    currency: string,
+  ): Promise<UserInteractiveMoviePurchase> {
+    const movie = await this.moviesRepository.findOne({
+      where: { interactive_movie_id: movieId },
+    });
+    if (!movie) {
+      throw new NotFoundException(`Interactive movie with ID ${movieId} not found`);
+    }
+
+    const purchase = this.purchaseRepository.create({
+      userId,
+      interactiveMovieId: movieId,
+      txnId,
+      paidAmount,
+      currency,
+      status: 1, // Active
+    });
+
+    return this.purchaseRepository.save(purchase);
+  }
 }
+
