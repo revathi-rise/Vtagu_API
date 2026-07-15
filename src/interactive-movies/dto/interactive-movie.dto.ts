@@ -23,6 +23,15 @@ export class CreateInteractiveMovieDto {
   @IsString()
   @IsOptional()
   languages?: string;
+
+  @IsOptional()
+  is_free?: number;
+
+  @IsOptional()
+  price?: number;
+
+  @IsOptional()
+  currency?: string;
 }
 
 export class UpdateInteractiveMovieDto {
@@ -49,4 +58,13 @@ export class UpdateInteractiveMovieDto {
   @IsString()
   @IsOptional()
   languages?: string;
+
+  @IsOptional()
+  is_free?: number;
+
+  @IsOptional()
+  price?: number;
+
+  @IsOptional()
+  currency?: string;
 }

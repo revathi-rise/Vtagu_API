@@ -63,6 +63,9 @@ export class PlansService {
       if (createPlanDto.plan_name) planData.name = createPlanDto.plan_name;
       if (createPlanDto.plan_price) planData.price = createPlanDto.plan_price;
       if (createPlanDto.plan_duration) planData.validity = createPlanDto.plan_duration;
+      if (createPlanDto.is_interactive_included !== undefined) {
+        planData.isInteractiveIncluded = Number(createPlanDto.is_interactive_included);
+      }
       
       const plan = this.planRepository.create(planData);
       const savedPlan = await this.planRepository.save(plan);
@@ -94,6 +97,9 @@ export class PlansService {
       if (updatePlanDto.plan_name) updateData.name = updatePlanDto.plan_name;
       if (updatePlanDto.plan_price) updateData.price = updatePlanDto.plan_price;
       if (updatePlanDto.plan_duration) updateData.validity = updatePlanDto.plan_duration;
+      if (updatePlanDto.is_interactive_included !== undefined) {
+        updateData.isInteractiveIncluded = Number(updatePlanDto.is_interactive_included);
+      }
 
       Object.assign(plan, updateData);
       const updatedPlan = await this.planRepository.save(plan);
@@ -155,6 +161,8 @@ export class PlansService {
       plan_duration: plan.validity,
       status: plan.status,
       currency: plan.currency || 'USD',
+      is_interactive_included: plan.isInteractiveIncluded || 0,
+      isInteractiveIncluded: plan.isInteractiveIncluded || 0,
     };
   }
 }

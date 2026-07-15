@@ -60,6 +60,10 @@ export class CreatePlanDto {
   @IsString()
   @IsOptional()
   currency?: string;
+
+  @IsInt()
+  @IsOptional()
+  is_interactive_included?: number;
 }
 
 export class UpdatePlanDto {
@@ -122,6 +126,10 @@ export class UpdatePlanDto {
   @IsString()
   @IsOptional()
   currency?: string;
+
+  @IsInt()
+  @IsOptional()
+  is_interactive_included?: number;
 }
 
 export class PlanResponseDto {
@@ -141,4 +149,6 @@ export class PlanResponseDto {
   plan_price: number;
   plan_duration: string;
   currency: string;
+  is_interactive_included: number;
+  isInteractiveIncluded: number;
 }

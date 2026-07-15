@@ -555,7 +555,8 @@ export class UsersService {
       await this.usersRepository.save(user);
 
       // Send OTP via SMS
-      await this.sendSms(mobile, otp);
+      const customerName = user.user_name || 'Customer';
+      await this.sendSms(mobile, otp, customerName);
       console.log(`Mobile Login OTP for ${mobile}: ${otp}`);
 
       return {
@@ -602,60 +603,43 @@ export class UsersService {
   }
 
   /**
-   * Helper: Send SMS via Ping4SMS
+   * Helper: Send SMS via My Dreams Technology SMS API
    */
-  private async sendSms(mobile: string, otp: string): Promise<void> {
-    const apiKey = process.env.SMS_API_KEY || '44d753832f414d90e28b69cee1b9f24e';
-    const sender = process.env.SMS_SENDER || 'VTAGU';
-    const route = process.env.SMS_ROUTE || '4';
-    const templateid = process.env.SMS_TEMPLATE_ID || '1207161832333779530';
+  private async sendSms(mobile: string, otp: string, customerName: string): Promise<void> {
+    const apiKey = process.env.SMS_API_KEY || 'pdtPO9aL4m8RSQTV';
+    const sender = process.env.SMS_SENDER || 'MDTDMO';
 
-    // Use mobile as is, but ensure no non-numeric characters
+    // Format mobile number: Ensure it has no non-digits
     let formattedMobile = mobile.replace(/\D/g, '');
 
-    // Add 91 prefix for 10-digit Indian numbers
+    // Add 91 prefix for 10-digit Indian numbers if not already present
     if (formattedMobile.length === 10) {
       formattedMobile = '91' + formattedMobile;
     }
 
-    // EXACT DLT template match (from Jio TrueConnect):
-    // Welcome to www.vtagu.in your login otp is {#var#}
-    const message = `Welcome to www.vtagu.in your login otp is ${otp}`;
+    // Approved DLT Template
+    const message = `Dear ${customerName}, Your OTP for login to ${otp}. Valid for 30 minutes. Please do not share this OTP. Regards, My Dreams Technology Team`;
 
-    // Use '+' for spaces as per Ping4SMS dashboard requirements
-    const encodedMessage = encodeURIComponent(message).replace(/%20/g, '+');
+    // URL-encode message for query parameter safely
+    const encodedMessage = encodeURIComponent(message);
 
-    const url = `https://site.ping4sms.com/api/smsapi?key=${apiKey}&route=${route}&sender=${sender}&number=${formattedMobile}&sms=${encodedMessage}&templateid=${templateid}`;
+    const url = `http://app.mydreamstechnology.in/vb/apikey.php?apikey=${apiKey}&senderid=${sender}&number=${formattedMobile}&message=${encodedMessage}`;
 
-    const https = require('https');
     const http = require('http');
 
-    return new Promise((resolve, reject) => {
-      console.log(`Sending SMS to ${formattedMobile} using route ${route}...`);
+    return new Promise((resolve) => {
+      console.log(`Sending OTP SMS to ${formattedMobile} using My Dreams Technology...`);
 
-      const request = https.get(url, (res) => {
+      http.get(url, (res) => {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
           console.log(`SMS Gateway Response for ${formattedMobile}: ${data}`);
           resolve();
         });
-      });
-
-      request.on('error', (err) => {
-        console.error(`HTTPS SMS failed, trying HTTP fallback for ${formattedMobile}:`, err.message);
-        const httpUrl = url.replace('https://', 'http://');
-        http.get(httpUrl, (res) => {
-          let data = '';
-          res.on('data', (chunk) => { data += chunk; });
-          res.on('end', () => {
-            console.log(`SMS Gateway (HTTP Fallback) Response for ${formattedMobile}: ${data}`);
-            resolve();
-          });
-        }).on('error', (httpErr) => {
-          console.error(`Critical: SMS failed to ${formattedMobile}:`, httpErr.message);
-          resolve();
-        });
+      }).on('error', (err) => {
+        console.error(`SMS request failed to ${formattedMobile}:`, err.message);
+        resolve(); // resolve to prevent blocking main login flow if SMS gateway is down
       });
     });
   }
