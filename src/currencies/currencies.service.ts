@@ -12,13 +12,17 @@ export class CurrenciesService {
   ) {}
 
   async findAll() {
-    return this.currencyRepo.find({ order: { id: 'ASC' } });
+    const list = await this.currencyRepo.find({ order: { id: 'ASC' } });
+    return list.map(c => c.code.toUpperCase() === 'INR' ? { ...c, symbol: '₹' } : c);
   }
 
   async findOne(id: number) {
     const currency = await this.currencyRepo.findOne({ where: { id } });
     if (!currency) {
       throw new NotFoundException(`Currency with ID ${id} not found`);
+    }
+    if (currency.code && currency.code.toUpperCase() === 'INR') {
+      currency.symbol = '₹';
     }
     return currency;
   }
