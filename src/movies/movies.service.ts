@@ -3,12 +3,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Movie } from './movie.entity';
 import { CreateMovieDto, MovieResponseDto, UpdateMovieDto } from './movies.dto';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Plan } from '../plans/entities/plan.entity';
 
 @Injectable()
 export class MoviesService {
   constructor(
     @InjectRepository(Movie)
     private moviesRepo: Repository<Movie>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
   ) { }
 
   async findAll(languageSlug?: string): Promise<MovieResponseDto[]> {
@@ -31,10 +37,46 @@ export class MoviesService {
     return movies.map(m => this.mapToResponse(m));
   }
 
-  async findOneBySlug(slug: string): Promise<MovieResponseDto> {
+  async checkStandardAccess(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSubs = await this.subscriptionRepository.find({
+      where: { userId, status: 1 },
+    });
+    for (const activeSub of activeSubs) {
+      const isPaymentSuccess = activeSub.payment_status === 2;
+      const isDateValid = activeSub.timestamp_from <= currentTimestamp && activeSub.timestamp_to >= currentTimestamp;
+
+      if (isPaymentSuccess && isDateValid) {
+        const plan = await this.planRepository.findOne({
+          where: { planId: activeSub.planId },
+        });
+        if (plan) {
+          const hasQuality = plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
+          if (hasQuality) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async findOneBySlug(slug: string, userId?: number): Promise<MovieResponseDto> {
     const movie = await this.moviesRepo.findOne({ where: { slug } });
     if (!movie) throw new NotFoundException('Movie not found');
-    return this.mapToResponse(movie);
+    
+    const isFree = !!movie.free;
+    let hasAccess = isFree;
+    if (!isFree && userId) {
+      hasAccess = await this.checkStandardAccess(userId);
+    }
+    
+    const response = this.mapToResponse(movie);
+    if (!hasAccess) {
+      if (response.media && response.media.video) {
+        response.media.video.url = "";
+      }
+    }
+    return response;
   }
 
   async create(dto: CreateMovieDto): Promise<MovieResponseDto> {

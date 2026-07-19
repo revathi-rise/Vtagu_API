@@ -62,6 +62,22 @@ export class UpdateSubscriptionDto {
   @IsNumber()
   @IsOptional()
   paid_amount?: number;
+
+  @IsString()
+  @IsOptional()
+  payment_method?: string;
+
+  @IsString()
+  @IsOptional()
+  payment_details?: string;
+
+  @IsInt()
+  @IsOptional()
+  timestamp_from?: number;
+
+  @IsInt()
+  @IsOptional()
+  timestamp_to?: number;
 }
 
 export class SubscriptionResponseDto {
@@ -76,4 +92,23 @@ export class SubscriptionResponseDto {
   price_amount: number;
   paid_amount: number;
   currency: string;
+  is_interactive_included?: number;
+  isInteractiveIncluded?: number;
+  is_standard_included?: number;
+  isStandardIncluded?: number;
+  plan?: {
+    planId: number;
+    name: string;
+    price: number;
+    validity: string;
+    is_interactive_included: number;
+    isInteractiveIncluded: number;
+    is_standard_included: number;
+    isStandardIncluded: number;
+    screens: number | string;
+    quality: string;
+    compatibility: number;
+    unlimited: number;
+    cancellation: number;
+  };
 }

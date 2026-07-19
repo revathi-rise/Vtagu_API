@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Plan } from '../../plans/entities/plan.entity';
 
 @Entity('subscription')
 export class Subscription {
@@ -8,6 +9,10 @@ export class Subscription {
 
   @Column({ name: 'plan_id' })
   planId: number;
+
+  @ManyToOne(() => Plan)
+  @JoinColumn({ name: 'plan_id' })
+  plan: Plan;
 
   @Column({ name: 'user_id' })
   userId: number;

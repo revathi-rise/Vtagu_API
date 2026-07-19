@@ -63,8 +63,11 @@ export class PlansService {
       if (createPlanDto.plan_name) planData.name = createPlanDto.plan_name;
       if (createPlanDto.plan_price) planData.price = createPlanDto.plan_price;
       if (createPlanDto.plan_duration) planData.validity = createPlanDto.plan_duration;
+      if (createPlanDto.plan_description) planData.description = createPlanDto.plan_description;
       if (createPlanDto.is_interactive_included !== undefined) {
         planData.isInteractiveIncluded = Number(createPlanDto.is_interactive_included);
+      } else if (createPlanDto.isInteractiveIncluded !== undefined) {
+        planData.isInteractiveIncluded = Number(createPlanDto.isInteractiveIncluded);
       }
       
       const plan = this.planRepository.create(planData);
@@ -97,8 +100,11 @@ export class PlansService {
       if (updatePlanDto.plan_name) updateData.name = updatePlanDto.plan_name;
       if (updatePlanDto.plan_price) updateData.price = updatePlanDto.plan_price;
       if (updatePlanDto.plan_duration) updateData.validity = updatePlanDto.plan_duration;
+      if (updatePlanDto.plan_description) updateData.description = updatePlanDto.plan_description;
       if (updatePlanDto.is_interactive_included !== undefined) {
         updateData.isInteractiveIncluded = Number(updatePlanDto.is_interactive_included);
+      } else if (updatePlanDto.isInteractiveIncluded !== undefined) {
+        updateData.isInteractiveIncluded = Number(updatePlanDto.isInteractiveIncluded);
       }
 
       Object.assign(plan, updateData);
@@ -144,6 +150,8 @@ export class PlansService {
    */
   private mapToResponse(plan: Plan | null): PlanResponseDto | null {
     if (!plan) return null;
+    const hasQuality = plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
+    const isStandard = hasQuality ? 1 : 0;
     return {
       planId: plan.planId,
       id: plan.planId,
@@ -159,10 +167,13 @@ export class PlansService {
       discount: plan.discount,
       validity: plan.validity,
       plan_duration: plan.validity,
+      plan_description: plan.description,
       status: plan.status,
-      currency: plan.currency || 'USD',
+      currency: plan.currency || 'INR',
       is_interactive_included: plan.isInteractiveIncluded || 0,
       isInteractiveIncluded: plan.isInteractiveIncluded || 0,
+      is_standard_included: isStandard,
+      isStandardIncluded: isStandard,
     };
   }
 }

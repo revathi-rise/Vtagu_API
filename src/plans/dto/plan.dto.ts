@@ -6,24 +6,24 @@ export class CreatePlanDto {
   name: string;
 
   @IsInt()
-  @IsNotEmpty()
-  screens: number;
+  @IsOptional()
+  screens?: number;
 
   @IsString()
-  @IsNotEmpty()
-  quality: string;
+  @IsOptional()
+  quality?: string;
 
   @IsInt()
-  @IsNotEmpty()
-  compatibility: number;
+  @IsOptional()
+  compatibility?: number;
 
   @IsInt()
-  @IsNotEmpty()
-  unlimited: number;
+  @IsOptional()
+  unlimited?: number;
 
   @IsInt()
-  @IsNotEmpty()
-  cancellation: number;
+  @IsOptional()
+  cancellation?: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -64,6 +64,10 @@ export class CreatePlanDto {
   @IsInt()
   @IsOptional()
   is_interactive_included?: number;
+
+  @IsInt()
+  @IsOptional()
+  isInteractiveIncluded?: number;
 }
 
 export class UpdatePlanDto {
@@ -130,6 +134,10 @@ export class UpdatePlanDto {
   @IsInt()
   @IsOptional()
   is_interactive_included?: number;
+
+  @IsInt()
+  @IsOptional()
+  isInteractiveIncluded?: number;
 }
 
 export class PlanResponseDto {
@@ -148,7 +156,10 @@ export class PlanResponseDto {
   plan_name: string;
   plan_price: number;
   plan_duration: string;
+  plan_description?: string;
   currency: string;
   is_interactive_included: number;
   isInteractiveIncluded: number;
+  is_standard_included: number;
+  isStandardIncluded: number;
 }

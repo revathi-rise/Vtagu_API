@@ -20,7 +20,6 @@ export class SubscriptionsService {
   async create(createSubscriptionDto: CreateSubscriptionDto): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto }> {
     try {
       const subscription = this.subscriptionRepository.create(createSubscriptionDto);
-      subscription.payment_status = 1; // Pending
       subscription.status = 1; // Active
 
       // Resolve price, discount, and currency from the Plan if not provided
@@ -43,9 +42,24 @@ export class SubscriptionsService {
         ? createSubscriptionDto.paid_amount
         : (planPrice - planDiscount);
 
+      if (subscription.paid_amount === 0) {
+        subscription.payment_status = 2; // Success
+        if (!subscription.payment_method) {
+          subscription.payment_method = 'FREE';
+        }
+        if (!subscription.payment_timestamp) {
+          subscription.payment_timestamp = Math.floor(Date.now() / 1000);
+        }
+      } else {
+        subscription.payment_status = 1; // Pending
+      }
+
       subscription.currency = createSubscriptionDto.currency || 'INR';
 
       const savedSubscription = await this.subscriptionRepository.save(subscription);
+      if (plan) {
+        savedSubscription.plan = plan;
+      }
       return {
         status: true,
         message: 'Subscription created successfully',
@@ -62,7 +76,7 @@ export class SubscriptionsService {
   async findAll(): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto[] }> {
     try {
       const subscriptions = await this.subscriptionRepository.find({
-        relations: ['user'],
+        relations: ['user', 'plan'],
         order: { subscriptionId: 'DESC' },
       });
       return {
@@ -82,7 +96,7 @@ export class SubscriptionsService {
     try {
       const subscription = await this.subscriptionRepository.findOne({
         where: { subscriptionId: id },
-        relations: ['user'],
+        relations: ['user', 'plan'],
       });
       if (!subscription) {
         throw new NotFoundException('Subscription not found');
@@ -104,7 +118,7 @@ export class SubscriptionsService {
     try {
       const subscription = await this.subscriptionRepository.findOne({
         where: { userId, status: 1 },
-        relations: ['user'],
+        relations: ['user', 'plan'],
       });
 
       if (!subscription) {
@@ -144,6 +158,12 @@ export class SubscriptionsService {
       }
 
       const updatedSubscription = await this.subscriptionRepository.save(subscription);
+      const plan = await this.planRepository.findOne({
+        where: { planId: updatedSubscription.planId },
+      });
+      if (plan) {
+        updatedSubscription.plan = plan;
+      }
       return {
         status: true,
         message: 'Subscription updated successfully',
@@ -182,7 +202,7 @@ export class SubscriptionsService {
     try {
       const subscriptions = await this.subscriptionRepository.find({
         where: { userId },
-        relations: ['user'],
+        relations: ['user', 'plan'],
         order: { subscriptionId: 'DESC' },
       });
 
@@ -200,6 +220,11 @@ export class SubscriptionsService {
    * Helper: Map entity to response
    */
   private mapToResponse(subscription: Subscription): SubscriptionResponseDto {
+    const plan = subscription.plan;
+    const hasQuality = plan && plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
+    const isStandard = hasQuality ? 1 : 0;
+    const isInteractive = plan ? (plan.isInteractiveIncluded || 0) : 0;
+
     return {
       subscriptionId: subscription.subscriptionId,
       userId: subscription.userId,
@@ -212,6 +237,25 @@ export class SubscriptionsService {
       price_amount: Number(subscription.price_amount),
       paid_amount: Number(subscription.paid_amount),
       currency: subscription.currency,
+      is_interactive_included: isInteractive,
+      isInteractiveIncluded: isInteractive,
+      is_standard_included: isStandard,
+      isStandardIncluded: isStandard,
+      plan: plan ? {
+        planId: plan.planId,
+        name: plan.name,
+        price: plan.price,
+        validity: plan.validity,
+        is_interactive_included: isInteractive,
+        isInteractiveIncluded: isInteractive,
+        is_standard_included: isStandard,
+        isStandardIncluded: isStandard,
+        screens: plan.screens,
+        quality: plan.quality,
+        compatibility: plan.compatibility || 0,
+        unlimited: plan.unlimited || 0,
+        cancellation: plan.cancellation || 0,
+      } : undefined,
     };
   }
 }

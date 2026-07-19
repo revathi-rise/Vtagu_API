@@ -8,19 +8,19 @@ export class Plan {
   @Column({ length: 255 })
   name: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: true })
   screens: number;
 
-  @Column({ length: 255 })
+  @Column({ length: 255, nullable: true })
   quality: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 1, nullable: true })
   compatibility: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 1, nullable: true })
   unlimited: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0, nullable: true })
   cancellation: number;
 
   @Column({ type: 'float' })
@@ -35,10 +35,13 @@ export class Plan {
   @Column({ type: 'int', default: 1 })
   status: number; // 1 active, 0 inactive
 
-  @Column({ length: 255, default: 'USD' })
+  @Column({ length: 255, default: 'INR' })
   currency: string;
 
   @Column({ type: 'tinyint', default: 0, name: 'is_interactive_included' })
   isInteractiveIncluded: number;
+
+  @Column({ length: 500, nullable: true })
+  description: string;
 }
 

@@ -38,9 +38,13 @@ export class MoviesController {
   }
 
   @Get(':slug')
-  async findOne(@Param('slug') slug: string): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
+  async findOne(
+    @Param('slug') slug: string,
+    @Query('userId') userId?: string,
+  ): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
-      const data = await this.moviesService.findOneBySlug(slug);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.moviesService.findOneBySlug(slug, parsedUserId);
       return { status: true, message: 'Movie fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

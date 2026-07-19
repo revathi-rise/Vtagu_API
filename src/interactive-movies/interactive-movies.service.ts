@@ -114,20 +114,26 @@ export class InteractiveMoviesService {
     }
 
     // 2. Check if the user has an active subscription that includes interactive movies
-    const activeSub = await this.subscriptionRepository.findOne({
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSubs = await this.subscriptionRepository.find({
       where: { userId, status: 1 },
     });
-    if (activeSub) {
-      const plan = await this.planRepository.findOne({
-        where: { planId: activeSub.planId },
-      });
-      if (plan && plan.isInteractiveIncluded === 1) {
-        return {
-          hasAccess: true,
-          reason: 'subscription',
-          price: movie.price,
-          currency: movie.currency,
-        };
+    for (const activeSub of activeSubs) {
+      const isPaymentSuccess = activeSub.payment_status === 2;
+      const isDateValid = activeSub.timestamp_from <= currentTimestamp && activeSub.timestamp_to >= currentTimestamp;
+
+      if (isPaymentSuccess && isDateValid) {
+        const plan = await this.planRepository.findOne({
+          where: { planId: activeSub.planId },
+        });
+        if (plan && plan.isInteractiveIncluded === 1) {
+          return {
+            hasAccess: true,
+            reason: 'subscription',
+            price: movie.price,
+            currency: movie.currency,
+          };
+        }
       }
     }
 

@@ -3,12 +3,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Episode } from './episode.entity';
 import { CreateEpisodeDto, EpisodeResponseDto, UpdateEpisodeDto } from './episode.dto';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Plan } from '../plans/entities/plan.entity';
 
 @Injectable()
 export class EpisodesService {
   constructor(
     @InjectRepository(Episode)
     private readonly episodeRepository: Repository<Episode>,
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private readonly planRepository: Repository<Plan>,
   ) {}
 
   async create(dto: CreateEpisodeDto): Promise<EpisodeResponseDto> {
@@ -35,7 +41,30 @@ export class EpisodesService {
     return episodes.map(e => this.mapToResponse(e));
   }
 
-  async findOne(idOrSlug: string | number): Promise<EpisodeResponseDto> {
+  async checkStandardAccess(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSubs = await this.subscriptionRepository.find({
+      where: { userId, status: 1 },
+    });
+    for (const activeSub of activeSubs) {
+      const isPaymentSuccess = activeSub.payment_status === 2;
+      const isDateValid = activeSub.timestamp_from <= currentTimestamp && activeSub.timestamp_to >= currentTimestamp;
+
+      if (isPaymentSuccess && isDateValid) {
+        const plan = await this.planRepository.findOne({
+          where: { planId: activeSub.planId },
+        });
+        if (plan) {
+          const hasQuality = plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
+          if (hasQuality) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async findOne(idOrSlug: string | number, userId?: number): Promise<EpisodeResponseDto> {
     let episode: Episode;
     if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
       episode = await this.episodeRepository.findOneBy({ episode_id: Number(idOrSlug) });
@@ -43,7 +72,20 @@ export class EpisodesService {
       episode = await this.episodeRepository.findOneBy({ slug: String(idOrSlug) });
     }
     if (!episode) throw new NotFoundException('Episode not found');
-    return this.mapToResponse(episode);
+
+    const isFree = !!episode.free;
+    let hasAccess = isFree;
+    if (!isFree && userId) {
+      hasAccess = await this.checkStandardAccess(userId);
+    }
+
+    const response = this.mapToResponse(episode);
+    if (!hasAccess) {
+      if (response.media && response.media.video) {
+        response.media.video.url = "";
+      }
+    }
+    return response;
   }
 
   async update(id: number, dto: UpdateEpisodeDto): Promise<EpisodeResponseDto> {

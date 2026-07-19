@@ -25,8 +25,11 @@ export class EpisodesController {
   }
 
   @Get(':idOrSlug')
-  async findOne(@Param('idOrSlug') idOrSlug: string) {
-    const data = await this.episodesService.findOne(idOrSlug);
+  async findOne(
+    @Param('idOrSlug') idOrSlug: string,
+    @Query('userId') userId?: string,
+  ) {
+    const data = await this.episodesService.findOne(idOrSlug, userId ? Number(userId) : undefined);
     return { status: true, message: 'Episode fetched successfully', data };
   }
 

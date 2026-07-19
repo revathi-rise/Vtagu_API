@@ -46,6 +46,8 @@ import { Language } from './languages/language.entity';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { Currency } from './currencies/entities/currency.entity';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { WatchSession } from './watch-sessions/entities/watch-session.entity';
+import { WatchSessionsModule } from './watch-sessions/watch-sessions.module';
 
 @Module({
   imports: [
@@ -78,6 +80,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
         News,
         Language,
         Currency,
+        WatchSession,
       ],
       synchronize: false,
     }),
@@ -121,6 +124,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     LanguagesModule,
     CurrenciesModule,
     DashboardModule,
+    WatchSessionsModule,
   ],
 })
 export class AppModule {}
