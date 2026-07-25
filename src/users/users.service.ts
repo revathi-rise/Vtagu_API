@@ -555,9 +555,13 @@ export class UsersService {
       await this.usersRepository.save(user);
 
       // Send OTP via SMS
-      const customerName = user.user_name || 'Customer';
+      let customerName = user.user_name || 'Customer';
+      // Fallback to "Customer" if the name is an auto-generated placeholder (e.g., User_1234, User?1234)
+      if (customerName.match(/^User[_\?]?\d*$/i)) {
+        customerName = 'Customer';
+      }
       await this.sendSms(mobile, otp, customerName);
-      console.log(`Mobile Login OTP for ${mobile}: ${otp}`);
+      console.log(`Mobile Login OTP for ${mobile}: ${otp} (Sent to ${customerName})`);
 
       return {
         status: true,
@@ -618,28 +622,43 @@ export class UsersService {
     }
 
     // Approved DLT Template
-    const message = `Dear ${customerName}, Your OTP for login to ${otp}. Valid for 30 minutes. Please do not share this OTP. Regards, My Dreams Technology Team`;
+    const templateId = process.env.SMS_LOGIN_TEMPLATE_ID || '1277178454507676243';
+    const message = `Dear ${customerName} , Your OTP for login is ${otp} . Please use it to verify your login within 10 minutes. https://vtagu.com/ VtagU Primetime`;
 
-    // URL-encode message for query parameter safely
-    const encodedMessage = encodeURIComponent(message);
+    const baseUrl = "http://app.mydreamstechnology.in/vb/apikey.php";
+    
+    // Safely encode parameters without relying on axios
+    const queryParams = new URLSearchParams({
+      apikey: apiKey,
+      senderid: sender,
+      templateid: templateId,
+      number: formattedMobile,
+      message: message
+    }).toString();
 
-    const url = `http://app.mydreamstechnology.in/vb/apikey.php?apikey=${apiKey}&senderid=${sender}&number=${formattedMobile}&message=${encodedMessage}`;
-
+    const fullUrl = `${baseUrl}?${queryParams}`;
     const http = require('http');
 
     return new Promise((resolve) => {
       console.log(`Sending OTP SMS to ${formattedMobile} using My Dreams Technology...`);
-
-      http.get(url, (res) => {
+      
+      const req = http.get(fullUrl, (res) => {
         let data = '';
         res.on('data', (chunk) => { data += chunk; });
         res.on('end', () => {
           console.log(`SMS Gateway Response for ${formattedMobile}: ${data}`);
           resolve();
         });
-      }).on('error', (err) => {
-        console.error(`SMS request failed to ${formattedMobile}:`, err.message);
-        resolve(); // resolve to prevent blocking main login flow if SMS gateway is down
+      });
+
+      req.on('error', (error) => {
+        console.error(`SMS Error to ${formattedMobile}:`, error.message);
+        resolve(); // We log error but don't throw to prevent blocking main login flow if SMS gateway is down
+      });
+
+      // Handle timeout (10 seconds)
+      req.setTimeout(10000, () => {
+        req.destroy(new Error('Request timeout after 10 seconds'));
       });
     });
   }
