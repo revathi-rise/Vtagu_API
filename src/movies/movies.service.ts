@@ -172,6 +172,7 @@ export class MoviesService {
       viewCount: m.view_count,
       isInteractive: m.is_interactive,
       interactiveMap: m.interactive_map,
+      subtitles: m.subtitles,
       media: {
         image: { url: m.movie_image || '', alt: m.poster_alt || '' },
         card_image: { url: m.card_image || '', alt: '' },

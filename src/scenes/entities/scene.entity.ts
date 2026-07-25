@@ -25,6 +25,9 @@ export class Scene {
   @Column({ name: 'show_choices_on', type: 'time', nullable: true })
   show_choices_on: string;
 
+  @Column({ type: 'json', nullable: true })
+  subtitles: any;
+
   @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movie_id' })
   movie: Movie;

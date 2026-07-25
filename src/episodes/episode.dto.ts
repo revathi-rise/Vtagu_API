@@ -70,6 +70,9 @@ export class CreateEpisodeDto {
   @IsBoolean()
   @IsOptional()
   free?: boolean;
+
+  @IsOptional()
+  subtitles?: any;
 }
 
 export class UpdateEpisodeDto {
@@ -144,6 +147,9 @@ export class UpdateEpisodeDto {
   @IsBoolean()
   @IsOptional()
   free?: boolean;
+
+  @IsOptional()
+  subtitles?: any;
 }
 
 export class EpisodeResponseDto {
@@ -167,6 +173,7 @@ export class EpisodeResponseDto {
     video: { url: string; alt: string };
     trailer: { url: string; alt: string };
   };
+  subtitles?: any;
   createdAt: Date;
   updatedAt: Date;
 }

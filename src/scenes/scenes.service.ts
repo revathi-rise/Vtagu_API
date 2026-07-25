@@ -32,6 +32,7 @@ export class ScenesService {
       is_ending: Boolean(scene.is_ending),
       end_text: scene.end_text || null,
       show_choices_on: scene.show_choices_on,
+      subtitles: scene.subtitles || [],
       choices: scene.choices.map((choice) => ({
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
@@ -59,6 +60,7 @@ export class ScenesService {
       is_ending: Boolean(scene.is_ending),
       end_text: scene.end_text || null,
       show_choices_on: scene.show_choices_on,
+      subtitles: scene.subtitles || [],
       choices: scene.choices.map((choice) => ({
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
@@ -78,6 +80,7 @@ export class ScenesService {
       is_ending: dto.is_ending,
       end_text: dto.end_text,
       show_choices_on: dto.show_choices_on,
+      subtitles: dto.subtitles,
     });
     const saved = await this.scenesRepository.save(scene);
     return this.findOne(saved.scene_id);
@@ -90,6 +93,7 @@ export class ScenesService {
       ...(dto.is_ending !== undefined && { is_ending: dto.is_ending }),
       ...(dto.end_text !== undefined && { end_text: dto.end_text }),
       ...(dto.show_choices_on !== undefined && { show_choices_on: dto.show_choices_on }),
+      ...(dto.subtitles !== undefined && { subtitles: dto.subtitles }),
     });
     return this.findOne(id);
   }

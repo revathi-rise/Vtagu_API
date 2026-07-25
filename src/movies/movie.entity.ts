@@ -89,6 +89,9 @@ export class Movie {
   @Column({ name: 'interactive_map', type: 'text', nullable: true })
   interactive_map: string;
 
+  @Column({ type: 'json', nullable: true })
+  subtitles: any;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

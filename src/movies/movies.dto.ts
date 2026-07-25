@@ -138,6 +138,10 @@ export class CreateMovieDto {
   @IsString()
   @IsOptional()
   interactive_map?: string;
+
+  @IsOptional()
+  subtitles?: any;
+
   @IsString()
   @IsOptional()
   movie_name?: string;
@@ -213,6 +217,7 @@ export class MovieResponseDto {
     video: { url: string; alt: string };
     trailer: { url: string; alt: string };
   };
+  subtitles?: any;
   createdAt: Date;
   updatedAt: Date;
 }

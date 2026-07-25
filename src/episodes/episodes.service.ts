@@ -116,6 +116,7 @@ export class EpisodesService {
       isFeatured: e.featured,
       isFree: e.free,
       viewCount: e.view_count,
+      subtitles: e.subtitles,
       media: {
         image: { url: e.image || '', alt: e.poster_alt || '' },
         poster_image: { url: e.poster_image || '', alt: '' },

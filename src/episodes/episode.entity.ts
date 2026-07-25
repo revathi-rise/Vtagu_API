@@ -62,6 +62,9 @@ export class Episode {
   @Column({ name: 'view_count', default: 0 })
   view_count: number;
 
+  @Column({ type: 'json', nullable: true })
+  subtitles: any;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 
