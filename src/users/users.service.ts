@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Plan } from '../plans/entities/plan.entity';
+import { Permission } from './entities/permission.entity';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 @Injectable()
@@ -14,6 +15,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
+    @InjectRepository(Permission)
+    private permissionRepository: Repository<Permission>,
     private readonly mailerService: MailerService,
   ) { }
 
@@ -206,7 +209,10 @@ export class UsersService {
    */
   async adminLogin(adminLoginDto: AdminLoginDto, ipAddress: string): Promise<{ status: boolean; message: string; data: AdminResponseDto; token: string }> {
     try {
-      const user = await this.usersRepository.findOne({ where: { email: adminLoginDto.email } });
+      const user = await this.usersRepository.findOne({ 
+        where: { email: adminLoginDto.email },
+        relations: ['permissions']
+      });
       if (!user) {
         console.log(`[ADMIN LOGIN] User not found: ${adminLoginDto.email}`);
         throw new UnauthorizedException('Invalid credentials');
@@ -214,16 +220,19 @@ export class UsersService {
 
       console.log(`[ADMIN LOGIN] User found: ${user.email}, type: ${user.type}, status: ${user.status}`);
 
-      // Check if user is admin (type 1)
-      if (String(user.type) !== '1') {
+      // Check if user is admin (type 2) or Super Master (type 1)
+      if (String(user.type) !== '1' && String(user.type) !== '2') {
         console.log(`[ADMIN LOGIN] User is not admin. Type: ${user.type}`);
         throw new UnauthorizedException('Only administrators can access this endpoint');
       }
 
-      // Check if user account is active (status = 1 or 'active')
       if (String(user.status) !== '1' && user.status !== 'active') {
         console.log(`[ADMIN LOGIN] Admin account not active. Status: ${user.status}`);
         throw new UnauthorizedException('Admin account is not active');
+      }
+
+      if (user.is_locked) {
+        throw new UnauthorizedException('Account is locked by Super Master');
       }
 
       // Verify password
@@ -331,7 +340,9 @@ export class UsersService {
    */
   async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
     try {
-      const users = await this.usersRepository.find();
+      const users = await this.usersRepository.find({
+        relations: ['permissions']
+      });
       const plans = await this.planRepository.find();
       const planMap = new Map(plans.map(p => [p.planId.toString(), p.price]));
 
@@ -350,7 +361,10 @@ export class UsersService {
    */
   async getUserProfile(userId: number): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
     try {
-      const user = await this.usersRepository.findOne({ where: { userId } });
+      const user = await this.usersRepository.findOne({ 
+        where: { userId },
+        relations: ['permissions']
+      });
       if (!user) {
         throw new NotFoundException('User not found');
       }
@@ -682,6 +696,8 @@ export class UsersService {
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt,
+      is_locked: user.is_locked,
+      permissions: user.permissions?.map(p => p.module_name) || [],
     };
   }
 
@@ -697,6 +713,73 @@ export class UsersService {
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt,
+      type: user.type,
+      is_locked: user.is_locked,
+      permissions: user.permissions?.map(p => p.module_name) || [],
     };
+  }
+
+  /**
+   * Get all permissions
+   */
+  async getAllPermissions(): Promise<{ status: boolean; message: string; data: Permission[] }> {
+    try {
+      const permissions = await this.permissionRepository.find();
+      return { status: true, message: 'Permissions fetched successfully', data: permissions };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Update user permissions
+   */
+  async updateUserPermissions(userId: number, permissionIds: number[]): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId }, relations: ['permissions'] });
+      if (!user) throw new NotFoundException('User not found');
+
+      const permissions = await this.permissionRepository.findByIds(permissionIds);
+      user.permissions = permissions;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return { status: true, message: 'User permissions updated successfully', data: this.mapUserToResponse(updatedUser) };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Update user role
+   */
+  async updateUserRole(userId: number, type: string): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId }, relations: ['permissions'] });
+      if (!user) throw new NotFoundException('User not found');
+
+      user.type = type;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return { status: true, message: 'User role updated successfully', data: this.mapUserToResponse(updatedUser) };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Toggle user lock
+   */
+  async toggleUserLock(userId: number, is_locked: boolean): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId }, relations: ['permissions'] });
+      if (!user) throw new NotFoundException('User not found');
+
+      user.is_locked = is_locked;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return { status: true, message: `User account ${is_locked ? 'locked' : 'unlocked'} successfully`, data: this.mapUserToResponse(updatedUser) };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }

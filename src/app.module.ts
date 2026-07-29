@@ -20,6 +20,7 @@ import { EpisodesModule } from './episodes/episodes.module';
 import { Episode } from './episodes/episode.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
+import { Permission } from './users/entities/permission.entity';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { Subscription } from './subscriptions/entities/subscription.entity';
 import { UserDevicesModule } from './user-devices/user-devices.module';
@@ -68,6 +69,7 @@ import { WatchSessionsModule } from './watch-sessions/watch-sessions.module';
         InteractiveMovie,
         Episode,
         User,
+        Permission,
         Subscription,
         UserDevice,
         WatchProgress,

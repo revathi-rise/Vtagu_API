@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Permission } from './permission.entity';
 
 @Entity('user')
 export class User {
@@ -95,6 +96,16 @@ export class User {
   @Column({ nullable: true })
   last_login_ip_address: string;
 
+  @Column({ default: false })
+  is_locked: boolean;
+
+  @ManyToMany(() => Permission)
+  @JoinTable({
+    name: 'user_permissions',
+    joinColumn: { name: 'user_id', referencedColumnName: 'userId' },
+    inverseJoinColumn: { name: 'permission_id', referencedColumnName: 'id' }
+  })
+  permissions: Permission[];
 
   get is_admin(): boolean {
     return String(this.type) === '1';

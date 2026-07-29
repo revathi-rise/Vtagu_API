@@ -116,6 +116,9 @@ export class UpdateUserDto {
   @IsOptional()
   type?: string;
 
+  @IsOptional()
+  is_locked?: boolean;
+
 
   @IsString()
   @IsOptional()
@@ -188,6 +191,8 @@ export class UserResponseDto {
   logged_in: boolean;
   last_login_ip_address: string;
   createdAt: Date;
+  is_locked: boolean;
+  permissions?: string[];
 }
 
 export class AdminLoginDto {
@@ -205,9 +210,12 @@ export class AdminResponseDto {
   email: string;
   user_name: string;
   status: string;
+  type: string;
   logged_in: boolean;
   last_login_ip_address: string;
   createdAt: Date;
+  is_locked: boolean;
+  permissions?: string[];
 }
 
 export class MobileLoginDto {
