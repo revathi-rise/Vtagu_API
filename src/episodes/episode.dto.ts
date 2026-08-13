@@ -73,6 +73,9 @@ export class CreateEpisodeDto {
 
   @IsOptional()
   subtitles?: any;
+
+  @IsOptional()
+  audio_tracks?: any;
 }
 
 export class UpdateEpisodeDto {
@@ -150,6 +153,9 @@ export class UpdateEpisodeDto {
 
   @IsOptional()
   subtitles?: any;
+
+  @IsOptional()
+  audio_tracks?: any;
 }
 
 export class EpisodeResponseDto {
@@ -174,6 +180,7 @@ export class EpisodeResponseDto {
     trailer: { url: string; alt: string };
   };
   subtitles?: any;
+  audio_tracks?: any;
   createdAt: Date;
   updatedAt: Date;
 }

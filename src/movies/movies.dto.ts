@@ -142,6 +142,9 @@ export class CreateMovieDto {
   @IsOptional()
   subtitles?: any;
 
+  @IsOptional()
+  audio_tracks?: any;
+
   @IsString()
   @IsOptional()
   movie_name?: string;
@@ -218,6 +221,7 @@ export class MovieResponseDto {
     trailer: { url: string; alt: string };
   };
   subtitles?: any;
+  audio_tracks?: any;
   createdAt: Date;
   updatedAt: Date;
 }

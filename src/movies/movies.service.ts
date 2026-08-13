@@ -138,6 +138,9 @@ export class MoviesService {
       }
     }
 
+    if (dto.subtitles !== undefined) movie.subtitles = dto.subtitles;
+    if (dto.audio_tracks !== undefined) movie.audio_tracks = dto.audio_tracks;
+
     return movie;
   }
 
@@ -173,6 +176,7 @@ export class MoviesService {
       isInteractive: m.is_interactive,
       interactiveMap: m.interactive_map,
       subtitles: m.subtitles,
+      audio_tracks: m.audio_tracks,
       media: {
         image: { url: m.movie_image || '', alt: m.poster_alt || '' },
         card_image: { url: m.card_image || '', alt: '' },

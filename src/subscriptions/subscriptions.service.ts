@@ -56,6 +56,16 @@ export class SubscriptionsService {
 
       subscription.currency = createSubscriptionDto.currency || 'INR';
 
+      if (!subscription.timestamp_from) {
+        subscription.timestamp_from = Math.floor(Date.now() / 1000);
+      }
+      if (!subscription.timestamp_to) {
+        subscription.timestamp_to = this.calculateTimestampTo(
+          subscription.timestamp_from,
+          plan?.validity
+        );
+      }
+
       const savedSubscription = await this.subscriptionRepository.save(subscription);
       if (plan) {
         savedSubscription.plan = plan;
@@ -68,6 +78,42 @@ export class SubscriptionsService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+  /**
+   * Helper: Calculate timestamp_to based on plan validity string
+   */
+  private calculateTimestampTo(fromSec: number, validityStr?: string): number {
+    if (!validityStr) return fromSec + (30 * 86400);
+
+    const dateMatch = validityStr.match(/\d{4}-\d{2}-\d{2}/);
+    if (dateMatch) {
+      const targetTime = Math.floor(new Date(dateMatch[0] + 'T23:59:59').getTime() / 1000);
+      if (!isNaN(targetTime) && targetTime > fromSec) {
+        return targetTime;
+      }
+    }
+
+    let days = 30;
+    const lower = validityStr.toLowerCase();
+    if (lower.includes('year')) {
+      const match = lower.match(/(\d+)/);
+      const years = match ? parseInt(match[1]) : 1;
+      days = years * 365;
+    } else if (lower.includes('month')) {
+      const match = lower.match(/(\d+)/);
+      const months = match ? parseInt(match[1]) : 1;
+      days = months * 30;
+    } else if (lower.includes('day')) {
+      const match = lower.match(/(\d+)/);
+      days = match ? parseInt(match[1]) : 1;
+    } else if (lower.includes('week')) {
+      const match = lower.match(/(\d+)/);
+      const weeks = match ? parseInt(match[1]) : 1;
+      days = weeks * 7;
+    }
+
+    return fromSec + (days * 86400);
   }
 
   /**

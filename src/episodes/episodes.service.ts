@@ -117,6 +117,7 @@ export class EpisodesService {
       isFree: e.free,
       viewCount: e.view_count,
       subtitles: e.subtitles,
+      audio_tracks: e.audio_tracks,
       media: {
         image: { url: e.image || '', alt: e.poster_alt || '' },
         poster_image: { url: e.poster_image || '', alt: '' },

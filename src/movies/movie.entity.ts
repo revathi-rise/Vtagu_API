@@ -92,6 +92,9 @@ export class Movie {
   @Column({ type: 'json', nullable: true })
   subtitles: any;
 
+  @Column({ type: 'json', nullable: true })
+  audio_tracks: any;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 
