@@ -2,27 +2,89 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserDevice } from './entities/user-device.entity';
-import { CreateUserDeviceDto, UpdateUserDeviceDto, UserDeviceResponseDto } from './dto/user-device.dto';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Plan } from '../plans/entities/plan.entity';
+import { CreateUserDeviceDto, UpdateUserDeviceDto, UserDeviceResponseDto, UserDeviceStatusDto } from './dto/user-device.dto';
 
 @Injectable()
 export class UserDevicesService {
   constructor(
     @InjectRepository(UserDevice)
     private userDeviceRepository: Repository<UserDevice>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
   ) {}
+
+  /**
+   * Helper: Get allowed devices limit for a user based on active subscription plan
+   */
+  async getUserDeviceLimit(userId: number): Promise<number> {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSubs = await this.subscriptionRepository.find({
+      where: { userId, status: 1 },
+    });
+
+    let maxScreens = 0;
+    let hasActiveSubscription = false;
+    for (const sub of activeSubs) {
+      if (sub.payment_status === 2 && sub.timestamp_from <= currentTimestamp && sub.timestamp_to >= currentTimestamp) {
+        const plan = await this.planRepository.findOne({ where: { planId: sub.planId } });
+        if (plan) {
+          hasActiveSubscription = true;
+          if (plan.screens > maxScreens) {
+            maxScreens = plan.screens;
+          }
+        }
+      }
+    }
+
+    // Default to 1 screen if unsubscribed or plan screens is 0
+    return hasActiveSubscription ? (maxScreens > 0 ? maxScreens : 1) : 1;
+  }
+
+  /**
+   * Get user device limit status and active devices
+   */
+  async getUserDeviceStatus(userId: number): Promise<{ status: boolean; message: string; data: UserDeviceStatusDto }> {
+    try {
+      const allowedDevices = await this.getUserDeviceLimit(userId);
+      const activeDevices = await this.userDeviceRepository.find({
+        where: { userId, is_active: true },
+        order: { last_active: 'DESC' },
+      });
+
+      const activeCount = activeDevices.length;
+      const canRegisterNewDevice = activeCount < allowedDevices;
+
+      return {
+        status: true,
+        message: 'User device status fetched successfully',
+        data: {
+          allowedDevices,
+          activeCount,
+          canRegisterNewDevice,
+          activeDevices: activeDevices.map(d => this.mapToResponse(d)),
+        },
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
 
   /**
    * Register a new device
    */
-  async registerDevice(createUserDeviceDto: CreateUserDeviceDto): Promise<{ status: boolean; message: string; data: UserDeviceResponseDto }> {
+  async registerDevice(createUserDeviceDto: CreateUserDeviceDto): Promise<{ status: boolean; message: string; data: UserDeviceResponseDto; deviceLimit?: number; activeCount?: number }> {
     try {
-      // Check if device already exists
+      // Check if device already exists for this user
       const existingDevice = await this.userDeviceRepository.findOne({
         where: { userId: createUserDeviceDto.userId, device_id: createUserDeviceDto.device_id },
       });
 
       if (existingDevice) {
-        // Update existing device
+        // Re-activating/updating an existing device is always allowed
         Object.assign(existingDevice, createUserDeviceDto);
         existingDevice.last_active = new Date();
         existingDevice.is_active = true;
@@ -34,6 +96,18 @@ export class UserDevicesService {
         };
       }
 
+      // For NEW device registration, check allowed device limit based on plan
+      const allowedDevices = await this.getUserDeviceLimit(createUserDeviceDto.userId);
+      const activeDevicesCount = await this.userDeviceRepository.count({
+        where: { userId: createUserDeviceDto.userId, is_active: true },
+      });
+
+      if (activeDevicesCount >= allowedDevices) {
+        throw new BadRequestException(
+          `DEVICE_LIMIT_EXCEEDED: Maximum allowed devices (${allowedDevices}) reached for your subscription plan. Please deactivate an existing device before registering a new device.`
+        );
+      }
+
       const device = this.userDeviceRepository.create(createUserDeviceDto);
       device.is_active = true;
       device.last_active = new Date();
@@ -43,6 +117,8 @@ export class UserDevicesService {
         status: true,
         message: 'Device registered successfully',
         data: this.mapToResponse(savedDevice),
+        deviceLimit: allowedDevices,
+        activeCount: activeDevicesCount + 1,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -214,6 +290,7 @@ export class UserDevicesService {
       device_type: device.device_type,
       os: device.os,
       os_version: device.os_version,
+      ip_address: device.ip_address,
       is_active: device.is_active,
       last_active: device.last_active,
       created_at: device.created_at,

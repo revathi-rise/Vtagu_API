@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Request } from '@nestjs/common';
 import { UserDevicesService } from './user-devices.service';
 import { CreateUserDeviceDto, UpdateUserDeviceDto } from './dto/user-device.dto';
 
@@ -11,8 +11,20 @@ export class UserDevicesController {
    * POST /user-devices/register
    */
   @Post('register')
-  async registerDevice(@Body() createUserDeviceDto: CreateUserDeviceDto) {
+  async registerDevice(@Body() createUserDeviceDto: CreateUserDeviceDto, @Request() req) {
+    if (!createUserDeviceDto.ip_address) {
+      createUserDeviceDto.ip_address = this.getIpAddress(req);
+    }
     return this.userDevicesService.registerDevice(createUserDeviceDto);
+  }
+
+  /**
+   * Get device limit status for user
+   * GET /user-devices/user/:userId/status
+   */
+  @Get('user/:userId/status')
+  async getUserDeviceStatus(@Param('userId') userId: string) {
+    return this.userDevicesService.getUserDeviceStatus(Number(userId));
   }
 
   /**
@@ -77,4 +89,16 @@ export class UserDevicesController {
   async logoutOtherDevices(@Param('userId') userId: string, @Param('deviceId') deviceId: string) {
     return this.userDevicesService.logoutOtherDevices(Number(userId), deviceId);
   }
+
+  /**
+   * Helper: Get client IP address
+   */
+  private getIpAddress(req: any): string {
+    const forwarded = req.headers ? req.headers['x-forwarded-for'] : undefined;
+    const ip = forwarded
+      ? forwarded.split(',')[0].trim()
+      : req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown';
+    return ip;
+  }
 }
+

@@ -60,7 +60,16 @@ export class UserDeviceResponseDto {
   device_type: string;
   os: string;
   os_version: string;
+  ip_address?: string;
   is_active: boolean;
   last_active: Date;
   created_at: Date;
 }
+
+export class UserDeviceStatusDto {
+  allowedDevices: number;
+  activeCount: number;
+  canRegisterNewDevice: boolean;
+  activeDevices: UserDeviceResponseDto[];
+}
+
