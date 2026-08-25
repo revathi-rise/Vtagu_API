@@ -71,6 +71,10 @@ export class CreateEpisodeDto {
   @IsOptional()
   free?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_coming_soon?: boolean;
+
   @IsOptional()
   subtitles?: any;
 
@@ -151,6 +155,10 @@ export class UpdateEpisodeDto {
   @IsOptional()
   free?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_coming_soon?: boolean;
+
   @IsOptional()
   subtitles?: any;
 
@@ -171,6 +179,8 @@ export class EpisodeResponseDto {
   rating: number;
   isFeatured: boolean;
   isFree: boolean;
+  isComingSoon: boolean;
+  is_coming_soon: boolean;
   viewCount: number;
   media: {
     image: { url: string; alt: string };

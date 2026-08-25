@@ -38,6 +38,9 @@ export class Poster {
   @Column({ type: 'char', length: 2, default: 'A' })
   status: string;
 
+  @Column({ name: 'is_coming_soon', default: false })
+  is_coming_soon?: boolean;
+
   @CreateDateColumn({ type: 'datetime', name: 'createdon', nullable: true })
   createdon?: Date;
 }

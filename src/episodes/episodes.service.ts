@@ -115,6 +115,8 @@ export class EpisodesService {
       rating: e.rating ? parseFloat(e.rating.toString()) : null,
       isFeatured: e.featured,
       isFree: e.free,
+      isComingSoon: e.is_coming_soon,
+      is_coming_soon: e.is_coming_soon,
       viewCount: e.view_count,
       subtitles: e.subtitles,
       audio_tracks: e.audio_tracks,

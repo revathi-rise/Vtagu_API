@@ -140,6 +140,7 @@ export class MoviesService {
 
     if (dto.subtitles !== undefined) movie.subtitles = dto.subtitles;
     if (dto.audio_tracks !== undefined) movie.audio_tracks = dto.audio_tracks;
+    if (dto.is_coming_soon !== undefined) movie.is_coming_soon = dto.is_coming_soon;
 
     return movie;
   }
@@ -174,6 +175,8 @@ export class MoviesService {
       languages: m.languages,
       viewCount: m.view_count,
       isInteractive: m.is_interactive,
+      isComingSoon: m.is_coming_soon,
+      is_coming_soon: m.is_coming_soon,
       interactiveMap: m.interactive_map,
       subtitles: m.subtitles,
       audio_tracks: m.audio_tracks,

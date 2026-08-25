@@ -32,6 +32,9 @@ export class InteractiveMovie {
   @Column({ length: 10, default: 'INR', name: 'currency' })
   currency: string;
 
+  @Column({ type: 'tinyint', default: 0, name: 'is_coming_soon' })
+  is_coming_soon: number;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

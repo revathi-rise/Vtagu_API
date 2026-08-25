@@ -59,6 +59,9 @@ export class Episode {
   @Column({ default: false })
   free: boolean;
 
+  @Column({ name: 'is_coming_soon', default: false })
+  is_coming_soon: boolean;
+
   @Column({ name: 'view_count', default: 0 })
   view_count: number;
 

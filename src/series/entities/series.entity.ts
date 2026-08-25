@@ -37,4 +37,7 @@ export class Series {
 
   @Column({ default: 0 })
   featured: number;
+
+  @Column({ name: 'is_coming_soon', default: false })
+  is_coming_soon: boolean;
 }

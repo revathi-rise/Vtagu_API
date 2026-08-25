@@ -86,6 +86,9 @@ export class Movie {
   @Column({ name: 'is_interactive', default: false })
   is_interactive: boolean;
 
+  @Column({ name: 'is_coming_soon', default: false })
+  is_coming_soon: boolean;
+
   @Column({ name: 'interactive_map', type: 'text', nullable: true })
   interactive_map: string;
 

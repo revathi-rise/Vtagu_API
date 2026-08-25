@@ -135,6 +135,10 @@ export class CreateMovieDto {
   @IsOptional()
   is_interactive?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_coming_soon?: boolean;
+
   @IsString()
   @IsOptional()
   interactive_map?: string;
@@ -213,6 +217,8 @@ export class MovieResponseDto {
   languages: string;
   viewCount: number;
   isInteractive: boolean;
+  isComingSoon: boolean;
+  is_coming_soon: boolean;
   interactiveMap: string;
   media: {
     image: { url: string; alt: string };
