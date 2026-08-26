@@ -119,14 +119,14 @@ export class InteractiveMoviesService {
       where: { userId, status: 1 },
     });
     for (const activeSub of activeSubs) {
-      const isPaymentSuccess = activeSub.payment_status === 2;
-      const isDateValid = activeSub.timestamp_from <= currentTimestamp && activeSub.timestamp_to >= currentTimestamp;
+      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
+      const isDateValid = Number(activeSub.timestamp_from) <= currentTimestamp && Number(activeSub.timestamp_to) >= currentTimestamp;
 
       if (isPaymentSuccess && isDateValid) {
         const plan = await this.planRepository.findOne({
           where: { planId: activeSub.planId },
         });
-        if (plan && plan.isInteractiveIncluded === 1) {
+        if (plan && (Number(plan.isInteractiveIncluded) === 1 || Number((plan as any).is_interactive_included) === 1)) {
           return {
             hasAccess: true,
             reason: 'subscription',
