@@ -51,6 +51,8 @@ import { WatchSession } from './watch-sessions/entities/watch-session.entity';
 import { WatchSessionsModule } from './watch-sessions/watch-sessions.module';
 import { ShortsModule } from './shorts/shorts.module';
 import { Short } from './shorts/short.entity';
+import { WatchlistModule } from './watchlist/watchlist.module';
+import { Watchlist } from './watchlist/entities/watchlist.entity';
 
 @Module({
   imports: [
@@ -86,6 +88,7 @@ import { Short } from './shorts/short.entity';
         Currency,
         WatchSession,
         Short,
+        Watchlist,
       ],
       synchronize: false,
     }),
@@ -131,6 +134,7 @@ import { Short } from './shorts/short.entity';
     DashboardModule,
     WatchSessionsModule,
     ShortsModule,
+    WatchlistModule,
   ],
 })
 export class AppModule {}
