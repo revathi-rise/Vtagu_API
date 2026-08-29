@@ -6,6 +6,9 @@ import { CreateTransactionDto, UpdateTransactionDto } from './dto/transaction.dt
 import * as crypto from 'crypto';
 const Razorpay = require('razorpay');
 
+import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+
 @Injectable()
 export class TransactionsService {
   private razorpay: any;
@@ -13,6 +16,9 @@ export class TransactionsService {
   constructor(
     @InjectRepository(Transaction)
     private repository: Repository<Transaction>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
+    private subscriptionsService: SubscriptionsService,
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID || 'YOUR_RAZORPAY_KEY_ID',
@@ -39,7 +45,10 @@ export class TransactionsService {
 
   async create(dto: CreateTransactionDto): Promise<Transaction> {
     try {
-      const transaction = this.repository.create(dto);
+      const transaction = this.repository.create({
+        ...dto,
+        created_at: new Date(),
+      });
       return await this.repository.save(transaction);
     } catch (error: any) {
       throw new BadRequestException(error.message);
@@ -81,6 +90,7 @@ export class TransactionsService {
         user_id: userId,
         amount: amount,
         status: 'P', // Pending
+        created_at: new Date(),
       });
       await this.repository.save(newTransaction);
 
@@ -102,7 +112,27 @@ export class TransactionsService {
       const transaction = await this.repository.findOne({ where: { txn_id: razorpayOrderId } });
       if (transaction) {
         transaction.status = 'C'; // Complete
+        if (!transaction.created_at || isNaN(new Date(transaction.created_at).getTime()) || new Date(transaction.created_at).getFullYear() < 2000) {
+          transaction.created_at = new Date();
+        }
         await this.repository.save(transaction);
+
+        // Also update any matching subscription to payment_status = 2 (Success) and send Subscription Success SMS
+        try {
+          const subscription = await this.subscriptionRepository.findOne({
+            where: { txnId: razorpayOrderId },
+            relations: ['user', 'plan'],
+          });
+          if (subscription) {
+            subscription.payment_status = 2; // Success
+            subscription.payment_timestamp = Math.floor(Date.now() / 1000);
+            const savedSub = await this.subscriptionRepository.save(subscription);
+            await this.subscriptionsService.sendSubscriptionSuccessNotification(savedSub);
+          }
+        } catch (subErr) {
+          console.error('[VERIFY PAYMENT] Error updating subscription:', subErr.message);
+        }
+
         return { success: true, message: 'Payment verified successfully' };
       } else {
         throw new NotFoundException('Transaction record not found');

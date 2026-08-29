@@ -17,6 +17,6 @@ export class Transaction {
   @Column({ length: 1, default: 'P' })
   status: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 }
