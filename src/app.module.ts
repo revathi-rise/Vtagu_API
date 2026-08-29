@@ -53,6 +53,7 @@ import { ShortsModule } from './shorts/shorts.module';
 import { Short } from './shorts/short.entity';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { Watchlist } from './watchlist/entities/watchlist.entity';
+import { SmsModule } from './sms/sms.module';
 
 @Module({
   imports: [
@@ -135,6 +136,7 @@ import { Watchlist } from './watchlist/entities/watchlist.entity';
     WatchSessionsModule,
     ShortsModule,
     WatchlistModule,
+    SmsModule,
   ],
 })
 export class AppModule {}

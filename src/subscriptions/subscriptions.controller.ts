@@ -61,6 +61,42 @@ export class SubscriptionsController {
   }
 
   /**
+   * Trigger Expiry Reminder SMS for subscriptions expiring soon
+   * POST /subscriptions/send-expiry-reminders
+   * GET /subscriptions/send-expiry-reminders
+   */
+  @Post('send-expiry-reminders')
+  async sendExpiryRemindersPost(@Body() body: { daysAhead?: number }) {
+    return this.subscriptionsService.sendExpiryReminders(body?.daysAhead || 3);
+  }
+
+  @Get('send-expiry-reminders')
+  async sendExpiryRemindersGet() {
+    return this.subscriptionsService.sendExpiryReminders(3);
+  }
+
+  /**
+   * Manually trigger Subscription Success SMS for a subscription ID
+   * POST /subscriptions/:id/send-success-sms
+   */
+  @Post(':id/send-success-sms')
+  async sendSuccessSms(@Param('id') id: string) {
+    const subRes = await this.subscriptionsService.findOne(Number(id));
+    if (!subRes || !subRes.data) {
+      return { status: false, message: 'Subscription not found' };
+    }
+    const fullSub = await this.subscriptionsService['subscriptionRepository'].findOne({
+      where: { subscriptionId: Number(id) },
+      relations: ['user', 'plan'],
+    });
+    if (!fullSub) {
+      return { status: false, message: 'Subscription entity not found' };
+    }
+    const sent = await this.subscriptionsService.sendSubscriptionSuccessNotification(fullSub);
+    return { status: sent, message: sent ? 'Subscription success SMS sent' : 'Failed to send SMS (check user mobile number)' };
+  }
+
+  /**
    * Cancel subscription
    * DELETE /subscriptions/:id
    */

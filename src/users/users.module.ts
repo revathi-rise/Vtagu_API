@@ -6,8 +6,10 @@ import { User } from './entities/user.entity';
 import { Plan } from '../plans/entities/plan.entity';
 import { Permission } from './entities/permission.entity';
 
+import { SmsModule } from '../sms/sms.module';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Plan, Permission])],
+  imports: [TypeOrmModule.forFeature([User, Plan, Permission]), SmsModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

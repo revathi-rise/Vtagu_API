@@ -8,6 +8,8 @@ import { Plan } from '../plans/entities/plan.entity';
 import { Permission } from './entities/permission.entity';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
+import { SmsService } from '../sms/sms.service';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -18,6 +20,7 @@ export class UsersService {
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
     private readonly mailerService: MailerService,
+    private readonly smsService: SmsService,
   ) { }
 
   /**
@@ -621,60 +624,10 @@ export class UsersService {
   }
 
   /**
-   * Helper: Send SMS via My Dreams Technology SMS API
+   * Helper: Send SMS via SmsService using approved DLT template
    */
   private async sendSms(mobile: string, otp: string, customerName: string): Promise<void> {
-    const apiKey = process.env.SMS_API_KEY || 'pdtPO9aL4m8RSQTV';
-    const sender = process.env.SMS_SENDER || 'MDTDMO';
-
-    // Format mobile number: Ensure it has no non-digits
-    let formattedMobile = mobile.replace(/\D/g, '');
-
-    // Add 91 prefix for 10-digit Indian numbers if not already present
-    if (formattedMobile.length === 10) {
-      formattedMobile = '91' + formattedMobile;
-    }
-
-    // Approved DLT Template
-    const templateId = process.env.SMS_LOGIN_TEMPLATE_ID || '1277178454507676243';
-    const message = `Dear ${customerName} , Your OTP for login is ${otp} . Please use it to verify your login within 10 minutes. https://vtagu.com/ VtagU Primetime`;
-
-    const baseUrl = "http://app.mydreamstechnology.in/vb/apikey.php";
-    
-    // Safely encode parameters without relying on axios
-    const queryParams = new URLSearchParams({
-      apikey: apiKey,
-      senderid: sender,
-      templateid: templateId,
-      number: formattedMobile,
-      message: message
-    }).toString();
-
-    const fullUrl = `${baseUrl}?${queryParams}`;
-    const http = require('http');
-
-    return new Promise((resolve) => {
-      console.log(`Sending OTP SMS to ${formattedMobile} using My Dreams Technology...`);
-      
-      const req = http.get(fullUrl, (res) => {
-        let data = '';
-        res.on('data', (chunk) => { data += chunk; });
-        res.on('end', () => {
-          console.log(`SMS Gateway Response for ${formattedMobile}: ${data}`);
-          resolve();
-        });
-      });
-
-      req.on('error', (error) => {
-        console.error(`SMS Error to ${formattedMobile}:`, error.message);
-        resolve(); // We log error but don't throw to prevent blocking main login flow if SMS gateway is down
-      });
-
-      // Handle timeout (10 seconds)
-      req.setTimeout(10000, () => {
-        req.destroy(new Error('Request timeout after 10 seconds'));
-      });
-    });
+    await this.smsService.sendOtpSms(mobile, otp, customerName);
   }
 
   /**

@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Subscription } from './entities/subscription.entity';
 import { CreateSubscriptionDto, UpdateSubscriptionDto, SubscriptionResponseDto } from './dto/subscription.dto';
 import { Plan } from '../plans/entities/plan.entity';
+import { User } from '../users/entities/user.entity';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -12,6 +14,9 @@ export class SubscriptionsService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private smsService: SmsService,
   ) {}
 
   /**
@@ -70,6 +75,12 @@ export class SubscriptionsService {
       if (plan) {
         savedSubscription.plan = plan;
       }
+
+      // If payment is successful upon creation, send Subscription Success SMS
+      if (savedSubscription.payment_status === 2 && savedSubscription.status === 1) {
+        await this.sendSubscriptionSuccessNotification(savedSubscription);
+      }
+
       return {
         status: true,
         message: 'Subscription created successfully',
@@ -210,10 +221,91 @@ export class SubscriptionsService {
       if (plan) {
         updatedSubscription.plan = plan;
       }
+
+      // If payment_status was updated to success (2) or active, send Subscription Success SMS
+      if (updateSubscriptionDto.payment_status === 2 || updatedSubscription.payment_status === 2) {
+        await this.sendSubscriptionSuccessNotification(updatedSubscription);
+      }
+
       return {
         status: true,
         message: 'Subscription updated successfully',
         data: this.mapToResponse(updatedSubscription),
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Helper: Send Subscription Success SMS Notification
+   */
+  async sendSubscriptionSuccessNotification(subscription: Subscription): Promise<boolean> {
+    try {
+      const user = subscription.user || await this.userRepository.findOne({ where: { userId: subscription.userId } });
+      const plan = subscription.plan || await this.planRepository.findOne({ where: { planId: subscription.planId } });
+
+      if (user && user.mobile) {
+        const planName = plan ? plan.name : 'Subscription';
+        const validTillDate = this.smsService.formatDateForSms(subscription.timestamp_to);
+        const amount = subscription.paid_amount !== undefined ? subscription.paid_amount : (plan ? plan.price : 0);
+
+        return await this.smsService.sendSubscriptionSuccessSms(
+          user.mobile,
+          user.user_name,
+          planName,
+          amount,
+          validTillDate,
+        );
+      }
+      return false;
+    } catch (error) {
+      console.error('Error sending subscription success SMS:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Check active subscriptions expiring within N days and send Expiry Reminder SMS
+   */
+  async sendExpiryReminders(daysAhead: number = 3): Promise<{ status: boolean; message: string; countSent: number }> {
+    try {
+      const nowSec = Math.floor(Date.now() / 1000);
+      const targetSec = nowSec + (daysAhead * 86400);
+
+      // Find active & paid subscriptions
+      const subscriptions = await this.subscriptionRepository.find({
+        where: { status: 1, payment_status: 2 },
+        relations: ['user', 'plan'],
+      });
+
+      let countSent = 0;
+      for (const sub of subscriptions) {
+        // Check if subscription expires within the window
+        if (sub.timestamp_to >= nowSec && sub.timestamp_to <= targetSec) {
+          const user = sub.user || await this.userRepository.findOne({ where: { userId: sub.userId } });
+          const plan = sub.plan || await this.planRepository.findOne({ where: { planId: sub.planId } });
+
+          if (user && user.mobile) {
+            const planName = plan ? plan.name : 'Subscription';
+            const expiryDate = this.smsService.formatDateForSms(sub.timestamp_to);
+
+            const sent = await this.smsService.sendExpiryReminderSms(
+              user.mobile,
+              user.user_name,
+              planName,
+              expiryDate,
+            );
+
+            if (sent) countSent++;
+          }
+        }
+      }
+
+      return {
+        status: true,
+        message: `Successfully processed expiry reminders. Sent ${countSent} SMS notification(s).`,
+        countSent,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
