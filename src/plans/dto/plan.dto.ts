@@ -68,6 +68,14 @@ export class CreatePlanDto {
   @IsInt()
   @IsOptional()
   isInteractiveIncluded?: number;
+
+  @IsInt()
+  @IsOptional()
+  is_shorts_included?: number;
+
+  @IsInt()
+  @IsOptional()
+  isShortsIncluded?: number;
 }
 
 export class UpdatePlanDto {
@@ -138,6 +146,14 @@ export class UpdatePlanDto {
   @IsInt()
   @IsOptional()
   isInteractiveIncluded?: number;
+
+  @IsInt()
+  @IsOptional()
+  is_shorts_included?: number;
+
+  @IsInt()
+  @IsOptional()
+  isShortsIncluded?: number;
 }
 
 export class PlanResponseDto {
@@ -160,6 +176,8 @@ export class PlanResponseDto {
   currency: string;
   is_interactive_included: number;
   isInteractiveIncluded: number;
+  is_shorts_included: number;
+  isShortsIncluded: number;
   is_standard_included: number;
   isStandardIncluded: number;
 }

@@ -69,6 +69,12 @@ export class PlansService {
       } else if (createPlanDto.isInteractiveIncluded !== undefined) {
         planData.isInteractiveIncluded = Number(createPlanDto.isInteractiveIncluded);
       }
+
+      if (createPlanDto.is_shorts_included !== undefined) {
+        planData.isShortsIncluded = Number(createPlanDto.is_shorts_included);
+      } else if (createPlanDto.isShortsIncluded !== undefined) {
+        planData.isShortsIncluded = Number(createPlanDto.isShortsIncluded);
+      }
       
       const plan = this.planRepository.create(planData);
       const savedPlan = await this.planRepository.save(plan);
@@ -105,6 +111,11 @@ export class PlansService {
         updateData.isInteractiveIncluded = Number(updatePlanDto.is_interactive_included);
       } else if (updatePlanDto.isInteractiveIncluded !== undefined) {
         updateData.isInteractiveIncluded = Number(updatePlanDto.isInteractiveIncluded);
+      }
+      if (updatePlanDto.is_shorts_included !== undefined) {
+        updateData.isShortsIncluded = Number(updatePlanDto.is_shorts_included);
+      } else if (updatePlanDto.isShortsIncluded !== undefined) {
+        updateData.isShortsIncluded = Number(updatePlanDto.isShortsIncluded);
       }
 
       Object.assign(plan, updateData);
@@ -172,6 +183,8 @@ export class PlansService {
       currency: plan.currency || 'INR',
       is_interactive_included: plan.isInteractiveIncluded || 0,
       isInteractiveIncluded: plan.isInteractiveIncluded || 0,
+      is_shorts_included: plan.isShortsIncluded !== undefined ? Number(plan.isShortsIncluded) : 1,
+      isShortsIncluded: plan.isShortsIncluded !== undefined ? Number(plan.isShortsIncluded) : 1,
       is_standard_included: isStandard,
       isStandardIncluded: isStandard,
     };

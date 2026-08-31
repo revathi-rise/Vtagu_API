@@ -25,42 +25,6 @@ export class SubscriptionsController {
   }
 
   /**
-   * Get subscription by ID
-   * GET /subscriptions/:id
-   */
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.subscriptionsService.findOne(Number(id));
-  }
-
-  /**
-   * Get active subscription for user
-   * GET /subscriptions/user/:userId/active
-   */
-  @Get('user/:userId/active')
-  async getActiveSubscription(@Param('userId') userId: string) {
-    return this.subscriptionsService.getActiveSubscription(Number(userId));
-  }
-
-  /**
-   * Get user subscription history
-   * GET /subscriptions/user/:userId/history
-   */
-  @Get('user/:userId/history')
-  async getUserSubscriptionHistory(@Param('userId') userId: string) {
-    return this.subscriptionsService.getUserSubscriptionHistory(Number(userId));
-  }
-
-  /**
-   * Update subscription
-   * PATCH /subscriptions/:id
-   */
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateSubscriptionDto: UpdateSubscriptionDto) {
-    return this.subscriptionsService.update(Number(id), updateSubscriptionDto);
-  }
-
-  /**
    * Trigger Expiry Reminder SMS for subscriptions expiring soon
    * POST /subscriptions/send-expiry-reminders
    * GET /subscriptions/send-expiry-reminders
@@ -73,6 +37,39 @@ export class SubscriptionsController {
   @Get('send-expiry-reminders')
   async sendExpiryRemindersGet() {
     return this.subscriptionsService.sendExpiryReminders(3);
+  }
+
+  /**
+   * Get active subscription for user (with route aliases)
+   * GET /subscriptions/user/:userId/active
+   * GET /subscriptions/user/:userId
+   * GET /subscriptions/active/:userId
+   */
+  @Get('user/:userId/active')
+  async getActiveSubscription(@Param('userId') userId: string) {
+    return this.subscriptionsService.getActiveSubscription(Number(userId));
+  }
+
+  @Get('user/:userId')
+  async getActiveSubscriptionByUserAlias(@Param('userId') userId: string) {
+    if (!isNaN(Number(userId))) {
+      return this.subscriptionsService.getActiveSubscription(Number(userId));
+    }
+    return { status: false, message: 'Invalid user ID' };
+  }
+
+  @Get('active/:userId')
+  async getActiveSubscriptionAlias(@Param('userId') userId: string) {
+    return this.subscriptionsService.getActiveSubscription(Number(userId));
+  }
+
+  /**
+   * Get user subscription history
+   * GET /subscriptions/user/:userId/history
+   */
+  @Get('user/:userId/history')
+  async getUserSubscriptionHistory(@Param('userId') userId: string) {
+    return this.subscriptionsService.getUserSubscriptionHistory(Number(userId));
   }
 
   /**
@@ -94,6 +91,27 @@ export class SubscriptionsController {
     }
     const sent = await this.subscriptionsService.sendSubscriptionSuccessNotification(fullSub);
     return { status: sent, message: sent ? 'Subscription success SMS sent' : 'Failed to send SMS (check user mobile number)' };
+  }
+
+  /**
+   * Get subscription by ID (Wildcard - must be placed after specific routes)
+   * GET /subscriptions/:id
+   */
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    if (isNaN(Number(id))) {
+      return { status: false, message: 'Invalid subscription ID' };
+    }
+    return this.subscriptionsService.findOne(Number(id));
+  }
+
+  /**
+   * Update subscription
+   * PATCH /subscriptions/:id
+   */
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() updateSubscriptionDto: UpdateSubscriptionDto) {
+    return this.subscriptionsService.update(Number(id), updateSubscriptionDto);
   }
 
   /**

@@ -14,10 +14,12 @@ export class ShortsController {
   @Get('active')
   async findActive(
     @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
   ): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
     try {
       const l = limit ? parseInt(limit, 10) : undefined;
-      const data = await this.shortsService.findActive(l);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.shortsService.findActive(l, parsedUserId);
       return { status: true, message: 'Active shorts fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: [] };
@@ -29,9 +31,10 @@ export class ShortsController {
    * Admin endpoint — returns all shorts (active + inactive)
    */
   @Get()
-  async findAll(): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
+  async findAll(@Query('userId') userId?: string): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
     try {
-      const data = await this.shortsService.findAll();
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.shortsService.findAll(parsedUserId);
       return { status: true, message: 'Shorts fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: [] };
@@ -45,9 +48,11 @@ export class ShortsController {
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
+    @Query('userId') userId?: string,
   ): Promise<{ status: boolean; message: string; data: ShortResponseDto }> {
     try {
-      const data = await this.shortsService.findOne(id);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.shortsService.findOne(id, parsedUserId);
       return { status: true, message: 'Short fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

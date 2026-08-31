@@ -41,6 +41,9 @@ export class Plan {
   @Column({ type: 'tinyint', default: 0, name: 'is_interactive_included' })
   isInteractiveIncluded: number;
 
+  @Column({ type: 'tinyint', default: 1, name: 'is_shorts_included' })
+  isShortsIncluded: number;
+
   @Column({ length: 500, nullable: true })
   description: string;
 }
