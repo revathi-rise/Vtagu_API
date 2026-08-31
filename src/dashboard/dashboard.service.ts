@@ -38,7 +38,7 @@ export class DashboardService {
       .getCount();
 
     const activeSubs = await this.subscriptionRepository.count({
-      where: { status: 1 },
+      where: { status: 1, payment_status: 2 },
     });
 
     const revenueResult = await this.subscriptionRepository

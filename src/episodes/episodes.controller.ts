@@ -17,9 +17,13 @@ export class EpisodesController {
   }
 
   @Get()
-  async findAll(@Query('season_id') seasonId?: string) {
+  async findAll(
+    @Query('season_id') seasonId?: string,
+    @Query('userId') userId?: string,
+  ) {
     const data = await this.episodesService.findAll(
       seasonId ? Number(seasonId) : undefined,
+      userId ? Number(userId) : undefined,
     );
     return { status: true, message: 'Episodes fetched successfully', data };
   }

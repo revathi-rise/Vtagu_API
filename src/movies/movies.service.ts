@@ -17,7 +17,7 @@ export class MoviesService {
     private planRepository: Repository<Plan>,
   ) { }
 
-  async findAll(languageSlug?: string): Promise<MovieResponseDto[]> {
+  async findAll(languageSlug?: string, userId?: number): Promise<MovieResponseDto[]> {
     let movies: Movie[];
     if (languageSlug) {
       movies = await this.moviesRepo.find({
@@ -29,12 +29,30 @@ export class MoviesService {
     } else {
       movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
     }
-    return movies.map(m => this.mapToResponse(m));
+    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    return movies.map(m => {
+      const isFree = !!m.free;
+      const hasAccess = isFree || hasSubAccess;
+      const res = this.mapToResponse(m);
+      if (!hasAccess && res.media && res.media.video) {
+        res.media.video.url = "";
+      }
+      return res;
+    });
   }
 
-  async findForHome(limit = 10): Promise<MovieResponseDto[]> {
+  async findForHome(limit = 10, userId?: number): Promise<MovieResponseDto[]> {
     const movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit });
-    return movies.map(m => this.mapToResponse(m));
+    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    return movies.map(m => {
+      const isFree = !!m.free;
+      const hasAccess = isFree || hasSubAccess;
+      const res = this.mapToResponse(m);
+      if (!hasAccess && res.media && res.media.video) {
+        res.media.video.url = "";
+      }
+      return res;
+    });
   }
 
   async checkStandardAccess(userId?: number): Promise<boolean> {

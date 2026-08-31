@@ -17,9 +17,13 @@ export class MoviesController {
   }
 
   @Get()
-  async findAll(@Query('language') language?: string): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
+  async findAll(
+    @Query('language') language?: string,
+    @Query('userId') userId?: string,
+  ): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
-      const data = await this.moviesService.findAll(language);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.moviesService.findAll(language, parsedUserId);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -27,10 +31,14 @@ export class MoviesController {
   }
 
   @Get('trending')
-  async getTrending(@Query('limit') limit?: string) {
+  async getTrending(
+    @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
+  ) {
     try {
       const l = limit ? parseInt(limit, 10) : 10;
-      const data = await this.moviesService.findForHome(l);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const data = await this.moviesService.findForHome(l, parsedUserId);
       return { status: true, message: 'Trending movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

@@ -193,6 +193,8 @@ export class UserResponseDto {
   createdAt: Date;
   is_locked: boolean;
   permissions?: string[];
+  is_subscribed?: boolean;
+  active_subscription?: any;
 }
 
 export class AdminLoginDto {

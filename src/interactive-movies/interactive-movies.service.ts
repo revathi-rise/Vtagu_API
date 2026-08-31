@@ -119,7 +119,7 @@ export class InteractiveMoviesService {
       where: { userId, status: 1 },
     });
     for (const activeSub of activeSubs) {
-      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
+      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || activeSub.payment_method === 'FREE';
       const isDateValid = Number(activeSub.timestamp_from) <= currentTimestamp && Number(activeSub.timestamp_to) >= currentTimestamp;
 
       if (isPaymentSuccess && isDateValid) {

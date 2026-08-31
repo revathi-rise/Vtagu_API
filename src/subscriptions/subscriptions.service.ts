@@ -173,12 +173,20 @@ export class SubscriptionsService {
    */
   async getActiveSubscription(userId: number): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto | null }> {
     try {
-      const subscription = await this.subscriptionRepository.findOne({
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      const subscriptions = await this.subscriptionRepository.find({
         where: { userId, status: 1 },
         relations: ['user', 'plan'],
+        order: { subscriptionId: 'DESC' },
       });
 
-      if (!subscription) {
+      const activeSub = subscriptions.find((sub) => {
+        const isPaid = Number(sub.payment_status) === 2 || sub.payment_method === 'FREE';
+        const isValidDate = Number(sub.timestamp_from) <= currentTimestamp && Number(sub.timestamp_to) >= currentTimestamp;
+        return isPaid && isValidDate;
+      });
+
+      if (!activeSub) {
         return {
           status: true,
           message: 'No active subscription found',
@@ -189,7 +197,7 @@ export class SubscriptionsService {
       return {
         status: true,
         message: 'Active subscription fetched successfully',
-        data: this.mapToResponse(subscription),
+        data: this.mapToResponse(activeSub),
       };
     } catch (error) {
       throw new BadRequestException(error.message);

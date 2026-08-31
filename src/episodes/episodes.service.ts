@@ -32,13 +32,22 @@ export class EpisodesService {
     return this.mapToResponse(saved);
   }
 
-  async findAll(seasonId?: number): Promise<EpisodeResponseDto[]> {
+  async findAll(seasonId?: number, userId?: number): Promise<EpisodeResponseDto[]> {
     const where = seasonId ? { season_id: seasonId } : {};
     const episodes = await this.episodeRepository.find({
       where,
       order: { season_id: 'ASC', episode_number: 'ASC' },
     });
-    return episodes.map(e => this.mapToResponse(e));
+    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    return episodes.map(e => {
+      const isFree = !!e.free;
+      const hasAccess = isFree || hasSubAccess;
+      const res = this.mapToResponse(e);
+      if (!hasAccess && res.media && res.media.video) {
+        res.media.video.url = "";
+      }
+      return res;
+    });
   }
 
   async checkStandardAccess(userId?: number): Promise<boolean> {

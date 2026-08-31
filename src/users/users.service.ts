@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Plan } from '../plans/entities/plan.entity';
 import { Permission } from './entities/permission.entity';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 import { SmsService } from '../sms/sms.service';
@@ -19,6 +20,8 @@ export class UsersService {
     private planRepository: Repository<Plan>,
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
     private readonly mailerService: MailerService,
     private readonly smsService: SmsService,
   ) { }
@@ -56,7 +59,7 @@ export class UsersService {
       return {
         status: true,
         message: 'User registered successfully. OTP sent to email.',
-        data: this.mapUserToResponse(savedUser),
+        data: await this.mapUserToResponse(savedUser),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -85,7 +88,7 @@ export class UsersService {
       return {
         status: true,
         message: 'OTP verified successfully',
-        data: this.mapUserToResponse(updatedUser),
+        data: await this.mapUserToResponse(updatedUser),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -151,7 +154,7 @@ export class UsersService {
       return {
         status: true,
         message: 'Login successful',
-        data: this.mapUserToResponse(updatedUser),
+        data: await this.mapUserToResponse(updatedUser),
         token: updatedUser.user_session,
       };
     } catch (error) {
@@ -199,7 +202,7 @@ export class UsersService {
       return {
         status: true,
         message: 'Google login successful',
-        data: this.mapUserToResponse(savedUser),
+        data: await this.mapUserToResponse(savedUser),
         token: savedUser.user_session,
       };
     } catch (error) {
@@ -349,10 +352,11 @@ export class UsersService {
       const plans = await this.planRepository.find();
       const planMap = new Map(plans.map(p => [p.planId.toString(), p.price]));
 
+      const data = await Promise.all(users.map(user => this.mapUserToResponse(user, user.plan ? planMap.get(user.plan) : undefined)));
       return {
         status: true,
         message: 'Users fetched successfully',
-        data: users.map(user => this.mapUserToResponse(user, user.plan ? planMap.get(user.plan) : undefined)),
+        data,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -381,7 +385,7 @@ export class UsersService {
       return {
         status: true,
         message: 'User profile fetched successfully',
-        data: this.mapUserToResponse(user, planPrice),
+        data: await this.mapUserToResponse(user, planPrice),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -416,7 +420,7 @@ export class UsersService {
       return {
         status: true,
         message: 'User profile updated successfully',
-        data: this.mapUserToResponse(updatedUser, planPrice),
+        data: await this.mapUserToResponse(updatedUser, planPrice),
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -615,7 +619,7 @@ export class UsersService {
       return {
         status: true,
         message: 'Login successful',
-        data: this.mapUserToResponse(updatedUser),
+        data: await this.mapUserToResponse(updatedUser),
         token: updatedUser.user_session,
       };
     } catch (error) {
@@ -631,9 +635,43 @@ export class UsersService {
   }
 
   /**
-   * Helper: Map user entity to response DTO
+   * Helper: Check if user has an active valid subscription
    */
-  private mapUserToResponse(user: User, planPrice?: number): UserResponseDto {
+  async getActiveUserSubscription(userId: number): Promise<Subscription | null> {
+    if (!userId) return null;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSubs = await this.subscriptionRepository.find({
+      where: { userId, status: 1 },
+      relations: ['plan'],
+      order: { subscriptionId: 'DESC' },
+    });
+
+    for (const sub of activeSubs) {
+      const isPaid = Number(sub.payment_status) === 2 || sub.payment_method === 'FREE';
+      const isValidDate = Number(sub.timestamp_from) <= currentTimestamp && Number(sub.timestamp_to) >= currentTimestamp;
+      if (isPaid && isValidDate) {
+        return sub;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Helper: Map user entity to response DTO with dynamic subscription status
+   */
+  private async mapUserToResponse(user: User, planPrice?: number): Promise<UserResponseDto> {
+    const activeSub = await this.getActiveUserSubscription(user.userId);
+    const isSubscribed = !!activeSub;
+    let resolvedPlan: string | null = user.plan || null;
+    let resolvedPlanPrice = planPrice;
+
+    if (activeSub && activeSub.plan) {
+      resolvedPlan = activeSub.plan.name || activeSub.planId.toString();
+      resolvedPlanPrice = activeSub.paid_amount ?? activeSub.plan.price;
+    } else if (!isSubscribed) {
+      resolvedPlan = null;
+    }
+
     return {
       userId: user.userId,
       email: user.email,
@@ -643,14 +681,23 @@ export class UsersService {
       gender: user.gender,
       profile_picture: user.profile_picture,
       status: user.status,
-      plan: user.plan,
-      plan_price: planPrice,
+      plan: resolvedPlan || '',
+      plan_price: resolvedPlanPrice,
       type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt,
       is_locked: user.is_locked,
       permissions: user.permissions?.map(p => p.module_name) || [],
+      is_subscribed: isSubscribed,
+      active_subscription: activeSub ? {
+        subscriptionId: activeSub.subscriptionId,
+        planId: activeSub.planId,
+        planName: activeSub.plan?.name,
+        timestamp_from: activeSub.timestamp_from,
+        timestamp_to: activeSub.timestamp_to,
+        payment_status: activeSub.payment_status,
+      } : null,
     };
   }
 
@@ -696,7 +743,7 @@ export class UsersService {
       user.permissions = permissions;
       const updatedUser = await this.usersRepository.save(user);
 
-      return { status: true, message: 'User permissions updated successfully', data: this.mapUserToResponse(updatedUser) };
+      return { status: true, message: 'User permissions updated successfully', data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -713,7 +760,7 @@ export class UsersService {
       user.type = type;
       const updatedUser = await this.usersRepository.save(user);
 
-      return { status: true, message: 'User role updated successfully', data: this.mapUserToResponse(updatedUser) };
+      return { status: true, message: 'User role updated successfully', data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -730,7 +777,7 @@ export class UsersService {
       user.is_locked = is_locked;
       const updatedUser = await this.usersRepository.save(user);
 
-      return { status: true, message: `User account ${is_locked ? 'locked' : 'unlocked'} successfully`, data: this.mapUserToResponse(updatedUser) };
+      return { status: true, message: `User account ${is_locked ? 'locked' : 'unlocked'} successfully`, data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
