@@ -47,7 +47,9 @@ export class UsersService {
         type: registerDto.type || 'U',
         otp,
         status: '1', // default active status
-        register_step: 1,
+        otp_verified: registerDto.type ? 'Y' : 'N', // Auto-verify if created via Admin panel
+        register_step: registerDto.type ? 2 : 1,
+        createdAt: new Date(),
       });
 
       const savedUser = await this.usersRepository.save(user);
@@ -182,6 +184,7 @@ export class UsersService {
           loginOauthUid: googleLoginDto.login_oauth_uid,
           profile_picture: googleLoginDto.profile_picture || null,
           register_step: 2,
+          createdAt: new Date(),
         });
       } else {
         // Update OAuth UID and Profile Picture if missing or updated
@@ -567,6 +570,7 @@ export class UsersService {
           status: 'active',
           otp_verified: 'Y', // Mobile verification will happen via OTP
           register_step: 2,
+          createdAt: new Date(),
         });
         user = await this.usersRepository.save(user);
       }
@@ -686,7 +690,7 @@ export class UsersService {
       type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
-      createdAt: user.createdAt,
+      createdAt: user.createdAt || new Date(),
       is_locked: user.is_locked,
       permissions: user.permissions?.map(p => p.module_name) || [],
       is_subscribed: isSubscribed,
@@ -712,7 +716,7 @@ export class UsersService {
       status: user.status,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
-      createdAt: user.createdAt,
+      createdAt: user.createdAt || new Date(),
       type: user.type,
       is_locked: user.is_locked,
       permissions: user.permissions?.map(p => p.module_name) || [],

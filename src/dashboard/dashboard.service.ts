@@ -5,6 +5,9 @@ import { User } from '../users/entities/user.entity';
 import { Movie } from '../movies/movie.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Genre } from '../genres/genre.entity';
+import { Series } from '../series/entities/series.entity';
+import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
+import { Short } from '../shorts/short.entity';
 import { MoviesService } from '../movies/movies.service';
 
 @Injectable()
@@ -18,24 +21,22 @@ export class DashboardService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Genre)
     private genreRepository: Repository<Genre>,
+    @InjectRepository(Series)
+    private seriesRepository: Repository<Series>,
+    @InjectRepository(InteractiveMovie)
+    private interactiveMovieRepository: Repository<InteractiveMovie>,
+    @InjectRepository(Short)
+    private shortRepository: Repository<Short>,
     private moviesService: MoviesService,
   ) {}
 
   async getStats() {
     // 1. Overview counts
     const totalUsers = await this.userRepository.count();
-
-    // Count movies: where movie_type != 'series' or is null
-    const totalMovies = await this.movieRepository
-      .createQueryBuilder('movie')
-      .where('LOWER(movie.movie_type) != :type OR movie.movie_type IS NULL', { type: 'series' })
-      .getCount();
-
-    // Count series: where movie_type == 'series'
-    const totalSeries = await this.movieRepository
-      .createQueryBuilder('movie')
-      .where('LOWER(movie.movie_type) = :type', { type: 'series' })
-      .getCount();
+    const totalMovies = await this.movieRepository.count();
+    const totalInteractiveMovies = await this.interactiveMovieRepository.count();
+    const totalSeries = await this.seriesRepository.count();
+    const totalShorts = await this.shortRepository.count();
 
     const activeSubs = await this.subscriptionRepository.count({
       where: { status: 1, payment_status: 2 },
@@ -44,14 +45,21 @@ export class DashboardService {
     const revenueResult = await this.subscriptionRepository
       .createQueryBuilder('sub')
       .select('SUM(sub.paid_amount)', 'sum')
+      .where('sub.payment_status = :status', { status: 2 })
       .getRawOne();
     const totalRevenue = parseFloat(revenueResult?.sum || '0');
 
-    const viewsResult = await this.movieRepository
+    const movieViewsRes = await this.movieRepository
       .createQueryBuilder('movie')
       .select('SUM(movie.view_count)', 'sum')
       .getRawOne();
-    const totalViews = parseInt(viewsResult?.sum || '0', 10);
+
+    const shortViewsRes = await this.shortRepository
+      .createQueryBuilder('short')
+      .select('SUM(short.view_count)', 'sum')
+      .getRawOne();
+
+    const totalViews = (parseInt(movieViewsRes?.sum || '0', 10)) + (parseInt(shortViewsRes?.sum || '0', 10));
 
     // 2. Trending movies (top 5 by view_count)
     const trendingMoviesRaw = await this.movieRepository.find({
@@ -187,7 +195,9 @@ export class DashboardService {
     return {
       totalUsers,
       totalMovies,
+      totalInteractiveMovies,
       totalSeries,
+      totalShorts,
       activeSubs,
       revenue: totalRevenue,
       totalViews,
