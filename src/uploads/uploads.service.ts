@@ -5,12 +5,16 @@ import * as https from 'https';
 
 @Injectable()
 export class UploadsService {
-  private readonly localUploadDir = path.join(process.cwd(), 'public', 'images');
+  private readonly localImageDir = path.join(process.cwd(), 'public', 'images');
+  private readonly localSubtitleDir = path.join(process.cwd(), 'public', 'subtitles');
 
   constructor() {
-    // Ensure local upload directory exists
-    if (!fs.existsSync(this.localUploadDir)) {
-      fs.mkdirSync(this.localUploadDir, { recursive: true });
+    // Ensure local upload directories exist
+    if (!fs.existsSync(this.localImageDir)) {
+      fs.mkdirSync(this.localImageDir, { recursive: true });
+    }
+    if (!fs.existsSync(this.localSubtitleDir)) {
+      fs.mkdirSync(this.localSubtitleDir, { recursive: true });
     }
   }
 
@@ -66,20 +70,72 @@ export class UploadsService {
   }
 
   /**
-   * Save file to local public/images folder.
+   * Upload a subtitle file.
+   * If BunnyCDN credentials are set in .env, upload to BunnyCDN.
+   * Otherwise, save locally in public/subtitles/.
    */
-  private saveLocally(buffer: Buffer, fileName: string, requestHostUrl?: string): string {
-    const filePath = path.join(this.localUploadDir, fileName);
+  async uploadSubtitle(
+    file: Express.Multer.File,
+    forceStorage?: 'local' | 'bunny',
+    requestHostUrl?: string,
+  ): Promise<{ status: boolean; message: string; url: string }> {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Generate safe, unique filename: SUB_ + timestamp + 4 digit random + original extension
+    const ext = path.extname(file.originalname).toLowerCase() || '.vtt';
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const fileName = `SUB_${Date.now()}_${randomSuffix}${ext}`;
+
+    const useBunny = forceStorage
+      ? forceStorage === 'bunny'
+      : !!(process.env.BUNNY_API_KEY && process.env.BUNNY_STORAGE_ZONE_NAME);
+
+    if (useBunny) {
+      try {
+        const url = await this.uploadToBunnyCDN(file.buffer, fileName, 'subtitles');
+        return {
+          status: true,
+          message: 'Subtitle uploaded successfully to BunnyCDN',
+          url,
+        };
+      } catch (error) {
+        console.error('BunnyCDN upload failed, falling back to local storage:', error.message);
+        // Fallback to local storage on error
+        const localUrl = this.saveLocally(file.buffer, fileName, requestHostUrl, 'subtitles');
+        return {
+          status: true,
+          message: 'BunnyCDN upload failed. Saved to local storage fallback.',
+          url: localUrl,
+        };
+      }
+    } else {
+      const localUrl = this.saveLocally(file.buffer, fileName, requestHostUrl, 'subtitles');
+      return {
+        status: true,
+        message: 'Subtitle uploaded successfully to local storage',
+        url: localUrl,
+      };
+    }
+  }
+
+  /**
+   * Save file to local public folder.
+   */
+  private saveLocally(buffer: Buffer, fileName: string, requestHostUrl?: string, folder: 'images' | 'subtitles' = 'images'): string {
+    const dir = folder === 'images' ? this.localImageDir : this.localSubtitleDir;
+    const filePath = path.join(dir, fileName);
     fs.writeFileSync(filePath, buffer);
 
     const host = requestHostUrl || 'http://localhost:3000';
-    return `${host}/public/images/${fileName}`;
+    return `${host}/public/${folder}/${fileName}`;
   }
 
   /**
    * Upload file to BunnyCDN Storage.
    */
-  private async uploadToBunnyCDN(buffer: Buffer, fileName: string): Promise<string> {
+  private async uploadToBunnyCDN(buffer: Buffer, fileName: string, folder: 'images' | 'subtitles' = 'images'): Promise<string> {
     const storageZone = process.env.BUNNY_STORAGE_ZONE_NAME || 'vtauprime';
     const apiKey = process.env.BUNNY_API_KEY;
     const region = process.env.BUNNY_STORAGE_REGION || 'sg';
@@ -94,8 +150,8 @@ export class UploadsService {
       ? 'storage.bunnycdn.com'
       : `${region}.storage.bunnycdn.com`;
 
-    // Path in storage: /<storage_zone>/images/<filename>
-    const storagePath = `/${storageZone}/images/${fileName}`;
+    // Path in storage: /<storage_zone>/<folder>/<filename>
+    const storagePath = `/${storageZone}/${folder}/${fileName}`;
     const url = `https://${hostname}${storagePath}`;
 
     return new Promise((resolve, reject) => {
@@ -119,7 +175,7 @@ export class UploadsService {
           if (res.statusCode === 200 || res.statusCode === 201) {
             // Success! Construct the CDN pull zone URL
             const cleanCdnDomain = cdnDomain.endsWith('/') ? cdnDomain.slice(0, -1) : cdnDomain;
-            resolve(`${cleanCdnDomain}/images/${fileName}`);
+            resolve(`${cleanCdnDomain}/${folder}/${fileName}`);
           } else {
             reject(new Error(`BunnyCDN API returned status ${res.statusCode}: ${body}`));
           }

@@ -50,4 +50,40 @@ export class UploadsController {
     const hostUrl = `${request.protocol}://${request.get('host')}`;
     return this.uploadsService.uploadImage(file, storage, hostUrl);
   }
+
+  /**
+   * Universal upload-subtitle endpoint: POST /upload-subtitle
+   * Accessible directly at the root api level (e.g. /api/upload-subtitle)
+   */
+  @Post('upload-subtitle')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadSubtitleRoot(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('storage') storage?: 'local' | 'bunny',
+    @Req() request?: Request,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required (form-data field name: "file")');
+    }
+    const hostUrl = `${request.protocol}://${request.get('host')}`;
+    return this.uploadsService.uploadSubtitle(file, storage, hostUrl);
+  }
+
+  /**
+   * Modular upload-subtitle endpoint: POST /uploads/subtitle
+   * Also accessible under the uploads prefix
+   */
+  @Post('uploads/subtitle')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadSubtitleModular(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('storage') storage?: 'local' | 'bunny',
+    @Req() request?: Request,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required (form-data field name: "file")');
+    }
+    const hostUrl = `${request.protocol}://${request.get('host')}`;
+    return this.uploadsService.uploadSubtitle(file, storage, hostUrl);
+  }
 }
