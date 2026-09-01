@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto, UpdateMovieDto, MovieResponseDto } from './movies.dto';
 
@@ -76,6 +76,18 @@ export class MoviesController {
       return { status: true, message: 'Movie deleted successfully', data: null };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
+    }
+  }
+
+  @Post(':id/view')
+  async incrementView(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ status: boolean; message: string }> {
+    try {
+      await this.moviesService.incrementView(id);
+      return { status: true, message: 'View count incremented' };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred' };
     }
   }
 }

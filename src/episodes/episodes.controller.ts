@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Param, Patch, Delete,
-  Query, HttpCode, HttpStatus,
+  Query, HttpCode, HttpStatus, ParseIntPipe,
 } from '@nestjs/common';
 import { EpisodesService } from './episodes.service';
 import { CreateEpisodeDto, UpdateEpisodeDto } from './episode.dto';
@@ -48,5 +48,17 @@ export class EpisodesController {
   async remove(@Param('id') id: string) {
     await this.episodesService.remove(Number(id));
     return { status: true, message: 'Episode deleted successfully', data: null };
+  }
+
+  @Post(':id/view')
+  async incrementView(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<{ status: boolean; message: string }> {
+    try {
+      await this.episodesService.incrementView(id);
+      return { status: true, message: 'View count incremented' };
+    } catch (error) {
+      return { status: false, message: error.message || 'An error occurred' };
+    }
   }
 }

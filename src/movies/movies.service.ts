@@ -119,6 +119,10 @@ export class MoviesService {
     if (result.affected === 0) throw new NotFoundException('Movie not found');
   }
 
+  async incrementView(id: number): Promise<void> {
+    await this.moviesRepo.increment({ movie_id: id }, 'view_count', 1);
+  }
+
   private mapFromDto(dto: CreateMovieDto): Partial<Movie> {
     const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, cast_name, director_name, rating, duration, release_date, ...rest } = dto;
     const movie: Partial<Movie> = { ...rest };

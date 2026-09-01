@@ -110,6 +110,10 @@ export class EpisodesService {
     if (result.affected === 0) throw new NotFoundException('Episode not found');
   }
 
+  async incrementView(id: number): Promise<void> {
+    await this.episodeRepository.increment({ episode_id: id }, 'view_count', 1);
+  }
+
   public mapToResponse(e: Episode): EpisodeResponseDto {
     return {
       id: e.episode_id,
