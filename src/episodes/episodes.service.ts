@@ -27,7 +27,8 @@ export class EpisodesService {
         .replace(/[\s_]+/g, '-')
         .replace(/^-+|-+$/g, '');
     }
-    const episode = this.episodeRepository.create(dto);
+    const episodeData = this.mapFromDto(dto);
+    const episode = this.episodeRepository.create(episodeData);
     const saved = await this.episodeRepository.save(episode);
     return this.mapToResponse(saved);
   }
@@ -100,7 +101,8 @@ export class EpisodesService {
   async update(id: number, dto: UpdateEpisodeDto): Promise<EpisodeResponseDto> {
     const episode = await this.episodeRepository.findOneBy({ episode_id: id });
     if (!episode) throw new NotFoundException('Episode not found');
-    Object.assign(episode, dto);
+    const updateData = this.mapFromDto(dto);
+    Object.assign(episode, updateData);
     const updated = await this.episodeRepository.save(episode);
     return this.mapToResponse(updated);
   }
@@ -112,6 +114,30 @@ export class EpisodesService {
 
   async incrementView(id: number): Promise<void> {
     await this.episodeRepository.increment({ episode_id: id }, 'view_count', 1);
+  }
+
+  private mapFromDto(dto: CreateEpisodeDto | UpdateEpisodeDto): Partial<Episode> {
+    const { media, ...rest } = dto;
+    const episode: Partial<Episode> = { ...rest };
+
+    if (media) {
+      if (media.image) {
+        episode.image = media.image.url;
+        episode.poster_alt = media.image.alt;
+      }
+      if (media.card_image) {
+        episode.card_image = media.card_image.url;
+      }
+      if (media.video) {
+        episode.url = media.video.url;
+      }
+      if (media.trailer) {
+        episode.trailer_url = media.trailer.url;
+        episode.trailer_alt = media.trailer.alt;
+      }
+    }
+
+    return episode;
   }
 
   public mapToResponse(e: Episode): EpisodeResponseDto {

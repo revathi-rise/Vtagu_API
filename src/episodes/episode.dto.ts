@@ -1,4 +1,45 @@
-import { IsInt, IsOptional, IsString, IsBoolean, IsNumber } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsBoolean, IsNumber, ValidateNested, IsUrl } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ImageMediaDto {
+  @IsUrl()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  alt?: string;
+}
+
+class VideoMediaDto {
+  @IsUrl()
+  url: string;
+
+  @IsString()
+  @IsOptional()
+  alt?: string;
+}
+
+class MediaDto {
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => ImageMediaDto)
+  image?: ImageMediaDto;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => ImageMediaDto)
+  card_image?: ImageMediaDto;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => VideoMediaDto)
+  video?: VideoMediaDto;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => VideoMediaDto)
+  trailer?: VideoMediaDto;
+}
 
 export class CreateEpisodeDto {
   @IsInt()
@@ -80,6 +121,11 @@ export class CreateEpisodeDto {
 
   @IsOptional()
   audio_tracks?: any;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => MediaDto)
+  media?: MediaDto;
 }
 
 export class UpdateEpisodeDto {
@@ -164,6 +210,11 @@ export class UpdateEpisodeDto {
 
   @IsOptional()
   audio_tracks?: any;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => MediaDto)
+  media?: MediaDto;
 }
 
 export class EpisodeResponseDto {
