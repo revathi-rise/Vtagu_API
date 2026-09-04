@@ -218,10 +218,7 @@ export class MovieResponseDto {
   director: string;
   director_name: string;
   isFeatured: boolean;
-  featured: boolean;
   isFree: boolean;
-  free: boolean;
-  is_free: boolean;
   movieType: string;
   contentType: string;
   ageRestriction: string;

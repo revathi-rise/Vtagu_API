@@ -229,10 +229,7 @@ export class EpisodeResponseDto {
   languages: string;
   rating: number;
   isFeatured: boolean;
-  featured: boolean;
   isFree: boolean;
-  free: boolean;
-  is_free: boolean;
   isComingSoon: boolean;
   is_coming_soon: boolean;
   viewCount: number;

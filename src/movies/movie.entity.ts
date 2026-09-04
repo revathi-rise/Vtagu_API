@@ -38,10 +38,10 @@ export class Movie {
   @Column({ nullable: true })
   director: string;
 
-  @Column({ default: false })
+  @Column({ type: 'tinyint', default: 0 })
   featured: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'tinyint', default: 0 })
   free: boolean;
 
   @Column({ name: 'movie_type', nullable: true })
