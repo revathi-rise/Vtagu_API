@@ -145,8 +145,18 @@ export class MoviesService {
   }
 
   private mapFromDto(dto: CreateMovieDto): Partial<Movie> {
-    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, cast_name, director_name, rating, duration, release_date, free, isFree, is_free, featured, isFeatured, is_featured, ...rest } = dto as any;
+    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, url, video_url, videoUrl, trailer_url, trailerUrl, cast_name, director_name, rating, duration, release_date, free, isFree, is_free, featured, isFeatured, is_featured, is_coming_soon, isComingSoon, is_interactive, isInteractive, kids_restriction, kidsRestriction, ...rest } = dto as any;
     const movie: Partial<Movie> = { ...rest };
+
+    const videoInput = url || video_url || videoUrl || movie_video;
+    if (videoInput) {
+      movie.url = videoInput;
+    }
+
+    const trailerInput = trailer_url || trailerUrl || movie_trailer;
+    if (trailerInput) {
+      movie.trailer_url = trailerInput;
+    }
 
     const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
     if (freeInput !== undefined) {
@@ -156,6 +166,21 @@ export class MoviesService {
     const featuredInput = featured !== undefined ? featured : (isFeatured !== undefined ? isFeatured : is_featured);
     if (featuredInput !== undefined) {
       movie.featured = parseBool(featuredInput);
+    }
+
+    const comingSoonInput = is_coming_soon !== undefined ? is_coming_soon : isComingSoon;
+    if (comingSoonInput !== undefined) {
+      movie.is_coming_soon = parseBool(comingSoonInput);
+    }
+
+    const interactiveInput = is_interactive !== undefined ? is_interactive : isInteractive;
+    if (interactiveInput !== undefined) {
+      movie.is_interactive = parseBool(interactiveInput);
+    }
+
+    const kidsInput = kids_restriction !== undefined ? kids_restriction : kidsRestriction;
+    if (kidsInput !== undefined) {
+      movie.kids_restriction = parseBool(kidsInput);
     }
 
     if (movie_name) movie.title = movie_name;
@@ -193,7 +218,6 @@ export class MoviesService {
 
     if (dto.subtitles !== undefined) movie.subtitles = dto.subtitles;
     if (dto.audio_tracks !== undefined) movie.audio_tracks = dto.audio_tracks;
-    if (dto.is_coming_soon !== undefined) movie.is_coming_soon = dto.is_coming_soon;
 
     return movie;
   }
@@ -201,6 +225,9 @@ export class MoviesService {
   public mapToResponse(m: Movie): MovieResponseDto {
     const isFreeBool = parseBool(m.free);
     const isFeaturedBool = parseBool(m.featured);
+    const isComingSoonBool = parseBool(m.is_coming_soon);
+    const isInteractiveBool = parseBool(m.is_interactive);
+    const kidsRestrictionBool = parseBool(m.kids_restriction);
 
     return {
       id: m.movie_id,
@@ -226,13 +253,13 @@ export class MoviesService {
       movieType: m.movie_type,
       contentType: m.type,
       ageRestriction: m.age_restriction,
-      kidsRestriction: m.kids_restriction,
+      kidsRestriction: kidsRestrictionBool,
       duration: m.duration,
       languages: m.languages,
       viewCount: m.view_count,
-      isInteractive: m.is_interactive,
-      isComingSoon: m.is_coming_soon,
-      is_coming_soon: m.is_coming_soon,
+      isInteractive: isInteractiveBool,
+      isComingSoon: isComingSoonBool,
+      is_coming_soon: isComingSoonBool,
       interactiveMap: m.interactive_map,
       subtitles: m.subtitles,
       audio_tracks: m.audio_tracks,

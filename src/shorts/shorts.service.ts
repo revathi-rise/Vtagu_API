@@ -6,6 +6,13 @@ import { CreateShortDto, ShortResponseDto, UpdateShortDto } from './shorts.dto';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
 
+const parseBool = (val: any): boolean => {
+  if (val === true || val === false) return val;
+  if (val === 1 || val === '1' || val === 'true') return true;
+  if (val === 0 || val === '0' || val === 'false') return false;
+  return false;
+};
+
 @Injectable()
 export class ShortsService {
   constructor(
@@ -45,7 +52,7 @@ export class ShortsService {
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
-      if (!s.is_free && !hasAccess) {
+      if (!parseBool(s.is_free) && !hasAccess) {
         res.video_url = "";
       }
       return res;
@@ -66,7 +73,7 @@ export class ShortsService {
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
-      if (!s.is_free && !hasAccess) {
+      if (!parseBool(s.is_free) && !hasAccess) {
         res.video_url = "";
       }
       return res;
@@ -76,7 +83,8 @@ export class ShortsService {
   async findOne(id: number, userId?: number): Promise<ShortResponseDto> {
     const short = await this.shortsRepo.findOne({ where: { short_id: id } });
     if (!short) throw new NotFoundException('Short not found');
-    const hasAccess = short.is_free || (userId ? await this.checkShortsAccess(userId) : false);
+    const isFree = parseBool(short.is_free);
+    const hasAccess = isFree || (userId ? await this.checkShortsAccess(userId) : false);
     const res = this.mapToResponse(short);
     if (!hasAccess) {
       res.video_url = "";
@@ -85,7 +93,11 @@ export class ShortsService {
   }
 
   async create(dto: CreateShortDto): Promise<ShortResponseDto> {
-    const short = this.shortsRepo.create(dto);
+    const shortData = { ...dto };
+    if (shortData.is_free !== undefined) shortData.is_free = parseBool(shortData.is_free) as any;
+    if (shortData.is_featured !== undefined) shortData.is_featured = parseBool(shortData.is_featured) as any;
+    if (shortData.is_active !== undefined) shortData.is_active = parseBool(shortData.is_active) as any;
+    const short = this.shortsRepo.create(shortData);
     const saved = await this.shortsRepo.save(short);
     return this.mapToResponse(saved);
   }
@@ -93,8 +105,18 @@ export class ShortsService {
   async update(id: number, dto: UpdateShortDto): Promise<ShortResponseDto> {
     const short = await this.shortsRepo.findOne({ where: { short_id: id } });
     if (!short) throw new NotFoundException('Short not found');
-    Object.assign(short, dto);
-    const updated = await this.shortsRepo.save(short);
+    const updateData = { ...dto };
+    delete (updateData as any).id;
+    delete (updateData as any).short_id;
+    delete (updateData as any).createdAt;
+    delete (updateData as any).updatedAt;
+    delete (updateData as any).created_at;
+    delete (updateData as any).updated_at;
+    if (updateData.is_free !== undefined) updateData.is_free = parseBool(updateData.is_free) as any;
+    if (updateData.is_featured !== undefined) updateData.is_featured = parseBool(updateData.is_featured) as any;
+    if (updateData.is_active !== undefined) updateData.is_active = parseBool(updateData.is_active) as any;
+    await this.shortsRepo.update({ short_id: id }, updateData);
+    const updated = await this.shortsRepo.findOne({ where: { short_id: id } });
     return this.mapToResponse(updated);
   }
 
@@ -118,9 +140,9 @@ export class ShortsService {
       duration: s.duration,
       languages: s.languages,
       genre_id: s.genre_id,
-      is_free: s.is_free,
-      is_featured: s.is_featured,
-      is_active: s.is_active,
+      is_free: parseBool(s.is_free),
+      is_featured: parseBool(s.is_featured),
+      is_active: parseBool(s.is_active),
       view_count: s.view_count,
       sort_order: s.sort_order,
       created_at: s.created_at,
