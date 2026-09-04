@@ -65,9 +65,9 @@ export class CreateMovieDto {
   @IsOptional()
   rating?: number;
 
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  genre_id?: number;
+  genre_id?: string;
 
   @ValidateNested()
   @IsOptional()
@@ -200,7 +200,7 @@ export class MovieResponseDto {
   release_date: string;
   countryId: number;
   rating: number;
-  genreId: number;
+  genreId: string;
   genre_name: string;
   ageGroup: string;
   actors: string;

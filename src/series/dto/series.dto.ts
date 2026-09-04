@@ -13,9 +13,9 @@ export class CreateSeriesDto {
   @IsOptional()
   description_long?: string;
 
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  genre_id?: number;
+  genre_id?: string;
 
   @IsString()
   @IsOptional()

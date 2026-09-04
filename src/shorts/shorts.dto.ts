@@ -27,9 +27,9 @@ export class CreateShortDto {
   @IsOptional()
   languages?: string;
 
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  genre_id?: number;
+  genre_id?: string;
 
   @IsBoolean()
   @IsOptional()
@@ -59,7 +59,7 @@ export class ShortResponseDto {
   thumbnail_url: string;
   duration: string;
   languages: string;
-  genre_id: number;
+  genre_id: string;
   is_free: boolean;
   is_featured: boolean;
   is_active: boolean;

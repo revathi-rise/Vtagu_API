@@ -14,8 +14,8 @@ export class Series {
   @Column({ name: 'description_long', type: 'text', nullable: true })
   description_long: string;
 
-  @Column({ name: 'genre_id', nullable: true })
-  genre_id: number;
+  @Column({ name: 'genre_id', type: 'varchar', nullable: true })
+  genre_id: string;
 
   @Column({ name: 'age_group', nullable: true })
   age_group: string;

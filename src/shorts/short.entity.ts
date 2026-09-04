@@ -26,8 +26,8 @@ export class Short {
   @Column({ nullable: true })
   languages: string;
 
-  @Column({ name: 'genre_id', nullable: true })
-  genre_id: number;
+  @Column({ name: 'genre_id', type: 'varchar', nullable: true })
+  genre_id: string;
 
   @Column({ name: 'is_free', default: true })
   is_free: boolean;
