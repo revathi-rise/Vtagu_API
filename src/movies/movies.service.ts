@@ -118,12 +118,20 @@ export class MoviesService {
   }
 
   async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
-    const movie = await this.moviesRepo.findOne({ where: { movie_id: id } });
-    if (!movie) throw new NotFoundException('Movie not found');
+    const existing = await this.moviesRepo.findOne({ where: { movie_id: id } });
+    if (!existing) throw new NotFoundException('Movie not found');
 
     const updateData = this.mapFromDto(dto);
-    Object.assign(movie, updateData);
-    const updated = await this.moviesRepo.save(movie);
+    delete (updateData as any).id;
+    delete (updateData as any).movie_id;
+    delete (updateData as any).createdAt;
+    delete (updateData as any).updatedAt;
+    delete (updateData as any).created_at;
+    delete (updateData as any).updated_at;
+    delete (updateData as any).genre_name;
+
+    await this.moviesRepo.update({ movie_id: id }, updateData);
+    const updated = await this.moviesRepo.findOne({ where: { movie_id: id } });
     return this.mapToResponse(updated);
   }
 

@@ -106,11 +106,17 @@ export class EpisodesService {
   }
 
   async update(id: number, dto: UpdateEpisodeDto): Promise<EpisodeResponseDto> {
-    const episode = await this.episodeRepository.findOneBy({ episode_id: id });
-    if (!episode) throw new NotFoundException('Episode not found');
+    const existing = await this.episodeRepository.findOneBy({ episode_id: id });
+    if (!existing) throw new NotFoundException('Episode not found');
     const updateData = this.mapFromDto(dto);
-    Object.assign(episode, updateData);
-    const updated = await this.episodeRepository.save(episode);
+    delete (updateData as any).id;
+    delete (updateData as any).episode_id;
+    delete (updateData as any).createdAt;
+    delete (updateData as any).updatedAt;
+    delete (updateData as any).created_at;
+    delete (updateData as any).updated_at;
+    await this.episodeRepository.update({ episode_id: id }, updateData);
+    const updated = await this.episodeRepository.findOneBy({ episode_id: id });
     return this.mapToResponse(updated);
   }
 
