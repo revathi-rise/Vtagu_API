@@ -6,6 +6,13 @@ import { CreateMovieDto, MovieResponseDto, UpdateMovieDto } from './movies.dto';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
 
+const parseBool = (val: any): boolean => {
+  if (val === true || val === false) return val;
+  if (val === 1 || val === '1' || val === 'true') return true;
+  if (val === 0 || val === '0' || val === 'false') return false;
+  return false;
+};
+
 @Injectable()
 export class MoviesService {
   constructor(
@@ -31,7 +38,7 @@ export class MoviesService {
     }
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return movies.map(m => {
-      const isFree = !!m.free;
+      const isFree = parseBool(m.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (!hasAccess && res.media && res.media.video) {
@@ -45,7 +52,7 @@ export class MoviesService {
     const movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit });
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return movies.map(m => {
-      const isFree = !!m.free;
+      const isFree = parseBool(m.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (!hasAccess && res.media && res.media.video) {
@@ -78,11 +85,17 @@ export class MoviesService {
     return false;
   }
 
-  async findOneBySlug(slug: string, userId?: number): Promise<MovieResponseDto> {
-    const movie = await this.moviesRepo.findOne({ where: { slug } });
+  async findOneBySlug(slugOrId: string, userId?: number): Promise<MovieResponseDto> {
+    let movie: Movie;
+    if (!isNaN(Number(slugOrId))) {
+      movie = await this.moviesRepo.findOne({ where: { movie_id: Number(slugOrId) } });
+    }
+    if (!movie) {
+      movie = await this.moviesRepo.findOne({ where: { slug: slugOrId } });
+    }
     if (!movie) throw new NotFoundException('Movie not found');
     
-    const isFree = !!movie.free;
+    const isFree = parseBool(movie.free);
     let hasAccess = isFree;
     if (!isFree && userId) {
       hasAccess = await this.checkStandardAccess(userId);
@@ -124,8 +137,18 @@ export class MoviesService {
   }
 
   private mapFromDto(dto: CreateMovieDto): Partial<Movie> {
-    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, cast_name, director_name, rating, duration, release_date, ...rest } = dto;
+    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, cast_name, director_name, rating, duration, release_date, free, isFree, is_free, featured, isFeatured, is_featured, ...rest } = dto as any;
     const movie: Partial<Movie> = { ...rest };
+
+    const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
+    if (freeInput !== undefined) {
+      movie.free = parseBool(freeInput);
+    }
+
+    const featuredInput = featured !== undefined ? featured : (isFeatured !== undefined ? isFeatured : is_featured);
+    if (featuredInput !== undefined) {
+      movie.featured = parseBool(featuredInput);
+    }
 
     if (movie_name) movie.title = movie_name;
     if (movie_desc) movie.description_short = movie_desc;
@@ -168,6 +191,9 @@ export class MoviesService {
   }
 
   public mapToResponse(m: Movie): MovieResponseDto {
+    const isFreeBool = parseBool(m.free);
+    const isFeaturedBool = parseBool(m.featured);
+
     return {
       id: m.movie_id,
       title: m.title,
@@ -187,8 +213,11 @@ export class MoviesService {
       cast_name: m.actors,
       director: m.director,
       director_name: m.director,
-      isFeatured: m.featured,
-      isFree: m.free,
+      isFeatured: isFeaturedBool,
+      featured: isFeaturedBool,
+      isFree: isFreeBool,
+      free: isFreeBool,
+      is_free: isFreeBool,
       movieType: m.movie_type,
       contentType: m.type,
       ageRestriction: m.age_restriction,

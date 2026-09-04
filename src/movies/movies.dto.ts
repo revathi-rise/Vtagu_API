@@ -91,13 +91,23 @@ export class CreateMovieDto {
   @IsOptional()
   director?: string;
 
-  @IsBoolean()
   @IsOptional()
   featured?: boolean;
 
-  @IsBoolean()
+  @IsOptional()
+  isFeatured?: boolean;
+
+  @IsOptional()
+  is_featured?: boolean;
+
   @IsOptional()
   free?: boolean;
+
+  @IsOptional()
+  isFree?: boolean;
+
+  @IsOptional()
+  is_free?: boolean;
 
   @IsString()
   @IsOptional()
@@ -208,7 +218,10 @@ export class MovieResponseDto {
   director: string;
   director_name: string;
   isFeatured: boolean;
+  featured: boolean;
   isFree: boolean;
+  free: boolean;
+  is_free: boolean;
   movieType: string;
   contentType: string;
   ageRestriction: string;

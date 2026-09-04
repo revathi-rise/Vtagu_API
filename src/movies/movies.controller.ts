@@ -60,6 +60,7 @@ export class MoviesController {
   }
 
   @Put(':id')
+  @Post(':id')
   async update(@Param('id') id: string, @Body() updateMovieDto: UpdateMovieDto): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
       const data = await this.moviesService.update(+id, updateMovieDto);

@@ -6,6 +6,13 @@ import { CreateEpisodeDto, EpisodeResponseDto, UpdateEpisodeDto } from './episod
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
 
+const parseBool = (val: any): boolean => {
+  if (val === true || val === false) return val;
+  if (val === 1 || val === '1' || val === 'true') return true;
+  if (val === 0 || val === '0' || val === 'false') return false;
+  return false;
+};
+
 @Injectable()
 export class EpisodesService {
   constructor(
@@ -41,7 +48,7 @@ export class EpisodesService {
     });
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return episodes.map(e => {
-      const isFree = !!e.free;
+      const isFree = parseBool(e.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(e);
       if (!hasAccess && res.media && res.media.video) {
@@ -83,7 +90,7 @@ export class EpisodesService {
     }
     if (!episode) throw new NotFoundException('Episode not found');
 
-    const isFree = !!episode.free;
+    const isFree = parseBool(episode.free);
     let hasAccess = isFree;
     if (!isFree && userId) {
       hasAccess = await this.checkStandardAccess(userId);
@@ -117,8 +124,18 @@ export class EpisodesService {
   }
 
   private mapFromDto(dto: CreateEpisodeDto | UpdateEpisodeDto): Partial<Episode> {
-    const { media, ...rest } = dto;
+    const { media, free, isFree, is_free, featured, isFeatured, is_featured, ...rest } = dto as any;
     const episode: Partial<Episode> = { ...rest };
+
+    const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
+    if (freeInput !== undefined) {
+      episode.free = parseBool(freeInput);
+    }
+
+    const featuredInput = featured !== undefined ? featured : (isFeatured !== undefined ? isFeatured : is_featured);
+    if (featuredInput !== undefined) {
+      episode.featured = parseBool(featuredInput);
+    }
 
     if (media) {
       if (media.image) {
@@ -141,6 +158,9 @@ export class EpisodesService {
   }
 
   public mapToResponse(e: Episode): EpisodeResponseDto {
+    const isFreeBool = parseBool(e.free);
+    const isFeaturedBool = parseBool(e.featured);
+
     return {
       id: e.episode_id,
       season_id: e.season_id,
@@ -152,8 +172,11 @@ export class EpisodesService {
       duration: e.duration,
       languages: e.languages,
       rating: e.rating ? parseFloat(e.rating.toString()) : null,
-      isFeatured: e.featured,
-      isFree: e.free,
+      isFeatured: isFeaturedBool,
+      featured: isFeaturedBool,
+      isFree: isFreeBool,
+      free: isFreeBool,
+      is_free: isFreeBool,
       isComingSoon: e.is_coming_soon,
       is_coming_soon: e.is_coming_soon,
       viewCount: e.view_count,
