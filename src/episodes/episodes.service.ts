@@ -51,7 +51,7 @@ export class EpisodesService {
       const isFree = parseBool(e.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(e);
-      if (!hasAccess && res.media && res.media.video) {
+      if (userId && !hasAccess && res.media && res.media.video) {
         res.media.video.url = "";
       }
       return res;
@@ -92,12 +92,12 @@ export class EpisodesService {
 
     const isFree = parseBool(episode.free);
     let hasAccess = isFree;
-    if (!isFree && userId) {
-      hasAccess = await this.checkStandardAccess(userId);
+    if (userId) {
+      hasAccess = isFree || (await this.checkStandardAccess(userId));
     }
 
     const response = this.mapToResponse(episode);
-    if (!hasAccess) {
+    if (userId && !hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }

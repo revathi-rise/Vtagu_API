@@ -3,7 +3,8 @@ import { Type } from 'class-transformer';
 
 class ImageMediaDto {
   @IsUrl()
-  url: string;
+  @IsOptional()
+  url?: string;
 
   @IsString()
   @IsOptional()
@@ -12,7 +13,8 @@ class ImageMediaDto {
 
 class VideoMediaDto {
   @IsUrl()
-  url: string;
+  @IsOptional()
+  url?: string;
 
   @IsString()
   @IsOptional()

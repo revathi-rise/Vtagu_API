@@ -41,7 +41,7 @@ export class MoviesService {
       const isFree = parseBool(m.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
-      if (!hasAccess && res.media && res.media.video) {
+      if (userId && !hasAccess && res.media && res.media.video) {
         res.media.video.url = "";
       }
       return res;
@@ -55,7 +55,7 @@ export class MoviesService {
       const isFree = parseBool(m.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
-      if (!hasAccess && res.media && res.media.video) {
+      if (userId && !hasAccess && res.media && res.media.video) {
         res.media.video.url = "";
       }
       return res;
@@ -97,12 +97,12 @@ export class MoviesService {
     
     const isFree = parseBool(movie.free);
     let hasAccess = isFree;
-    if (!isFree && userId) {
-      hasAccess = await this.checkStandardAccess(userId);
+    if (userId) {
+      hasAccess = isFree || (await this.checkStandardAccess(userId));
     }
     
     const response = this.mapToResponse(movie);
-    if (!hasAccess) {
+    if (userId && !hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }
@@ -145,17 +145,65 @@ export class MoviesService {
   }
 
   private mapFromDto(dto: CreateMovieDto): Partial<Movie> {
-    const { media, movie_name, movie_desc, movie_poster, movie_trailer, movie_video, url, video_url, videoUrl, trailer_url, trailerUrl, cast_name, director_name, rating, duration, release_date, free, isFree, is_free, featured, isFeatured, is_featured, is_coming_soon, isComingSoon, is_interactive, isInteractive, kids_restriction, kidsRestriction, ...rest } = dto as any;
+    const {
+      media,
+      movie_name,
+      movie_desc,
+      movie_poster,
+      movie_trailer,
+      movie_video,
+      url,
+      video_url,
+      videoUrl,
+      video,
+      trailer_url,
+      trailerUrl,
+      cast_name,
+      director_name,
+      rating,
+      duration,
+      release_date,
+      free,
+      isFree,
+      is_free,
+      featured,
+      isFeatured,
+      is_featured,
+      is_coming_soon,
+      isComingSoon,
+      is_interactive,
+      isInteractive,
+      kids_restriction,
+      kidsRestriction,
+      ...rest
+    } = dto as any;
     const movie: Partial<Movie> = { ...rest };
 
-    const videoInput = url || video_url || videoUrl || movie_video;
-    if (videoInput) {
-      movie.url = videoInput;
+    const rawVideoInput =
+      (typeof url === 'string' && url.trim() !== '' ? url.trim() : null) ||
+      (typeof video_url === 'string' && video_url.trim() !== '' ? video_url.trim() : null) ||
+      (typeof videoUrl === 'string' && videoUrl.trim() !== '' ? videoUrl.trim() : null) ||
+      (typeof movie_video === 'string' && movie_video.trim() !== '' ? movie_video.trim() : null) ||
+      (typeof video === 'string' && video.trim() !== '' ? video.trim() : null) ||
+      (video && typeof video === 'object' && typeof video.url === 'string' && video.url.trim() !== '' ? video.url.trim() : null) ||
+      (media && media.video && typeof media.video.url === 'string' && media.video.url.trim() !== '' ? media.video.url.trim() : null);
+
+    if (rawVideoInput) {
+      movie.url = rawVideoInput;
+    } else if (url === '' || video_url === '' || videoUrl === '' || movie_video === '' || (typeof video === 'string' && video === '') || (media && media.video && media.video.url === '')) {
+      movie.url = '';
     }
 
-    const trailerInput = trailer_url || trailerUrl || movie_trailer;
-    if (trailerInput) {
-      movie.trailer_url = trailerInput;
+    const rawTrailerInput =
+      (typeof trailer_url === 'string' && trailer_url.trim() !== '' ? trailer_url.trim() : null) ||
+      (typeof trailerUrl === 'string' && trailerUrl.trim() !== '' ? trailerUrl.trim() : null) ||
+      (typeof movie_trailer === 'string' && movie_trailer.trim() !== '' ? movie_trailer.trim() : null) ||
+      (media && media.trailer && typeof media.trailer.url === 'string' && media.trailer.url.trim() !== '' ? media.trailer.url.trim() : null);
+
+    if (rawTrailerInput) {
+      movie.trailer_url = rawTrailerInput;
+    } else if (trailer_url === '' || trailerUrl === '' || movie_trailer === '' || (media && media.trailer && media.trailer.url === '')) {
+      movie.trailer_url = '';
     }
 
     const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
@@ -186,11 +234,9 @@ export class MoviesService {
     if (movie_name) movie.title = movie_name;
     if (movie_desc) movie.description_short = movie_desc;
     if (movie_poster) movie.movie_image = movie_poster;
-    if (movie_trailer) movie.trailer_url = movie_trailer;
-    if (movie_video) movie.url = movie_video;
     if (cast_name) movie.actors = cast_name;
     if (director_name) movie.director = director_name;
-    if (rating) movie.rating = typeof rating === 'string' ? parseFloat(rating) : rating;
+    if (rating !== undefined && rating !== null) movie.rating = typeof rating === 'string' ? parseFloat(rating) : rating;
     if (duration) movie.duration = duration;
     if (release_date) {
       const year = new Date(release_date).getFullYear();
@@ -201,17 +247,13 @@ export class MoviesService {
 
     if (media) {
       if (media.image) {
-        movie.movie_image = media.image.url;
-        movie.poster_alt = media.image.alt;
+        if (media.image.url !== undefined) movie.movie_image = media.image.url;
+        if (media.image.alt !== undefined) movie.poster_alt = media.image.alt;
       }
       if (media.card_image) {
-        movie.card_image = media.card_image.url;
+        if (media.card_image.url !== undefined) movie.card_image = media.card_image.url;
       }
-      if (media.video) {
-        movie.url = media.video.url;
-      }
-      if (media.trailer) {
-        movie.trailer_url = media.trailer.url;
+      if (media.trailer && media.trailer.alt !== undefined) {
         movie.trailer_alt = media.trailer.alt;
       }
     }
