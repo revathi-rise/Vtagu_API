@@ -94,7 +94,7 @@ export class InteractiveMoviesService {
     }
 
     // 1. If movie is free, allow access
-    if (movie.is_free === 1) {
+    if (Number(movie.is_free) === 1 || Boolean(movie.is_free) === true || String(movie.is_free) === '1') {
       return {
         hasAccess: true,
         reason: 'free',
