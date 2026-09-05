@@ -32,12 +32,14 @@ export class ShortsService {
     });
 
     for (const activeSub of activeSubs) {
-      const isPaid = Number(activeSub.payment_status) === 2 || activeSub.payment_method === 'FREE';
-      const isValidDate = Number(activeSub.timestamp_from) <= currentTimestamp && Number(activeSub.timestamp_to) >= currentTimestamp;
+      const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
+      const fromSec = Number(activeSub.timestamp_from) || 0;
+      const toSec = Number(activeSub.timestamp_to) || 0;
+      const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaid && isValidDate) {
         const plan = await this.planRepository.findOne({ where: { planId: activeSub.planId } });
-        if (plan && (plan.isShortsIncluded === undefined || Number(plan.isShortsIncluded) === 1)) {
+        if (plan) {
           return true;
         }
       }

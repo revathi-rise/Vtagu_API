@@ -51,7 +51,7 @@ export class EpisodesService {
       const isFree = parseBool(e.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(e);
-      if (userId && !hasAccess && res.media && res.media.video) {
+      if (!hasAccess && res.media && res.media.video) {
         res.media.video.url = "";
       }
       return res;
@@ -65,16 +65,17 @@ export class EpisodesService {
       where: { userId, status: 1 },
     });
     for (const activeSub of activeSubs) {
-      const isPaymentSuccess = activeSub.payment_status === 2;
-      const isDateValid = activeSub.timestamp_from <= currentTimestamp && activeSub.timestamp_to >= currentTimestamp;
+      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
+      const fromSec = Number(activeSub.timestamp_from) || 0;
+      const toSec = Number(activeSub.timestamp_to) || 0;
+      const isDateValid = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaymentSuccess && isDateValid) {
         const plan = await this.planRepository.findOne({
           where: { planId: activeSub.planId },
         });
         if (plan) {
-          const hasQuality = plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
-          if (hasQuality) return true;
+          return true;
         }
       }
     }
@@ -91,13 +92,11 @@ export class EpisodesService {
     if (!episode) throw new NotFoundException('Episode not found');
 
     const isFree = parseBool(episode.free);
-    let hasAccess = isFree;
-    if (userId) {
-      hasAccess = isFree || (await this.checkStandardAccess(userId));
-    }
+    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    const hasAccess = isFree || hasSubAccess;
 
     const response = this.mapToResponse(episode);
-    if (userId && !hasAccess) {
+    if (!hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }
