@@ -551,20 +551,31 @@ export class UsersService {
     try {
       const { mobile } = mobileLoginDto;
 
-      // Basic mobile validation (ensure it has country code if needed, but we'll take what user gives)
       if (!mobile || mobile.length < 10) {
         throw new BadRequestException('Invalid mobile number');
       }
 
-      let user = await this.usersRepository.findOne({ where: { mobile } });
+      const rawMobile = mobile.trim();
+      const digitsOnly = rawMobile.replace(/\D/g, '');
+      const last10Digits = digitsOnly.slice(-10);
+
+      // Search for existing user with exact mobile or format variations
+      let user = await this.usersRepository.findOne({
+        where: [
+          { mobile: rawMobile },
+          { mobile: last10Digits },
+          { mobile: `+91${last10Digits}` },
+          { mobile: `91${last10Digits}` },
+        ],
+      });
 
       if (!user) {
         // Automatically create a new user for mobile login if they don't exist
         const randomPassword = await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 10);
         user = this.usersRepository.create({
-          mobile,
-          user_name: `User_${mobile.slice(-4)}`,
-          email: `${mobile}@vtagu.temporary`, // Temporary email since email is unique and required
+          mobile: rawMobile,
+          user_name: `User_${last10Digits.slice(-4)}`,
+          email: `${last10Digits}@vtagu.temporary`, // Temporary email since email is unique and required
           password: randomPassword,
           type: 'U',
           status: 'active',
@@ -585,8 +596,8 @@ export class UsersService {
       if (customerName.match(/^User[_\?]?\d*$/i)) {
         customerName = 'Customer';
       }
-      await this.sendSms(mobile, otp, customerName);
-      console.log(`Mobile Login OTP for ${mobile}: ${otp} (Sent to ${customerName})`);
+      await this.sendSms(rawMobile, otp, customerName);
+      console.log(`Mobile Login OTP for ${rawMobile}: ${otp} (Sent to ${customerName})`);
 
       return {
         status: true,
@@ -602,7 +613,19 @@ export class UsersService {
    */
   async verifyMobileLogin(verifyDto: VerifyMobileOtpDto, ipAddress: string): Promise<{ status: boolean; message: string; data: UserResponseDto; token: string }> {
     try {
-      const user = await this.usersRepository.findOne({ where: { mobile: verifyDto.mobile } });
+      const rawMobile = verifyDto.mobile ? verifyDto.mobile.trim() : '';
+      const digitsOnly = rawMobile.replace(/\D/g, '');
+      const last10Digits = digitsOnly.slice(-10);
+
+      const user = await this.usersRepository.findOne({
+        where: [
+          { mobile: rawMobile },
+          { mobile: last10Digits },
+          { mobile: `+91${last10Digits}` },
+          { mobile: `91${last10Digits}` },
+        ],
+      });
+
       if (!user) {
         throw new NotFoundException('User not found');
       }
