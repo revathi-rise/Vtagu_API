@@ -119,9 +119,16 @@ export class InteractiveMoviesService {
       where: { userId, status: 1 },
     });
     for (const activeSub of activeSubs) {
-      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
       const fromSec = Number(activeSub.timestamp_from) || 0;
       const toSec = Number(activeSub.timestamp_to) || 0;
+
+      if (toSec > 0 && toSec < currentTimestamp) {
+        activeSub.status = 0;
+        await this.subscriptionRepository.save(activeSub);
+        continue;
+      }
+
+      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
       const isDateValid = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaymentSuccess && isDateValid) {

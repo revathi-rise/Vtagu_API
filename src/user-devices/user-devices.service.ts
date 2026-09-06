@@ -29,7 +29,19 @@ export class UserDevicesService {
     let maxScreens = 0;
     let hasActiveSubscription = false;
     for (const sub of activeSubs) {
-      if (sub.payment_status === 2 && sub.timestamp_from <= currentTimestamp && sub.timestamp_to >= currentTimestamp) {
+      const fromSec = Number(sub.timestamp_from) || 0;
+      const toSec = Number(sub.timestamp_to) || 0;
+
+      if (toSec > 0 && toSec < currentTimestamp) {
+        sub.status = 0;
+        await this.subscriptionRepository.save(sub);
+        continue;
+      }
+
+      const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+      const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
+
+      if (isPaid && isValidDate) {
         const plan = await this.planRepository.findOne({ where: { planId: sub.planId } });
         if (plan) {
           hasActiveSubscription = true;

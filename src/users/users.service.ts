@@ -679,8 +679,17 @@ export class UsersService {
     });
 
     for (const sub of activeSubs) {
-      const isPaid = Number(sub.payment_status) === 2 || sub.payment_method === 'FREE';
-      const isValidDate = Number(sub.timestamp_from) <= currentTimestamp && Number(sub.timestamp_to) >= currentTimestamp;
+      const fromSec = Number(sub.timestamp_from) || 0;
+      const toSec = Number(sub.timestamp_to) || 0;
+
+      if (toSec > 0 && toSec < currentTimestamp) {
+        sub.status = 0;
+        await this.subscriptionRepository.save(sub);
+        continue;
+      }
+
+      const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+      const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
       if (isPaid && isValidDate) {
         return sub;
       }

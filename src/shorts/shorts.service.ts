@@ -32,9 +32,16 @@ export class ShortsService {
     });
 
     for (const activeSub of activeSubs) {
-      const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || activeSub.payment_method === 'FREE';
       const fromSec = Number(activeSub.timestamp_from) || 0;
       const toSec = Number(activeSub.timestamp_to) || 0;
+
+      if (toSec > 0 && toSec < currentTimestamp) {
+        activeSub.status = 0;
+        await this.subscriptionRepository.save(activeSub);
+        continue;
+      }
+
+      const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
       const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaid && isValidDate) {

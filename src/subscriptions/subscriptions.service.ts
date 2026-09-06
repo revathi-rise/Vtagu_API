@@ -201,11 +201,23 @@ export class SubscriptionsService {
         order: { subscriptionId: 'DESC' },
       });
 
-      const activeSub = subscriptions.find((sub) => {
-        const isPaid = Number(sub.payment_status) === 2 || sub.payment_method === 'FREE';
-        const isValidDate = Number(sub.timestamp_from) <= currentTimestamp && Number(sub.timestamp_to) >= currentTimestamp;
-        return isPaid && isValidDate;
-      });
+      let activeSub: Subscription | null = null;
+      for (const sub of subscriptions) {
+        const fromSec = Number(sub.timestamp_from) || 0;
+        const toSec = Number(sub.timestamp_to) || 0;
+
+        if (toSec > 0 && toSec < currentTimestamp) {
+          sub.status = 0;
+          await this.subscriptionRepository.save(sub);
+          continue;
+        }
+
+        const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+        const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
+        if (isPaid && isValidDate && !activeSub) {
+          activeSub = sub;
+        }
+      }
 
       if (!activeSub) {
         return {
