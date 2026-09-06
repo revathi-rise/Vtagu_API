@@ -138,6 +138,10 @@ export class UpdateUserDto {
 
   @IsString()
   @IsOptional()
+  card_ccc?: string;
+
+  @IsString()
+  @IsOptional()
   upi?: string;
 
   @IsString()
@@ -187,6 +191,11 @@ export class UserResponseDto {
   status: string;
   plan: string;
   plan_price?: number;
+  card_name?: string;
+  card_number?: string;
+  card_expiry?: string;
+  card_ccv?: string;
+  upi?: string;
   type: string;
   logged_in: boolean;
   last_login_ip_address: string;

@@ -36,6 +36,34 @@ export class CreateSubscriptionDto {
   @IsNumber()
   @IsOptional()
   paid_amount?: number;
+
+  @IsString()
+  @IsOptional()
+  card_name?: string;
+
+  @IsString()
+  @IsOptional()
+  card_number?: string;
+
+  @IsString()
+  @IsOptional()
+  card_expiry?: string;
+
+  @IsString()
+  @IsOptional()
+  card_ccv?: string;
+
+  @IsString()
+  @IsOptional()
+  card_ccc?: string;
+
+  @IsString()
+  @IsOptional()
+  upi?: string;
+
+  @IsString()
+  @IsOptional()
+  plan_name?: string;
 }
 
 export class UpdateSubscriptionDto {
@@ -78,6 +106,34 @@ export class UpdateSubscriptionDto {
   @IsInt()
   @IsOptional()
   timestamp_to?: number;
+
+  @IsString()
+  @IsOptional()
+  card_name?: string;
+
+  @IsString()
+  @IsOptional()
+  card_number?: string;
+
+  @IsString()
+  @IsOptional()
+  card_expiry?: string;
+
+  @IsString()
+  @IsOptional()
+  card_ccv?: string;
+
+  @IsString()
+  @IsOptional()
+  card_ccc?: string;
+
+  @IsString()
+  @IsOptional()
+  upi?: string;
+
+  @IsString()
+  @IsOptional()
+  plan_name?: string;
 }
 
 export class SubscriptionResponseDto {

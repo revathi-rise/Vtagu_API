@@ -411,6 +411,11 @@ export class UsersService {
         delete updateUserDto.login_oauth_uid;
       }
 
+      if (updateUserDto.card_ccc && !updateUserDto.card_ccv) {
+        updateUserDto.card_ccv = updateUserDto.card_ccc;
+      }
+      delete updateUserDto.card_ccc;
+
       Object.assign(user, updateUserDto);
       const updatedUser = await this.usersRepository.save(user);
 
@@ -695,8 +700,6 @@ export class UsersService {
     if (activeSub && activeSub.plan) {
       resolvedPlan = activeSub.plan.name || activeSub.planId.toString();
       resolvedPlanPrice = activeSub.paid_amount ?? activeSub.plan.price;
-    } else if (!isSubscribed) {
-      resolvedPlan = null;
     }
 
     return {
@@ -708,8 +711,13 @@ export class UsersService {
       gender: user.gender,
       profile_picture: user.profile_picture,
       status: user.status,
-      plan: resolvedPlan || '',
+      plan: resolvedPlan || user.plan || '',
       plan_price: resolvedPlanPrice,
+      card_name: user.card_name || null,
+      card_number: user.card_number || null,
+      card_expiry: user.card_expiry || null,
+      card_ccv: user.card_ccv || null,
+      upi: user.upi || null,
       type: user.type,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,

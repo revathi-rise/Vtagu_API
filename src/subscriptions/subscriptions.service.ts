@@ -24,7 +24,8 @@ export class SubscriptionsService {
    */
   async create(createSubscriptionDto: CreateSubscriptionDto): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto }> {
     try {
-      const subscription = this.subscriptionRepository.create(createSubscriptionDto);
+      const { card_name, card_number, card_expiry, card_ccv, card_ccc, upi, plan_name, ...subscriptionFields } = createSubscriptionDto;
+      const subscription = this.subscriptionRepository.create(subscriptionFields);
       subscription.status = 1; // Active
 
       // Resolve price, discount, and currency from the Plan if not provided
@@ -74,6 +75,26 @@ export class SubscriptionsService {
       const savedSubscription = await this.subscriptionRepository.save(subscription);
       if (plan) {
         savedSubscription.plan = plan;
+      }
+
+      // Sync plan and payment details to User entity in database
+      if (createSubscriptionDto.userId) {
+        const user = await this.userRepository.findOne({ where: { userId: createSubscriptionDto.userId } });
+        if (user) {
+          if (plan) {
+            user.plan = plan.name || String(plan.planId);
+          } else if (plan_name) {
+            user.plan = plan_name;
+          }
+          if (card_name) user.card_name = card_name;
+          if (card_number) user.card_number = card_number;
+          if (card_expiry) user.card_expiry = card_expiry;
+          const ccv = card_ccv || card_ccc;
+          if (ccv) user.card_ccv = ccv;
+          if (upi) user.upi = upi;
+
+          await this.userRepository.save(user);
+        }
       }
 
       // If payment is successful upon creation, send Subscription Success SMS
@@ -216,7 +237,8 @@ export class SubscriptionsService {
         throw new NotFoundException('Subscription not found');
       }
 
-      Object.assign(subscription, updateSubscriptionDto);
+      const { card_name, card_number, card_expiry, card_ccv, card_ccc, upi, plan_name, ...subUpdateFields } = updateSubscriptionDto;
+      Object.assign(subscription, subUpdateFields);
 
       if (updateSubscriptionDto.payment_status === 2) { // Success
         subscription.payment_timestamp = Math.floor(Date.now() / 1000);
@@ -228,6 +250,26 @@ export class SubscriptionsService {
       });
       if (plan) {
         updatedSubscription.plan = plan;
+      }
+
+      // Sync plan and payment details to User entity in database
+      if (updatedSubscription.userId) {
+        const user = await this.userRepository.findOne({ where: { userId: updatedSubscription.userId } });
+        if (user) {
+          if (plan) {
+            user.plan = plan.name || String(plan.planId);
+          } else if (plan_name) {
+            user.plan = plan_name;
+          }
+          if (card_name) user.card_name = card_name;
+          if (card_number) user.card_number = card_number;
+          if (card_expiry) user.card_expiry = card_expiry;
+          const ccv = card_ccv || card_ccc;
+          if (ccv) user.card_ccv = ccv;
+          if (upi) user.upi = upi;
+
+          await this.userRepository.save(user);
+        }
       }
 
       // If payment_status was updated to success (2) or active, send Subscription Success SMS
