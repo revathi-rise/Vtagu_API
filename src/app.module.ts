@@ -54,6 +54,11 @@ import { Short } from './shorts/short.entity';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { Watchlist } from './watchlist/entities/watchlist.entity';
 import { SmsModule } from './sms/sms.module';
+import { SvodRevenueModule } from './svod-revenue/svod-revenue.module';
+import { UsersSubscription } from './svod-revenue/entities/users-subscription.entity';
+import { WatchSessionLog } from './svod-revenue/entities/watch-session-log.entity';
+import { TitleLedger } from './svod-revenue/entities/title-ledger.entity';
+
 
 @Module({
   imports: [
@@ -90,6 +95,9 @@ import { SmsModule } from './sms/sms.module';
         WatchSession,
         Short,
         Watchlist,
+        UsersSubscription,
+        WatchSessionLog,
+        TitleLedger,
       ],
       synchronize: false,
     }),
@@ -137,6 +145,7 @@ import { SmsModule } from './sms/sms.module';
     ShortsModule,
     WatchlistModule,
     SmsModule,
+    SvodRevenueModule,
   ],
 })
 export class AppModule {}
