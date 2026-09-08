@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Video } from 'expo-av'; // Or 'react-native-video'
 
@@ -8,7 +8,7 @@ import { Video } from 'expo-av'; // Or 'react-native-video'
  * @param {string} filmId - Unique identifier of film/episode (e.g. "Raptus_2026")
  * @param {string} userId - Unique identifier of watching user (e.g. "12345-abcde")
  * @param {string} streamUrl - Video source HLS/MP4 URL
- * @param {string} [apiUrl] - Optional custom endpoint URL (defaults to production endpoint)
+ * @param {string} apiUrl - Backend endpoint URL (e.g. "https://api.vtagu.in/api/v1/tracking/log-watch-time")
  */
 const PlayerComponent = ({
   filmId,
@@ -29,8 +29,8 @@ const PlayerComponent = ({
   /**
    * Sends accumulated watch time seconds to backend API
    */
-  const syncWatchTime = async () => {
-    if (timeAccumulator.current > 0) {
+  const syncWatchTime = useCallback(async () => {
+    if (timeAccumulator.current > 0 && apiUrl && userId && filmId) {
       const timeToLog = timeAccumulator.current;
       timeAccumulator.current = 0; // Reset accumulator immediately before network request
 
@@ -46,40 +46,46 @@ const PlayerComponent = ({
         });
         const result = await response.json();
         if (!response.ok || !result.status) {
-          console.warn('Watch time sync returned failure status:', result);
+          console.warn('[WatchTracker] Sync returned failure status:', result);
           // Restore un-synced seconds back to accumulator in case of failure
           timeAccumulator.current += timeToLog;
         } else {
-          console.log(`[WatchTracker] Logged ${timeToLog} seconds for film ${filmId}`);
+          console.log(`[WatchTracker] Logged ${timeToLog}s watched for ${filmId}`);
         }
       } catch (error) {
-        console.error('[WatchTracker] Failed to sync watch time:', error);
+        console.error('[WatchTracker] Network error syncing watch time:', error);
         // Restore time in case of network error
         timeAccumulator.current += timeToLog;
       }
     }
-  };
+  }, [apiUrl, userId, filmId]);
+
+  // Keep ref to latest syncWatchTime for unmount cleanup
+  const syncWatchTimeRef = useRef(syncWatchTime);
+  useEffect(() => {
+    syncWatchTimeRef.current = syncWatchTime;
+  }, [syncWatchTime]);
 
   useEffect(() => {
-    // Heartbeat 1: Tick accumulator every 1 second when video is actively playing
+    // 1. Tick accumulator every 1 second when video is actively playing
     const secondCounter = setInterval(() => {
       if (isPlayingRef.current) {
         timeAccumulator.current += 1;
       }
     }, 1000);
 
-    // Heartbeat 2: Sync payload to server every 60 seconds
+    // 2. Sync payload to server every 60 seconds
     const syncInterval = setInterval(() => {
-      syncWatchTime();
+      syncWatchTimeRef.current();
     }, 60000);
 
     // Cleanup: Flush pending watch time and clear timers on unmount
     return () => {
       clearInterval(secondCounter);
       clearInterval(syncInterval);
-      syncWatchTime();
+      syncWatchTimeRef.current();
     };
-  }, [filmId, userId, apiUrl]);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -94,6 +100,15 @@ const PlayerComponent = ({
         style={styles.video}
         onPlaybackStatusUpdate={(status) => {
           if (!status.isLoaded) return;
+
+          const currentlyPlaying = status.isPlaying && !status.isBuffering;
+          const previouslyPlaying = isPlayingRef.current;
+
+          // If playback was paused or finished, trigger immediate sync
+          if (previouslyPlaying && !currentlyPlaying) {
+            syncWatchTime();
+          }
+
           setIsPlaying(status.isPlaying);
           setIsBuffering(status.isBuffering);
         }}
