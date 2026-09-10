@@ -45,8 +45,13 @@ export class MoviesService {
       const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
-      if (!hasAccess && res.media && res.media.video) {
-        res.media.video.url = "";
+      if (userId !== undefined && !hasAccess) {
+        if (res.media && res.media.video) {
+          res.media.video.url = "";
+        }
+        res.url = "";
+        res.video_url = "";
+        res.videoUrl = "";
       }
       return res;
     });
@@ -63,8 +68,13 @@ export class MoviesService {
       const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
-      if (!hasAccess && res.media && res.media.video) {
-        res.media.video.url = "";
+      if (userId !== undefined && !hasAccess) {
+        if (res.media && res.media.video) {
+          res.media.video.url = "";
+        }
+        res.url = "";
+        res.video_url = "";
+        res.videoUrl = "";
       }
       return res;
     });
@@ -125,10 +135,13 @@ export class MoviesService {
     const hasAccess = isFree || hasSubAccess;
     
     const response = this.mapToResponse(movie);
-    if (!hasAccess) {
+    if (userId !== undefined && !hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }
+      response.url = "";
+      response.video_url = "";
+      response.videoUrl = "";
     }
     return response;
   }
@@ -337,6 +350,13 @@ export class MoviesService {
       interactiveMap: m.interactive_map,
       subtitles: m.subtitles,
       audio_tracks: m.audio_tracks,
+      url: m.url || '',
+      video_url: m.url || '',
+      videoUrl: m.url || '',
+      trailer_url: m.trailer_url || '',
+      trailerUrl: m.trailer_url || '',
+      movie_image: m.movie_image || '',
+      card_image: m.card_image || '',
       media: {
         image: { url: m.movie_image || '', alt: m.poster_alt || '' },
         card_image: { url: m.card_image || '', alt: '' },

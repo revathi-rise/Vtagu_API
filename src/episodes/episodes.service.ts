@@ -51,8 +51,10 @@ export class EpisodesService {
       const isFree = parseBool(e.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(e);
-      if (!hasAccess && res.media && res.media.video) {
-        res.media.video.url = "";
+      if (userId !== undefined && !hasAccess) {
+        if (res.media && res.media.video) {
+          res.media.video.url = "";
+        }
       }
       return res;
     });
@@ -104,7 +106,7 @@ export class EpisodesService {
     const hasAccess = isFree || hasSubAccess;
 
     const response = this.mapToResponse(episode);
-    if (!hasAccess) {
+    if (userId !== undefined && !hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }

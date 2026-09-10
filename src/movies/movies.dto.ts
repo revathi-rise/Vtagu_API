@@ -246,6 +246,13 @@ export class MovieResponseDto {
   isRevenueManaged: boolean;
   is_revenue_managed: boolean;
   interactiveMap: string;
+  url?: string;
+  video_url?: string;
+  videoUrl?: string;
+  trailer_url?: string;
+  trailerUrl?: string;
+  movie_image?: string;
+  card_image?: string;
   media: {
     image: { url: string; alt: string };
     card_image: { url: string; alt: string };
@@ -257,3 +264,4 @@ export class MovieResponseDto {
   createdAt: Date;
   updatedAt: Date;
 }
+

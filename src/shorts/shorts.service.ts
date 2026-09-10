@@ -61,7 +61,7 @@ export class ShortsService {
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
-      if (!parseBool(s.is_free) && !hasAccess) {
+      if (userId !== undefined && !parseBool(s.is_free) && !hasAccess) {
         res.video_url = "";
       }
       return res;
@@ -82,7 +82,7 @@ export class ShortsService {
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
-      if (!parseBool(s.is_free) && !hasAccess) {
+      if (userId !== undefined && !parseBool(s.is_free) && !hasAccess) {
         res.video_url = "";
       }
       return res;
@@ -95,7 +95,7 @@ export class ShortsService {
     const isFree = parseBool(short.is_free);
     const hasAccess = isFree || (userId ? await this.checkShortsAccess(userId) : false);
     const res = this.mapToResponse(short);
-    if (!hasAccess) {
+    if (userId !== undefined && !hasAccess) {
       res.video_url = "";
     }
     return res;
