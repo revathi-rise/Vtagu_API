@@ -36,9 +36,13 @@ export class MoviesService {
     } else {
       movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
     }
-    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
+    const interactiveAccess = userId ? await this.checkStandardAccess(userId, true) : false;
+
     return movies.map(m => {
       const isFree = parseBool(m.free);
+      const isInteractiveMovie = parseBool(m.is_interactive);
+      const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (!hasAccess && res.media && res.media.video) {
@@ -50,9 +54,13 @@ export class MoviesService {
 
   async findForHome(limit = 10, userId?: number): Promise<MovieResponseDto[]> {
     const movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit });
-    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
+    const interactiveAccess = userId ? await this.checkStandardAccess(userId, true) : false;
+
     return movies.map(m => {
       const isFree = parseBool(m.free);
+      const isInteractiveMovie = parseBool(m.is_interactive);
+      const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (!hasAccess && res.media && res.media.video) {
@@ -62,7 +70,7 @@ export class MoviesService {
     });
   }
 
-  async checkStandardAccess(userId?: number): Promise<boolean> {
+  async checkStandardAccess(userId?: number, isInteractiveRequired: boolean = false): Promise<boolean> {
     if (!userId) return false;
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const activeSubs = await this.subscriptionRepository.find({
@@ -87,7 +95,14 @@ export class MoviesService {
           where: { planId: activeSub.planId },
         });
         if (plan) {
-          hasAccess = true;
+          if (isInteractiveRequired) {
+            const isInteractiveIncluded = parseBool(plan.isInteractiveIncluded) || parseBool((plan as any).is_interactive_included);
+            if (isInteractiveIncluded) {
+              hasAccess = true;
+            }
+          } else {
+            hasAccess = true;
+          }
         }
       }
     }
@@ -105,7 +120,8 @@ export class MoviesService {
     if (!movie) throw new NotFoundException('Movie not found');
     
     const isFree = parseBool(movie.free);
-    const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
+    const isInteractiveMovie = parseBool(movie.is_interactive);
+    const hasSubAccess = userId ? await this.checkStandardAccess(userId, isInteractiveMovie) : false;
     const hasAccess = isFree || hasSubAccess;
     
     const response = this.mapToResponse(movie);
@@ -238,6 +254,12 @@ export class MoviesService {
       movie.kids_restriction = parseBool(kidsInput);
     }
 
+    const { is_revenue_managed, isRevenueManaged, is_revenue_shared, is_pro_rata_included } = dto as any;
+    const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : is_pro_rata_included));
+    if (revenueManagedInput !== undefined) {
+      movie.is_revenue_managed = parseBool(revenueManagedInput);
+    }
+
     if (movie_name) movie.title = movie_name;
     if (movie_desc) movie.description_short = movie_desc;
     if (movie_poster) movie.movie_image = movie_poster;
@@ -275,6 +297,7 @@ export class MoviesService {
     const isFreeBool = parseBool(m.free);
     const isFeaturedBool = parseBool(m.featured);
     const isComingSoonBool = parseBool(m.is_coming_soon);
+    const isRevenueManagedBool = parseBool(m.is_revenue_managed);
     const isInteractiveBool = parseBool(m.is_interactive);
     const kidsRestrictionBool = parseBool(m.kids_restriction);
 
@@ -309,6 +332,8 @@ export class MoviesService {
       isInteractive: isInteractiveBool,
       isComingSoon: isComingSoonBool,
       is_coming_soon: isComingSoonBool,
+      isRevenueManaged: isRevenueManagedBool,
+      is_revenue_managed: isRevenueManagedBool,
       interactiveMap: m.interactive_map,
       subtitles: m.subtitles,
       audio_tracks: m.audio_tracks,

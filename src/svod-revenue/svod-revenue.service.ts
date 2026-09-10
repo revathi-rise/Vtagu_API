@@ -7,6 +7,7 @@ import { WatchSessionLog } from './entities/watch-session-log.entity';
 import { TitleLedger } from './entities/title-ledger.entity';
 import { LogWatchTimeDto, RunMonthlySplitDto, CreateUserSubscriptionDto } from './dto/svod-revenue.dto';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Movie } from '../movies/movie.entity';
 
 @Injectable()
 export class SvodRevenueService {
@@ -19,6 +20,8 @@ export class SvodRevenueService {
     private readonly titleLedgerRepo: Repository<TitleLedger>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
+    @InjectRepository(Movie)
+    private readonly movieRepo: Repository<Movie>,
   ) {}
 
   /**
@@ -168,6 +171,30 @@ export class SvodRevenueService {
       let totalDistributedRevenue = 0;
       const processedUserIds = new Set<string>();
 
+      // Fetch all movies into an indexed Map for zero-lag O(1) revenue management status checking
+      const allMovies = await this.movieRepo.find({
+        select: ['movie_id', 'title', 'slug', 'is_revenue_managed'],
+      });
+      const revenueManagedMap = new Map<string, boolean>();
+      for (const m of allMovies) {
+        const isManaged = Boolean(m.is_revenue_managed);
+        if (m.movie_id) revenueManagedMap.set(String(m.movie_id), isManaged);
+        if (m.title) revenueManagedMap.set(m.title.toLowerCase().trim(), isManaged);
+        if (m.slug) revenueManagedMap.set(m.slug.toLowerCase().trim(), isManaged);
+      }
+
+      const isTitleRevenueManaged = (filmId: string): boolean => {
+        if (!filmId) return true;
+        const normalized = filmId.toLowerCase().trim();
+        if (revenueManagedMap.has(normalized)) {
+          return revenueManagedMap.get(normalized)!;
+        }
+        if (revenueManagedMap.has(filmId)) {
+          return revenueManagedMap.get(filmId)!;
+        }
+        return true; // Default fallback to eligible if film is unknown
+      };
+
       for (const [userId, totalSecs] of userTotalSeconds.entries()) {
         if (totalSecs <= 0) continue;
         processedUserIds.add(userId);
@@ -194,6 +221,11 @@ export class SvodRevenueService {
         if (!titleMap) continue;
 
         for (const [filmId, filmSecs] of titleMap.entries()) {
+          // Verify if movie is marked for revenue management in Admin Portal
+          if (!isTitleRevenueManaged(filmId)) {
+            continue; // Skip revenue split allocation for non-revenue managed titles
+          }
+
           const percentage = filmSecs / totalSecs;
           const allocatedForTitle = userNetRev * percentage;
 

@@ -136,12 +136,16 @@ export class InteractiveMoviesService {
           where: { planId: activeSub.planId },
         });
         if (plan) {
-          return {
-            hasAccess: true,
-            reason: 'subscription',
-            price: movie.price,
-            currency: movie.currency,
-          };
+          const parseBool = (val: any) => val === 1 || val === '1' || val === true || val === 'true';
+          const isInteractiveIncluded = parseBool(plan.isInteractiveIncluded) || parseBool((plan as any).is_interactive_included);
+          if (isInteractiveIncluded) {
+            return {
+              hasAccess: true,
+              reason: 'subscription',
+              price: movie.price,
+              currency: movie.currency,
+            };
+          }
         }
       }
     }

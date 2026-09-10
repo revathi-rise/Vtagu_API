@@ -89,6 +89,9 @@ export class Movie {
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon: boolean;
 
+  @Column({ name: 'is_revenue_managed', type: 'tinyint', default: 0 })
+  is_revenue_managed: boolean;
+
   @Column({ name: 'interactive_map', type: 'text', nullable: true })
   interactive_map: string;
 

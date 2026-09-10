@@ -151,6 +151,18 @@ export class CreateMovieDto {
   @IsOptional()
   is_coming_soon?: boolean;
 
+  @IsOptional()
+  is_revenue_managed?: boolean;
+
+  @IsOptional()
+  isRevenueManaged?: boolean;
+
+  @IsOptional()
+  is_revenue_shared?: boolean;
+
+  @IsOptional()
+  is_pro_rata_included?: boolean;
+
   @IsString()
   @IsOptional()
   interactive_map?: string;
@@ -231,6 +243,8 @@ export class MovieResponseDto {
   isInteractive: boolean;
   isComingSoon: boolean;
   is_coming_soon: boolean;
+  isRevenueManaged: boolean;
+  is_revenue_managed: boolean;
   interactiveMap: string;
   media: {
     image: { url: string; alt: string };
