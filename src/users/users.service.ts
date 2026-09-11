@@ -698,18 +698,44 @@ export class UsersService {
   }
 
   /**
+   * Helper: Standardize quality string to numeric pixels height
+   */
+  public parseQualityToHeight(qualityStr?: string | null): number {
+    if (!qualityStr) return 480;
+    const q = qualityStr.toLowerCase().trim();
+    if (q.includes('4k') || q.includes('2160')) return 2160;
+    if (q.includes('full hd') || q.includes('1080')) return 1080;
+    if (q.includes('hd') || q.includes('720')) return 720;
+    if (q.includes('sd') || q.includes('480')) return 480;
+    if (q.includes('360')) return 360;
+    return 480;
+  }
+
+  /**
    * Helper: Map user entity to response DTO with dynamic subscription status
    */
   private async mapUserToResponse(user: User, planPrice?: number): Promise<UserResponseDto> {
     const activeSub = await this.getActiveUserSubscription(user.userId);
     const isSubscribed = !!activeSub;
-    let resolvedPlan: string | null = user.plan || null;
-    let resolvedPlanPrice = planPrice;
 
-    if (activeSub && activeSub.plan) {
-      resolvedPlan = activeSub.plan.name || activeSub.planId.toString();
-      resolvedPlanPrice = activeSub.paid_amount ?? activeSub.plan.price;
+    // Resolve numeric plan_id
+    let planId: number | undefined;
+    if (activeSub && activeSub.planId) {
+      planId = activeSub.planId;
+    } else if (user.plan && !isNaN(Number(user.plan))) {
+      planId = Number(user.plan);
     }
+
+    // Fetch Plan entity if not directly in activeSub
+    let planEntity: Plan | null = activeSub?.plan || null;
+    if (!planEntity && planId) {
+      planEntity = await this.planRepository.findOne({ where: { planId } });
+    }
+
+    const planName = planEntity?.name || (activeSub ? `Plan ${activeSub.planId}` : undefined);
+    const qualityStr = planEntity?.quality || activeSub?.plan?.quality || '480p';
+    const maxHeight = this.parseQualityToHeight(qualityStr);
+    const resolvedPrice = activeSub?.paid_amount ?? planEntity?.price ?? planPrice;
 
     return {
       userId: user.userId,
@@ -720,8 +746,12 @@ export class UsersService {
       gender: user.gender,
       profile_picture: user.profile_picture,
       status: user.status,
-      plan: resolvedPlan || user.plan || '',
-      plan_price: resolvedPlanPrice,
+      plan: planId ? String(planId) : (user.plan || ''),
+      plan_id: planId,
+      plan_name: planName,
+      max_quality: qualityStr,
+      max_quality_height: maxHeight,
+      plan_price: resolvedPrice,
       card_name: user.card_name || null,
       card_number: user.card_number || null,
       card_expiry: user.card_expiry || null,
@@ -737,9 +767,10 @@ export class UsersService {
       active_subscription: activeSub ? {
         subscriptionId: activeSub.subscriptionId,
         planId: activeSub.planId,
-        planName: activeSub.plan?.name,
+        planName: planName,
         screens: activeSub.plan?.screens || 1,
-        quality: activeSub.plan?.quality || 'HD',
+        quality: qualityStr,
+        max_quality_height: maxHeight,
         validity: activeSub.plan?.validity || '1 Year',
         price: activeSub.paid_amount ?? activeSub.plan?.price,
         isInteractiveIncluded: activeSub.plan?.isInteractiveIncluded,

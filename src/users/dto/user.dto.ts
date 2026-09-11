@@ -171,6 +171,9 @@ export class UpdateUserDto {
   @IsOptional()
   register_step?: number;
 
+  @IsOptional()
+  plan_id?: number;
+
   @IsString()
   @IsOptional()
   login_oauth_uid?: string;
@@ -190,6 +193,10 @@ export class UserResponseDto {
   profile_picture: string;
   status: string;
   plan: string;
+  plan_id?: number;
+  plan_name?: string;
+  max_quality?: string;
+  max_quality_height?: number;
   plan_price?: number;
   card_name?: string;
   card_number?: string;

@@ -82,9 +82,9 @@ export class SubscriptionsService {
         const user = await this.userRepository.findOne({ where: { userId: createSubscriptionDto.userId } });
         if (user) {
           if (plan) {
-            user.plan = plan.name || String(plan.planId);
-          } else if (plan_name) {
-            user.plan = plan_name;
+            user.plan = String(plan.planId);
+          } else if (createSubscriptionDto.planId) {
+            user.plan = String(createSubscriptionDto.planId);
           }
           if (card_name) user.card_name = card_name;
           if (card_number) user.card_number = card_number;
@@ -269,9 +269,9 @@ export class SubscriptionsService {
         const user = await this.userRepository.findOne({ where: { userId: updatedSubscription.userId } });
         if (user) {
           if (plan) {
-            user.plan = plan.name || String(plan.planId);
-          } else if (plan_name) {
-            user.plan = plan_name;
+            user.plan = String(plan.planId);
+          } else if (updatedSubscription.planId) {
+            user.plan = String(updatedSubscription.planId);
           }
           if (card_name) user.card_name = card_name;
           if (card_number) user.card_number = card_number;
