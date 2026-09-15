@@ -51,12 +51,12 @@ export class WatchProgressService {
         if (p.contentType === ContentType.MOVIE) {
           contentInfo = await this.moviesRepository.findOne({
             where: { movie_id: p.contentId },
-            select: ['movie_id', 'title', 'movie_image', 'duration'],
+            select: ['movie_id', 'slug', 'title', 'movie_image', 'duration'],
           });
         } else if (p.contentType === ContentType.EPISODE) {
           contentInfo = await this.episodesRepository.findOne({
             where: { episode_id: p.contentId },
-            select: ['episode_id', 'title', 'image'],
+            select: ['episode_id', 'slug', 'title', 'image'],
           });
         }
 
