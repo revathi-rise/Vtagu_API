@@ -35,10 +35,6 @@ export class CreateShortDto {
   @IsOptional()
   is_free?: boolean;
 
-  @IsBoolean()
-  @IsOptional()
-  is_free?: boolean;
-
   @IsNumber()
   @IsOptional()
   price?: number;
