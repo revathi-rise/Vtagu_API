@@ -116,6 +116,38 @@ export class CreateEpisodeDto {
   @IsOptional()
   is_coming_soon?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_revenue_managed?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isRevenueManaged?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_revenue_shared?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isRevenueShared?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_svod_eligible?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  revenue_share_percent?: number;
+
+  @IsNumber()
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
   @IsOptional()
   subtitles?: any;
 
@@ -205,6 +237,38 @@ export class UpdateEpisodeDto {
   @IsOptional()
   is_coming_soon?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  is_revenue_managed?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isRevenueManaged?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_revenue_shared?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isRevenueShared?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  is_svod_eligible?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  revenue_share_percent?: number;
+
+  @IsNumber()
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
   @IsOptional()
   subtitles?: any;
 
@@ -232,6 +296,11 @@ export class EpisodeResponseDto {
   isFree: boolean;
   isComingSoon: boolean;
   is_coming_soon: boolean;
+  is_revenue_managed: boolean;
+  is_svod_eligible: boolean;
+  revenue_share_percent: number;
+  price: number;
+  currency: string;
   viewCount: number;
   media: {
     image: { url: string; alt: string };

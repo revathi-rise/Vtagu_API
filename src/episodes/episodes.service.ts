@@ -139,8 +139,13 @@ export class EpisodesService {
   }
 
   private mapFromDto(dto: CreateEpisodeDto | UpdateEpisodeDto): Partial<Episode> {
-    const { media, free, isFree, is_free, featured, isFeatured, is_featured, ...rest } = dto as any;
+    const { media, free, isFree, is_free, featured, isFeatured, is_featured, is_revenue_managed, isRevenueManaged, is_revenue_shared, isRevenueShared, ...rest } = dto as any;
     const episode: Partial<Episode> = { ...rest };
+
+    const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : isRevenueShared));
+    if (revenueManagedInput !== undefined) {
+      episode.is_revenue_managed = parseBool(revenueManagedInput);
+    }
 
     const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
     if (freeInput !== undefined) {
@@ -191,6 +196,11 @@ export class EpisodesService {
       isFree: isFreeBool,
       isComingSoon: e.is_coming_soon,
       is_coming_soon: e.is_coming_soon,
+      is_revenue_managed: parseBool(e.is_revenue_managed),
+      is_svod_eligible: parseBool(e.is_svod_eligible),
+      revenue_share_percent: e.revenue_share_percent ? parseFloat(e.revenue_share_percent.toString()) : null,
+      price: e.price ? parseFloat(e.price.toString()) : null,
+      currency: e.currency,
       viewCount: e.view_count,
       subtitles: e.subtitles,
       audio_tracks: e.audio_tracks,

@@ -5,6 +5,7 @@ import { WatchSessionLog } from './entities/watch-session-log.entity';
 import { TitleLedger } from './entities/title-ledger.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Movie } from '../movies/movie.entity';
+import { Episode } from '../episodes/episode.entity';
 import { SvodRevenueService } from './svod-revenue.service';
 import { TrackingController } from './controllers/tracking.controller';
 import { RevenueController } from './controllers/revenue.controller';
@@ -17,6 +18,7 @@ import { RevenueController } from './controllers/revenue.controller';
       TitleLedger,
       Subscription,
       Movie,
+      Episode,
     ]),
   ],
   controllers: [TrackingController, RevenueController],
