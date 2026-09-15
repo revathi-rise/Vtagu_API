@@ -46,12 +46,30 @@ export class InteractiveMoviesService {
   }
 
   async create(dto: CreateInteractiveMovieDto): Promise<InteractiveMovie> {
-    const movie = this.moviesRepository.create(dto);
+    const data: any = { ...dto };
+    const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
+    
+    if (data.is_revenue_managed !== undefined) data.is_revenue_managed = parseBoolToNum(data.is_revenue_managed);
+    if (data.isRevenueManaged !== undefined) {
+      data.is_revenue_managed = parseBoolToNum(data.isRevenueManaged);
+      delete data.isRevenueManaged;
+    }
+
+    const movie = this.moviesRepository.create(data as CreateInteractiveMovieDto);
     return this.moviesRepository.save(movie);
   }
 
   async update(id: number, dto: UpdateInteractiveMovieDto): Promise<InteractiveMovie> {
-    await this.moviesRepository.update(id, dto);
+    const data: any = { ...dto };
+    const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
+    
+    if (data.is_revenue_managed !== undefined) data.is_revenue_managed = parseBoolToNum(data.is_revenue_managed);
+    if (data.isRevenueManaged !== undefined) {
+      data.is_revenue_managed = parseBoolToNum(data.isRevenueManaged);
+      delete data.isRevenueManaged;
+    }
+
+    await this.moviesRepository.update(id, data as UpdateInteractiveMovieDto);
     return this.findOne(id);
   }
 

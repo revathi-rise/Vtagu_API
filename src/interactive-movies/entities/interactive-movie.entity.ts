@@ -35,6 +35,15 @@ export class InteractiveMovie {
   @Column({ type: 'tinyint', default: 0, name: 'is_coming_soon' })
   is_coming_soon: number;
 
+  @Column({ type: 'tinyint', default: 0, name: 'is_revenue_managed' })
+  is_revenue_managed: number;
+
+  @Column({ type: 'tinyint', nullable: true, name: 'is_svod_eligible' })
+  is_svod_eligible: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'revenue_share_percent' })
+  revenue_share_percent: number;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

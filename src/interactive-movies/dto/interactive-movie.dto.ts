@@ -32,6 +32,15 @@ export class CreateInteractiveMovieDto {
 
   @IsOptional()
   currency?: string;
+
+  @IsOptional()
+  is_revenue_managed?: number;
+
+  @IsOptional()
+  is_svod_eligible?: number;
+
+  @IsOptional()
+  revenue_share_percent?: number;
 }
 
 export class UpdateInteractiveMovieDto {
@@ -67,4 +76,13 @@ export class UpdateInteractiveMovieDto {
 
   @IsOptional()
   currency?: string;
+
+  @IsOptional()
+  is_revenue_managed?: number;
+
+  @IsOptional()
+  is_svod_eligible?: number;
+
+  @IsOptional()
+  revenue_share_percent?: number;
 }

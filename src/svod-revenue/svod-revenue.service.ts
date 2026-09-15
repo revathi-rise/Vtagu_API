@@ -9,6 +9,7 @@ import { LogWatchTimeDto, RunMonthlySplitDto, CreateUserSubscriptionDto } from '
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Movie } from '../movies/movie.entity';
 import { Episode } from '../episodes/episode.entity';
+import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
 
 @Injectable()
 export class SvodRevenueService {
@@ -25,6 +26,8 @@ export class SvodRevenueService {
     private readonly movieRepo: Repository<Movie>,
     @InjectRepository(Episode)
     private readonly episodeRepo: Repository<Episode>,
+    @InjectRepository(InteractiveMovie)
+    private readonly interactiveMovieRepo: Repository<InteractiveMovie>,
   ) {}
 
   /**
@@ -194,6 +197,15 @@ export class SvodRevenueService {
         if (ep.episode_id) revenueManagedMap.set(`ep_${ep.episode_id}`, isManaged);
         if (ep.title) revenueManagedMap.set(ep.title.toLowerCase().trim(), isManaged);
         if (ep.slug) revenueManagedMap.set(`ep_${ep.slug.toLowerCase().trim()}`, isManaged);
+      }
+
+      const allInteractiveMovies = await this.interactiveMovieRepo.find({
+        select: ['interactive_movie_id', 'title', 'is_revenue_managed'],
+      });
+      for (const im of allInteractiveMovies) {
+        const isManaged = Boolean(im.is_revenue_managed);
+        if (im.interactive_movie_id) revenueManagedMap.set(`im_${im.interactive_movie_id}`, isManaged);
+        if (im.title) revenueManagedMap.set(im.title.toLowerCase().trim(), isManaged);
       }
 
       const isTitleRevenueManaged = (filmId: string): boolean => {
