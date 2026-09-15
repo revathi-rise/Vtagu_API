@@ -211,6 +211,13 @@ export class MoviesService {
       isInteractive,
       kids_restriction,
       kidsRestriction,
+      is_revenue_managed,
+      isRevenueManaged,
+      is_revenue_shared,
+      isRevenueShared,
+      is_pro_rata_included,
+      movieType,
+      contentType,
       ...rest
     } = dto as any;
     const movie: Partial<Movie> = { ...rest };
@@ -267,10 +274,15 @@ export class MoviesService {
       movie.kids_restriction = parseBool(kidsInput);
     }
 
-    const { is_revenue_managed, isRevenueManaged, is_revenue_shared, is_pro_rata_included } = dto as any;
     const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : is_pro_rata_included));
     if (revenueManagedInput !== undefined) {
       movie.is_revenue_managed = parseBool(revenueManagedInput);
+    }
+    
+    const { movie_type } = dto as any;
+    const mType = movie_type !== undefined ? movie_type : (movieType !== undefined ? movieType : contentType);
+    if (mType !== undefined) {
+      movie.movie_type = String(mType);
     }
 
     if (movie_name) movie.title = movie_name;

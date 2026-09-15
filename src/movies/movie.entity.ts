@@ -92,6 +92,18 @@ export class Movie {
   @Column({ name: 'is_revenue_managed', type: 'tinyint', default: 0 })
   is_revenue_managed: boolean;
 
+  @Column({ name: 'is_svod_eligible', type: 'tinyint', nullable: true })
+  is_svod_eligible: boolean;
+
+  @Column({ name: 'revenue_share_percent', type: 'decimal', precision: 5, scale: 2, nullable: true })
+  revenue_share_percent: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price: number;
+
+  @Column({ nullable: true })
+  currency: string;
+
   @Column({ name: 'interactive_map', type: 'text', nullable: true })
   interactive_map: string;
 
