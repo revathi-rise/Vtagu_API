@@ -10,6 +10,7 @@ import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Movie } from '../movies/movie.entity';
 import { Episode } from '../episodes/episode.entity';
 import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
+import { Short } from '../shorts/short.entity';
 
 @Injectable()
 export class SvodRevenueService {
@@ -28,6 +29,8 @@ export class SvodRevenueService {
     private readonly episodeRepo: Repository<Episode>,
     @InjectRepository(InteractiveMovie)
     private readonly interactiveMovieRepo: Repository<InteractiveMovie>,
+    @InjectRepository(Short)
+    private readonly shortRepo: Repository<Short>,
   ) {}
 
   /**
@@ -206,6 +209,16 @@ export class SvodRevenueService {
         const isManaged = Boolean(im.is_revenue_managed);
         if (im.interactive_movie_id) revenueManagedMap.set(`im_${im.interactive_movie_id}`, isManaged);
         if (im.title) revenueManagedMap.set(im.title.toLowerCase().trim(), isManaged);
+      }
+
+      const allShorts = await this.shortRepo.find({
+        select: ['short_id', 'title', 'slug', 'is_revenue_managed'],
+      });
+      for (const short of allShorts) {
+        const isManaged = Boolean(short.is_revenue_managed);
+        if (short.short_id) revenueManagedMap.set(`sh_${short.short_id}`, isManaged);
+        if (short.title) revenueManagedMap.set(short.title.toLowerCase().trim(), isManaged);
+        if (short.slug) revenueManagedMap.set(`sh_${short.slug.toLowerCase().trim()}`, isManaged);
       }
 
       const isTitleRevenueManaged = (filmId: string): boolean => {

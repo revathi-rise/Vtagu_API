@@ -37,6 +37,27 @@ export class CreateShortDto {
 
   @IsBoolean()
   @IsOptional()
+  is_free?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsOptional()
+  is_revenue_managed?: number;
+
+  @IsOptional()
+  is_svod_eligible?: number;
+
+  @IsOptional()
+  revenue_share_percent?: number;
+
+  @IsBoolean()
+  @IsOptional()
   is_featured?: boolean;
 
   @IsBoolean()

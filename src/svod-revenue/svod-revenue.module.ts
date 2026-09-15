@@ -7,6 +7,7 @@ import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Movie } from '../movies/movie.entity';
 import { Episode } from '../episodes/episode.entity';
 import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
+import { Short } from '../shorts/short.entity';
 import { SvodRevenueService } from './svod-revenue.service';
 import { TrackingController } from './controllers/tracking.controller';
 import { RevenueController } from './controllers/revenue.controller';
@@ -21,6 +22,7 @@ import { RevenueController } from './controllers/revenue.controller';
       Movie,
       Episode,
       InteractiveMovie,
+      Short,
     ]),
   ],
   controllers: [TrackingController, RevenueController],

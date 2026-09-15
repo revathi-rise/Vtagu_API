@@ -32,6 +32,21 @@ export class Short {
   @Column({ name: 'is_free', default: true })
   is_free: boolean;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price: number;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  currency: string;
+
+  @Column({ type: 'tinyint', default: 0, name: 'is_revenue_managed' })
+  is_revenue_managed: number;
+
+  @Column({ type: 'tinyint', nullable: true, name: 'is_svod_eligible' })
+  is_svod_eligible: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'revenue_share_percent' })
+  revenue_share_percent: number;
+
   @Column({ name: 'is_featured', default: false })
   is_featured: boolean;
 

@@ -102,11 +102,19 @@ export class ShortsService {
   }
 
   async create(dto: CreateShortDto): Promise<ShortResponseDto> {
-    const shortData = { ...dto };
+    const shortData: any = { ...dto };
     if (shortData.is_free !== undefined) shortData.is_free = parseBool(shortData.is_free) as any;
     if (shortData.is_featured !== undefined) shortData.is_featured = parseBool(shortData.is_featured) as any;
     if (shortData.is_active !== undefined) shortData.is_active = parseBool(shortData.is_active) as any;
-    const short = this.shortsRepo.create(shortData);
+    
+    const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
+    if (shortData.is_revenue_managed !== undefined) shortData.is_revenue_managed = parseBoolToNum(shortData.is_revenue_managed);
+    if (shortData.isRevenueManaged !== undefined) {
+      shortData.is_revenue_managed = parseBoolToNum(shortData.isRevenueManaged);
+      delete shortData.isRevenueManaged;
+    }
+
+    const short = this.shortsRepo.create(shortData as CreateShortDto);
     const saved = await this.shortsRepo.save(short);
     return this.mapToResponse(saved);
   }
@@ -114,7 +122,7 @@ export class ShortsService {
   async update(id: number, dto: UpdateShortDto): Promise<ShortResponseDto> {
     const short = await this.shortsRepo.findOne({ where: { short_id: id } });
     if (!short) throw new NotFoundException('Short not found');
-    const updateData = { ...dto };
+    const updateData: any = { ...dto };
     delete (updateData as any).id;
     delete (updateData as any).short_id;
     delete (updateData as any).createdAt;
@@ -124,9 +132,17 @@ export class ShortsService {
     if (updateData.is_free !== undefined) updateData.is_free = parseBool(updateData.is_free) as any;
     if (updateData.is_featured !== undefined) updateData.is_featured = parseBool(updateData.is_featured) as any;
     if (updateData.is_active !== undefined) updateData.is_active = parseBool(updateData.is_active) as any;
-    await this.shortsRepo.update({ short_id: id }, updateData);
+
+    const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
+    if (updateData.is_revenue_managed !== undefined) updateData.is_revenue_managed = parseBoolToNum(updateData.is_revenue_managed);
+    if (updateData.isRevenueManaged !== undefined) {
+      updateData.is_revenue_managed = parseBoolToNum(updateData.isRevenueManaged);
+      delete updateData.isRevenueManaged;
+    }
+
+    await this.shortsRepo.update({ short_id: id }, updateData as UpdateShortDto);
     const updated = await this.shortsRepo.findOne({ where: { short_id: id } });
-    return this.mapToResponse(updated);
+    return this.mapToResponse(updated!);
   }
 
   async remove(id: number): Promise<void> {
@@ -156,6 +172,11 @@ export class ShortsService {
       sort_order: s.sort_order,
       created_at: s.created_at,
       updated_at: s.updated_at,
-    };
+      price: s.price,
+      currency: s.currency,
+      is_revenue_managed: s.is_revenue_managed,
+      is_svod_eligible: s.is_svod_eligible,
+      revenue_share_percent: s.revenue_share_percent,
+    } as any;
   }
 }
