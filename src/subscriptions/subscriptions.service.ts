@@ -249,6 +249,29 @@ export class SubscriptionsService {
         };
       }
 
+      // Auto-sync user access for old users whose flags were not updated
+      if (activeSub.plan && Number(activeSub.status) === 1 && (Number(activeSub.payment_status) === 2 || String(activeSub.payment_method).toUpperCase() === 'FREE')) {
+        const user = activeSub.user || await this.userRepository.findOne({ where: { userId } });
+        if (user) {
+          let updated = false;
+          const expectedStandard = Number(activeSub.plan.unlimited) === 1 ? 1 : 0;
+          const expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
+          
+          if (Number(user.standard_access) !== expectedStandard) {
+            user.standard_access = expectedStandard;
+            updated = true;
+          }
+          if (Number(user.interactive_access) !== expectedInteractive) {
+            user.interactive_access = expectedInteractive;
+            updated = true;
+          }
+          
+          if (updated) {
+            await this.userRepository.save(user);
+          }
+        }
+      }
+
       return {
         status: true,
         message: 'Active subscription fetched successfully',
