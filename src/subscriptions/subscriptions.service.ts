@@ -94,18 +94,12 @@ export class SubscriptionsService {
           if (upi) user.upi = upi;
 
           if (Number(savedSubscription.payment_status) === 2 && Number(savedSubscription.status) === 1 && plan) {
-            if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 0) {
-              user.standard_access = 1;
-              user.interactive_access = 0;
-            } else if (Number(plan.unlimited) === 0 && Number(plan.isInteractiveIncluded) === 1) {
-              user.standard_access = 0;
-              user.interactive_access = 1;
-            } else if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 1) {
+            if (Number(plan.unlimited) === 1) {
               user.standard_access = 1;
               user.interactive_access = 1;
             } else {
-              user.standard_access = 0;
-              user.interactive_access = 0;
+              user.standard_access = Number(plan.isStandardAccess) === 1 ? 1 : 0;
+              user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
             }
           }
 
@@ -268,18 +262,12 @@ export class SubscriptionsService {
           let expectedStandard = 0;
           let expectedInteractive = 0;
 
-          if (Number(activeSub.plan.unlimited) === 1 && Number(activeSub.plan.isInteractiveIncluded) === 0) {
-            expectedStandard = 1;
-            expectedInteractive = 0;
-          } else if (Number(activeSub.plan.unlimited) === 0 && Number(activeSub.plan.isInteractiveIncluded) === 1) {
-            expectedStandard = 0;
-            expectedInteractive = 1;
-          } else if (Number(activeSub.plan.unlimited) === 1 && Number(activeSub.plan.isInteractiveIncluded) === 1) {
+          if (Number(activeSub.plan.unlimited) === 1) {
             expectedStandard = 1;
             expectedInteractive = 1;
           } else {
-            expectedStandard = 0;
-            expectedInteractive = 0;
+            expectedStandard = Number(activeSub.plan.isStandardAccess) === 1 ? 1 : 0;
+            expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
           }
 
           if (Number(user.standard_access) !== expectedStandard) {
@@ -351,18 +339,12 @@ export class SubscriptionsService {
           if (upi) user.upi = upi;
 
           if (Number(updatedSubscription.payment_status) === 2 && Number(updatedSubscription.status) === 1 && plan) {
-            if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 0) {
-              user.standard_access = 1;
-              user.interactive_access = 0;
-            } else if (Number(plan.unlimited) === 0 && Number(plan.isInteractiveIncluded) === 1) {
-              user.standard_access = 0;
-              user.interactive_access = 1;
-            } else if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 1) {
+            if (Number(plan.unlimited) === 1) {
               user.standard_access = 1;
               user.interactive_access = 1;
             } else {
-              user.standard_access = 0;
-              user.interactive_access = 0;
+              user.standard_access = Number(plan.isStandardAccess) === 1 ? 1 : 0;
+              user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
             }
           }
 

@@ -63,6 +63,14 @@ export class CreatePlanDto {
 
   @IsInt()
   @IsOptional()
+  is_standard_access?: number;
+
+  @IsInt()
+  @IsOptional()
+  isStandardAccess?: number;
+
+  @IsInt()
+  @IsOptional()
   is_interactive_included?: number;
 
   @IsInt()
@@ -141,6 +149,14 @@ export class UpdatePlanDto {
 
   @IsInt()
   @IsOptional()
+  is_standard_access?: number;
+
+  @IsInt()
+  @IsOptional()
+  isStandardAccess?: number;
+
+  @IsInt()
+  @IsOptional()
   is_interactive_included?: number;
 
   @IsInt()
@@ -173,7 +189,9 @@ export class PlanResponseDto {
   plan_price: number;
   plan_duration: string;
   plan_description?: string;
-  currency: string;
+  currency?: string;
+  is_standard_access?: number;
+  isStandardAccess?: number;
   is_interactive_included: number;
   isInteractiveIncluded: number;
   is_shorts_included: number;

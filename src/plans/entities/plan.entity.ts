@@ -38,6 +38,9 @@ export class Plan {
   @Column({ length: 255, default: 'INR' })
   currency: string;
 
+  @Column({ type: 'tinyint', default: 1, name: 'is_standard_access' })
+  isStandardAccess: number;
+
   @Column({ type: 'tinyint', default: 0, name: 'is_interactive_included' })
   isInteractiveIncluded: number;
 

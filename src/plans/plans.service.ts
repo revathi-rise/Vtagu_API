@@ -64,6 +64,12 @@ export class PlansService {
       if (createPlanDto.plan_price) planData.price = createPlanDto.plan_price;
       if (createPlanDto.plan_duration) planData.validity = createPlanDto.plan_duration;
       if (createPlanDto.plan_description) planData.description = createPlanDto.plan_description;
+      if (createPlanDto.is_standard_access !== undefined) {
+        planData.isStandardAccess = Number(createPlanDto.is_standard_access);
+      } else if (createPlanDto.isStandardAccess !== undefined) {
+        planData.isStandardAccess = Number(createPlanDto.isStandardAccess);
+      }
+
       if (createPlanDto.is_interactive_included !== undefined) {
         planData.isInteractiveIncluded = Number(createPlanDto.is_interactive_included);
       } else if (createPlanDto.isInteractiveIncluded !== undefined) {
@@ -107,6 +113,11 @@ export class PlansService {
       if (updatePlanDto.plan_price) updateData.price = updatePlanDto.plan_price;
       if (updatePlanDto.plan_duration) updateData.validity = updatePlanDto.plan_duration;
       if (updatePlanDto.plan_description) updateData.description = updatePlanDto.plan_description;
+      if (updatePlanDto.is_standard_access !== undefined) {
+        updateData.isStandardAccess = Number(updatePlanDto.is_standard_access);
+      } else if (updatePlanDto.isStandardAccess !== undefined) {
+        updateData.isStandardAccess = Number(updatePlanDto.isStandardAccess);
+      }
       if (updatePlanDto.is_interactive_included !== undefined) {
         updateData.isInteractiveIncluded = Number(updatePlanDto.is_interactive_included);
       } else if (updatePlanDto.isInteractiveIncluded !== undefined) {
@@ -162,7 +173,7 @@ export class PlansService {
   private mapToResponse(plan: Plan | null): PlanResponseDto | null {
     if (!plan) return null;
     const hasQuality = plan.quality && plan.quality.trim() !== '' && plan.quality.trim().toLowerCase() !== 'none';
-    const isStandard = hasQuality ? 1 : 0;
+    const isStandard = plan.isStandardAccess !== undefined ? Number(plan.isStandardAccess) : (hasQuality ? 1 : 0);
     return {
       planId: plan.planId,
       id: plan.planId,
@@ -181,6 +192,8 @@ export class PlansService {
       plan_description: plan.description,
       status: plan.status,
       currency: plan.currency || 'INR',
+      is_standard_access: isStandard,
+      isStandardAccess: isStandard,
       is_interactive_included: plan.isInteractiveIncluded || 0,
       isInteractiveIncluded: plan.isInteractiveIncluded || 0,
       is_shorts_included: plan.isShortsIncluded !== undefined ? Number(plan.isShortsIncluded) : 1,

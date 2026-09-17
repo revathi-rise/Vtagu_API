@@ -192,6 +192,10 @@ export class UserResponseDto {
   gender: string;
   profile_picture: string;
   status: string;
+  standard_access?: number;
+  interactive_access?: number;
+  is_standard_access?: number;
+  is_interactive_access?: number;
   plan: string;
   plan_id?: number;
   plan_name?: string;
