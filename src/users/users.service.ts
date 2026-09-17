@@ -824,6 +824,8 @@ export class UsersService {
         timestamp_from: activeSub.timestamp_from,
         timestamp_to: activeSub.timestamp_to,
         payment_status: activeSub.payment_status,
+        payment_method: activeSub.payment_method || null,
+        payment_details: activeSub.payment_details || null,
       } : null,
     };
   }

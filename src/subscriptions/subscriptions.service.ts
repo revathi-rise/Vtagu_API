@@ -514,6 +514,7 @@ export class SubscriptionsService {
       timestamp_from: subscription.timestamp_from,
       timestamp_to: subscription.timestamp_to,
       payment_method: subscription.payment_method,
+      payment_details: subscription.payment_details || null,
       price_amount: Number(subscription.price_amount),
       paid_amount: Number(subscription.paid_amount),
       currency: subscription.currency,

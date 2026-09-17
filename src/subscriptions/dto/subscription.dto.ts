@@ -165,6 +165,7 @@ export class SubscriptionResponseDto {
   timestamp_from: number;
   timestamp_to: number;
   payment_method: string;
+  payment_details?: string;
   price_amount: number;
   paid_amount: number;
   currency: string;
