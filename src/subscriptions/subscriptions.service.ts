@@ -94,8 +94,19 @@ export class SubscriptionsService {
           if (upi) user.upi = upi;
 
           if (Number(savedSubscription.payment_status) === 2 && Number(savedSubscription.status) === 1 && plan) {
-            user.standard_access = Number(plan.unlimited) === 1 ? 1 : 0;
-            user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
+            if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 0) {
+              user.standard_access = 1;
+              user.interactive_access = 0;
+            } else if (Number(plan.unlimited) === 0 && Number(plan.isInteractiveIncluded) === 1) {
+              user.standard_access = 0;
+              user.interactive_access = 1;
+            } else if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 1) {
+              user.standard_access = 1;
+              user.interactive_access = 1;
+            } else {
+              user.standard_access = 0;
+              user.interactive_access = 0;
+            }
           }
 
           await this.userRepository.save(user);
