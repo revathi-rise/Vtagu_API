@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 const Razorpay = require('razorpay');
 
 import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Plan } from '../plans/entities/plan.entity';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 
 @Injectable()
@@ -18,6 +19,8 @@ export class TransactionsService {
     private repository: Repository<Transaction>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
+    @InjectRepository(Plan)
+    private planRepository: Repository<Plan>,
     private subscriptionsService: SubscriptionsService,
   ) {
     this.razorpay = new Razorpay({
@@ -55,6 +58,25 @@ export class TransactionsService {
     }
   }
 
+  private calculateDurationSec(validityStr: string): number {
+    if (!validityStr) return 30 * 86400;
+    const lower = validityStr.toLowerCase();
+    if (lower.includes('year')) {
+      const m = lower.match(/(\d+)/);
+      return (m ? parseInt(m[1]) : 1) * 365 * 86400;
+    } else if (lower.includes('month')) {
+      const m = lower.match(/(\d+)/);
+      return (m ? parseInt(m[1]) : 1) * 30 * 86400;
+    } else if (lower.includes('week')) {
+      const m = lower.match(/(\d+)/);
+      return (m ? parseInt(m[1]) : 1) * 7 * 86400;
+    } else if (lower.includes('day')) {
+      const m = lower.match(/(\d+)/);
+      return (m ? parseInt(m[1]) : 1) * 86400;
+    }
+    return 30 * 86400;
+  }
+
   private async syncTransactionCompletion(transaction: Transaction): Promise<void> {
     if (!transaction || (transaction.status !== 'C' && String(transaction.status).toUpperCase() !== 'COMPLETED')) return;
 
@@ -65,19 +87,26 @@ export class TransactionsService {
 
       if (!subscription && transaction.user_id) {
         subscription = await this.subscriptionRepository.findOne({
-          where: { userId: transaction.user_id },
+          where: { userId: transaction.user_id, payment_status: 1 },
           order: { subscriptionId: 'DESC' },
         });
       }
 
-      if (subscription) {
+      if (subscription && Number(subscription.payment_status) !== 2) {
+        const plan = await this.planRepository.findOne({ where: { planId: subscription.planId } });
+        const now = Math.floor(Date.now() / 1000);
+        const durationSec = this.calculateDurationSec(plan?.validity || '1 Month');
+
         await this.subscriptionsService.update(subscription.subscriptionId, {
           payment_status: 2, // Success
           paid_amount: transaction.amount,
           price_amount: transaction.amount,
           txnId: transaction.txn_id,
           payment_method: 'RAZORPAY',
+          timestamp_from: now,
+          timestamp_to: now + durationSec,
         });
+        console.log('[DEBUG] Subscription marked as SUCCESS (2) for subId:', subscription.subscriptionId, 'Plan:', subscription.planId);
       }
     } catch (subErr: any) {
       console.error('[TRANSACTION SYNC ERROR]', subErr.message);
@@ -108,7 +137,7 @@ export class TransactionsService {
     }
   }
 
-  async createOrder(userId: number, amount: number) {
+  async createOrder(userId: number, amount: number, planId?: number) {
     const options = {
       amount: Math.round(amount * 100), // amount in the smallest currency unit (paisa)
       currency: 'INR',
@@ -126,6 +155,30 @@ export class TransactionsService {
         created_at: new Date(),
       });
       await this.repository.save(newTransaction);
+
+      if (planId) {
+        try {
+          const plan = await this.planRepository.findOne({ where: { planId } });
+          const now = Math.floor(Date.now() / 1000);
+          const durationSec = this.calculateDurationSec(plan?.validity || '1 Month');
+
+          await this.subscriptionsService.create({
+            planId: planId,
+            userId: userId,
+            payment_method: 'RAZORPAY',
+            payment_details: order.id,
+            txnId: order.id,
+            price_amount: amount,
+            paid_amount: amount,
+            payment_status: 1, // Pending
+            timestamp_from: now,
+            timestamp_to: now + durationSec,
+          });
+          console.log('[DEBUG] Created pending subscription for order:', order.id, 'Plan:', planId);
+        } catch (subErr: any) {
+          console.error('[CREATE PENDING SUB ERROR]', subErr.message);
+        }
+      }
 
       return order;
     } catch (error: any) {
@@ -201,28 +254,41 @@ export class TransactionsService {
     return { success: true, message: 'Webhook processed' };
   }
 
-  async checkPendingUserTransactions(userId: number) {
+  async checkPendingUserTransactions(userId: number, txnRef?: string) {
+    const cleanRef = txnRef ? txnRef.trim() : '';
+
     const pendingTxns = await this.repository.find({
       where: { user_id: userId, status: 'P' },
       order: { created_at: 'DESC' },
-      take: 5,
+      take: 10,
     });
-
-    if (!pendingTxns || pendingTxns.length === 0) {
-      return { success: false, message: 'No pending transactions found for this user', verifiedCount: 0 };
-    }
 
     let verifiedCount = 0;
 
+    // 1. Check pending transactions for this user
     for (const txn of pendingTxns) {
       if (!txn.txn_id) continue;
       try {
         const orderPayments = await this.razorpay.orders.fetchPayments(txn.txn_id);
-        const payments = orderPayments?.items || orderPayments;
+        const payments = Array.isArray(orderPayments) ? orderPayments : (orderPayments?.items || []);
 
-        if (Array.isArray(payments)) {
-          const capturedPayment = payments.find((p: any) => p.status === 'captured');
-          if (capturedPayment) {
+        for (const p of payments) {
+          const isCaptured = p.status === 'captured';
+          const isAuthorized = p.status === 'authorized';
+          const rrnMatch = Boolean(cleanRef) && (
+            p.acquirer_data?.rrn === cleanRef || 
+            p.acquirer_data?.upi_transaction_id === cleanRef || 
+            p.id === cleanRef
+          );
+
+          if (isCaptured || isAuthorized || rrnMatch) {
+            if (isAuthorized) {
+              try {
+                await this.razorpay.payments.capture(p.id, p.amount, p.currency || 'INR');
+              } catch (capErr: any) {
+                console.log('[DEBUG] Payment capture error or already captured:', capErr.message);
+              }
+            }
             txn.status = 'C';
             if (!txn.created_at || isNaN(new Date(txn.created_at).getTime())) {
               txn.created_at = new Date();
@@ -230,6 +296,7 @@ export class TransactionsService {
             const savedTxn = await this.repository.save(txn);
             await this.syncTransactionCompletion(savedTxn);
             verifiedCount++;
+            break;
           }
         }
       } catch (err: any) {
@@ -237,10 +304,62 @@ export class TransactionsService {
       }
     }
 
+    // 2. If cleanRef was passed (e.g. UPI RRN or Payment ID) and no pending order matched yet, search Razorpay directly
+    if (verifiedCount === 0 && cleanRef) {
+      try {
+        let matchedPayment: any = null;
+
+        if (cleanRef.startsWith('pay_')) {
+          matchedPayment = await this.razorpay.payments.fetch(cleanRef);
+        } else {
+          const recentPayments = await this.razorpay.payments.all({ count: 20 });
+          const items = Array.isArray(recentPayments) ? recentPayments : (recentPayments?.items || []);
+          matchedPayment = items.find((p: any) => 
+            p.acquirer_data?.rrn === cleanRef || 
+            p.acquirer_data?.upi_transaction_id === cleanRef ||
+            p.id === cleanRef
+          );
+        }
+
+        if (matchedPayment && (matchedPayment.status === 'captured' || matchedPayment.status === 'authorized')) {
+          if (matchedPayment.status === 'authorized') {
+            try {
+              await this.razorpay.payments.capture(matchedPayment.id, matchedPayment.amount, matchedPayment.currency || 'INR');
+            } catch (e: any) {}
+          }
+
+          let txn = await this.repository.findOne({ where: { txn_id: matchedPayment.order_id } });
+          if (!txn) {
+            txn = this.repository.create({
+              user_id: userId,
+              txn_id: matchedPayment.order_id || matchedPayment.id,
+              amount: matchedPayment.amount ? matchedPayment.amount / 100 : 0,
+              status: 'C',
+              created_at: new Date(),
+            });
+          } else {
+            txn.status = 'C';
+          }
+
+          const savedTxn = await this.repository.save(txn);
+          await this.syncTransactionCompletion(savedTxn);
+          verifiedCount++;
+        }
+      } catch (refErr: any) {
+        console.error('[REF CHECK ERROR]', refErr.message);
+      }
+    }
+
     if (verifiedCount > 0) {
-      return { success: true, message: `Successfully verified and activated ${verifiedCount} payment(s)!`, verifiedCount };
+      return { success: true, message: `Successfully verified and activated payment!`, verifiedCount };
     } else {
-      return { success: false, message: 'Payment not yet confirmed by Razorpay. Please wait a few minutes if money was debited.', verifiedCount: 0 };
+      return { 
+        success: false, 
+        message: cleanRef 
+          ? `Could not find payment for UPI Ref / Payment ID: ${cleanRef}. Please verify the 12-digit number.`
+          : 'Payment not yet confirmed by Razorpay. If debited via UPI, enter your 12-digit UPI Reference / RRN below.', 
+        verifiedCount: 0 
+      };
     }
   }
 }

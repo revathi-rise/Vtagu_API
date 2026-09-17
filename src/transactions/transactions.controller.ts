@@ -66,9 +66,13 @@ export class TransactionsController {
   }
 
   @Post('create-order')
-  async createOrder(@Body() body: { userId: number; amount: number }) {
+  async createOrder(@Body() body: { userId: number; amount: number; planId?: number }) {
     try {
-      const data = await this.service.createOrder(Number(body.userId), Number(body.amount));
+      const data = await this.service.createOrder(
+        Number(body.userId),
+        Number(body.amount),
+        body.planId ? Number(body.planId) : undefined,
+      );
       return { status: true, message: 'Razorpay order created successfully', data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
@@ -107,9 +111,9 @@ export class TransactionsController {
   }
 
   @Post('check-pending-user/:userId')
-  async checkPendingUser(@Param('userId') userId: string) {
+  async checkPendingUser(@Param('userId') userId: string, @Body() body?: { txnRef?: string }) {
     try {
-      const data = await this.service.checkPendingUserTransactions(+userId);
+      const data = await this.service.checkPendingUserTransactions(+userId, body?.txnRef);
       return { status: data.success, message: data.message, data };
     } catch (error) {
       return { status: false, message: error.message, data: null };

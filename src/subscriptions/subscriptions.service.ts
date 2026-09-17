@@ -314,6 +314,8 @@ export class SubscriptionsService {
         throw new NotFoundException('Subscription not found');
       }
 
+      const prevPaymentStatus = Number(subscription.payment_status);
+
       const { card_name, card_number, card_expiry, card_ccv, card_ccc, upi, plan_name, ...subUpdateFields } = updateSubscriptionDto;
       Object.assign(subscription, subUpdateFields);
 
@@ -359,8 +361,8 @@ export class SubscriptionsService {
         }
       }
 
-      // If payment_status was updated to success (2) or active, send Subscription Success SMS
-      if (Number(updateSubscriptionDto.payment_status) === 2 || Number(updatedSubscription.payment_status) === 2) {
+      // Send Subscription Success SMS ONLY when payment status transitions to 2 (Success) from pending/non-2
+      if (Number(updatedSubscription.payment_status) === 2 && prevPaymentStatus !== 2) {
         await this.sendSubscriptionSuccessNotification(updatedSubscription);
       }
 
