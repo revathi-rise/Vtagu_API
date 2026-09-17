@@ -17,7 +17,7 @@ export class SubscriptionsService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private smsService: SmsService,
-  ) {}
+  ) { }
 
   /**
    * Create a new subscription
@@ -254,9 +254,23 @@ export class SubscriptionsService {
         const user = activeSub.user || await this.userRepository.findOne({ where: { userId } });
         if (user) {
           let updated = false;
-          const expectedStandard = Number(activeSub.plan.unlimited) === 1 ? 1 : 0;
-          const expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
-          
+          let expectedStandard = 0;
+          let expectedInteractive = 0;
+
+          if (Number(activeSub.plan.unlimited) === 1 && Number(activeSub.plan.isInteractiveIncluded) === 0) {
+            expectedStandard = 1;
+            expectedInteractive = 0;
+          } else if (Number(activeSub.plan.unlimited) === 0 && Number(activeSub.plan.isInteractiveIncluded) === 1) {
+            expectedStandard = 0;
+            expectedInteractive = 1;
+          } else if (Number(activeSub.plan.unlimited) === 1 && Number(activeSub.plan.isInteractiveIncluded) === 1) {
+            expectedStandard = 1;
+            expectedInteractive = 1;
+          } else {
+            expectedStandard = 0;
+            expectedInteractive = 0;
+          }
+
           if (Number(user.standard_access) !== expectedStandard) {
             user.standard_access = expectedStandard;
             updated = true;
@@ -265,7 +279,7 @@ export class SubscriptionsService {
             user.interactive_access = expectedInteractive;
             updated = true;
           }
-          
+
           if (updated) {
             await this.userRepository.save(user);
           }
@@ -326,8 +340,19 @@ export class SubscriptionsService {
           if (upi) user.upi = upi;
 
           if (Number(updatedSubscription.payment_status) === 2 && Number(updatedSubscription.status) === 1 && plan) {
-            user.standard_access = Number(plan.unlimited) === 1 ? 1 : 0;
-            user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
+            if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 0) {
+              user.standard_access = 1;
+              user.interactive_access = 0;
+            } else if (Number(plan.unlimited) === 0 && Number(plan.isInteractiveIncluded) === 1) {
+              user.standard_access = 0;
+              user.interactive_access = 1;
+            } else if (Number(plan.unlimited) === 1 && Number(plan.isInteractiveIncluded) === 1) {
+              user.standard_access = 1;
+              user.interactive_access = 1;
+            } else {
+              user.standard_access = 0;
+              user.interactive_access = 0;
+            }
           }
 
           await this.userRepository.save(user);
