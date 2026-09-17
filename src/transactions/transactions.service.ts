@@ -55,11 +55,44 @@ export class TransactionsService {
     }
   }
 
+  private async syncTransactionCompletion(transaction: Transaction): Promise<void> {
+    if (!transaction || (transaction.status !== 'C' && String(transaction.status).toUpperCase() !== 'COMPLETED')) return;
+
+    try {
+      let subscription = await this.subscriptionRepository.findOne({
+        where: { txnId: transaction.txn_id },
+      });
+
+      if (!subscription && transaction.user_id) {
+        subscription = await this.subscriptionRepository.findOne({
+          where: { userId: transaction.user_id },
+          order: { subscriptionId: 'DESC' },
+        });
+      }
+
+      if (subscription) {
+        await this.subscriptionsService.update(subscription.subscriptionId, {
+          payment_status: 2, // Success
+          paid_amount: transaction.amount,
+          price_amount: transaction.amount,
+          txnId: transaction.txn_id,
+          payment_method: 'RAZORPAY',
+        });
+      }
+    } catch (subErr: any) {
+      console.error('[TRANSACTION SYNC ERROR]', subErr.message);
+    }
+  }
+
   async update(id: number, dto: UpdateTransactionDto): Promise<Transaction> {
     try {
       const transaction = await this.findOne(id);
       Object.assign(transaction, dto);
-      return await this.repository.save(transaction);
+      const savedTxn = await this.repository.save(transaction);
+      if (savedTxn.status === 'C' || String(savedTxn.status).toUpperCase() === 'COMPLETED') {
+        await this.syncTransactionCompletion(savedTxn);
+      }
+      return savedTxn;
     } catch (error: any) {
       throw new BadRequestException(error.message);
     }
@@ -115,19 +148,8 @@ export class TransactionsService {
         if (!transaction.created_at || isNaN(new Date(transaction.created_at).getTime()) || new Date(transaction.created_at).getFullYear() < 2000) {
           transaction.created_at = new Date();
         }
-        await this.repository.save(transaction);
-
-        // Also update any matching subscription to payment_status = 2 (Success) and send Subscription Success SMS
-        try {
-          const subscription = await this.subscriptionRepository.findOne({
-            where: { txnId: razorpayOrderId },
-          });
-          if (subscription) {
-            await this.subscriptionsService.update(subscription.subscriptionId, { payment_status: 2 });
-          }
-        } catch (subErr) {
-          console.error('[VERIFY PAYMENT] Error updating subscription:', subErr.message);
-        }
+        const savedTxn = await this.repository.save(transaction);
+        await this.syncTransactionCompletion(savedTxn);
 
         return { success: true, message: 'Payment verified successfully' };
       } else {
@@ -135,6 +157,90 @@ export class TransactionsService {
       }
     } else {
       throw new BadRequestException('Invalid signature');
+    }
+  }
+
+  async processWebhook(payload: any, signature: string) {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    const bodyStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    
+    if (signature && webhookSecret) {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(bodyStr)
+        .digest('hex');
+
+      if (expectedSignature !== signature) {
+        console.error('[WEBHOOK ERROR] Invalid Razorpay webhook signature');
+        throw new BadRequestException('Invalid webhook signature');
+      }
+    }
+
+    const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    console.log('[DEBUG] Razorpay Webhook Event Received:', data.event);
+
+    if (data.event === 'payment.captured' || data.event === 'order.paid') {
+      const paymentEntity = data.payload?.payment?.entity;
+      const orderId = paymentEntity?.order_id || data.payload?.order?.entity?.id;
+
+      if (orderId) {
+        const transaction = await this.repository.findOne({ where: { txn_id: orderId } });
+        if (transaction && transaction.status !== 'C') {
+          transaction.status = 'C'; // Complete
+          if (!transaction.created_at || isNaN(new Date(transaction.created_at).getTime())) {
+            transaction.created_at = new Date();
+          }
+          const savedTxn = await this.repository.save(transaction);
+          await this.syncTransactionCompletion(savedTxn);
+          console.log('[DEBUG] Webhook reconciled transaction successfully:', orderId);
+          return { success: true, message: 'Transaction reconciled via webhook', orderId };
+        }
+      }
+    }
+
+    return { success: true, message: 'Webhook processed' };
+  }
+
+  async checkPendingUserTransactions(userId: number) {
+    const pendingTxns = await this.repository.find({
+      where: { user_id: userId, status: 'P' },
+      order: { created_at: 'DESC' },
+      take: 5,
+    });
+
+    if (!pendingTxns || pendingTxns.length === 0) {
+      return { success: false, message: 'No pending transactions found for this user', verifiedCount: 0 };
+    }
+
+    let verifiedCount = 0;
+
+    for (const txn of pendingTxns) {
+      if (!txn.txn_id) continue;
+      try {
+        const orderPayments = await this.razorpay.orders.fetchPayments(txn.txn_id);
+        const payments = orderPayments?.items || orderPayments;
+
+        if (Array.isArray(payments)) {
+          const capturedPayment = payments.find((p: any) => p.status === 'captured');
+          if (capturedPayment) {
+            txn.status = 'C';
+            if (!txn.created_at || isNaN(new Date(txn.created_at).getTime())) {
+              txn.created_at = new Date();
+            }
+            const savedTxn = await this.repository.save(txn);
+            await this.syncTransactionCompletion(savedTxn);
+            verifiedCount++;
+          }
+        }
+      } catch (err: any) {
+        console.error(`[CHECK PENDING ERROR] Failed to check order ${txn.txn_id}:`, err.message);
+      }
+    }
+
+    if (verifiedCount > 0) {
+      return { success: true, message: `Successfully verified and activated ${verifiedCount} payment(s)!`, verifiedCount };
+    } else {
+      return { success: false, message: 'Payment not yet confirmed by Razorpay. Please wait a few minutes if money was debited.', verifiedCount: 0 };
     }
   }
 }

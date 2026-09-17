@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Put, Delete, Headers, Req } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto, UpdateTransactionDto } from './dto/transaction.dto';
 
@@ -91,6 +91,26 @@ export class TransactionsController {
         body.signature,
       );
       return { status: true, message: data.message, data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Post('webhook')
+  async handleWebhook(@Body() body: any, @Headers('x-razorpay-signature') signature: string) {
+    try {
+      const data = await this.service.processWebhook(body, signature);
+      return { status: true, message: data.message, data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
+
+  @Post('check-pending-user/:userId')
+  async checkPendingUser(@Param('userId') userId: string) {
+    try {
+      const data = await this.service.checkPendingUserTransactions(+userId);
+      return { status: data.success, message: data.message, data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
     }

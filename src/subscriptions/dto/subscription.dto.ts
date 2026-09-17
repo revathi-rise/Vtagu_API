@@ -37,6 +37,18 @@ export class CreateSubscriptionDto {
   @IsOptional()
   paid_amount?: number;
 
+  @IsInt()
+  @IsOptional()
+  payment_status?: number;
+
+  @IsString()
+  @IsOptional()
+  txnId?: string;
+
+  @IsString()
+  @IsOptional()
+  txn_id?: string;
+
   @IsString()
   @IsOptional()
   card_name?: string;

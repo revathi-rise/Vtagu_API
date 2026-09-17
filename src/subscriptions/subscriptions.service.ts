@@ -40,6 +40,10 @@ export class SubscriptionsService {
         planDiscount = plan.discount;
       }
 
+      if ((createSubscriptionDto as any).txn_id) {
+        subscription.txnId = (createSubscriptionDto as any).txn_id;
+      }
+
       subscription.price_amount = createSubscriptionDto.price_amount !== undefined
         ? createSubscriptionDto.price_amount
         : planPrice;
@@ -48,16 +52,19 @@ export class SubscriptionsService {
         ? createSubscriptionDto.paid_amount
         : (planPrice - planDiscount);
 
-      if (subscription.paid_amount === 0) {
+      if (createSubscriptionDto.payment_status !== undefined) {
+        subscription.payment_status = Number(createSubscriptionDto.payment_status);
+      } else if (subscription.paid_amount === 0) {
         subscription.payment_status = 2; // Success
         if (!subscription.payment_method) {
           subscription.payment_method = 'FREE';
         }
-        if (!subscription.payment_timestamp) {
-          subscription.payment_timestamp = Math.floor(Date.now() / 1000);
-        }
       } else {
-        subscription.payment_status = 1; // Pending
+        subscription.payment_status = 2; // Default to Success for paid checkouts
+      }
+
+      if (Number(subscription.payment_status) === 2 && !subscription.payment_timestamp) {
+        subscription.payment_timestamp = Math.floor(Date.now() / 1000);
       }
 
       subscription.currency = createSubscriptionDto.currency || 'INR';
