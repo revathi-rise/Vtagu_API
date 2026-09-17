@@ -93,9 +93,9 @@ export class SubscriptionsService {
           if (ccv) user.card_ccv = ccv;
           if (upi) user.upi = upi;
 
-          if (savedSubscription.payment_status === 2 && savedSubscription.status === 1 && plan) {
-            user.standard_access = plan.unlimited === 1 ? 1 : 0;
-            user.interactive_access = plan.isInteractiveIncluded === 1 ? 1 : 0;
+          if (Number(savedSubscription.payment_status) === 2 && Number(savedSubscription.status) === 1 && plan) {
+            user.standard_access = Number(plan.unlimited) === 1 ? 1 : 0;
+            user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
           }
 
           await this.userRepository.save(user);
@@ -103,7 +103,7 @@ export class SubscriptionsService {
       }
 
       // If payment is successful upon creation, send Subscription Success SMS
-      if (savedSubscription.payment_status === 2 && savedSubscription.status === 1) {
+      if (Number(savedSubscription.payment_status) === 2 && Number(savedSubscription.status) === 1) {
         await this.sendSubscriptionSuccessNotification(savedSubscription);
       }
 
@@ -229,11 +229,11 @@ export class SubscriptionsService {
         const user = await this.userRepository.findOne({ where: { userId } });
         if (user) {
           let updated = false;
-          if (user.standard_access === 1) {
+          if (Number(user.standard_access) === 1) {
             user.standard_access = 0;
             updated = true;
           }
-          if (user.interactive_access === 1) {
+          if (Number(user.interactive_access) === 1) {
             user.interactive_access = 0;
             updated = true;
           }
@@ -274,7 +274,7 @@ export class SubscriptionsService {
       const { card_name, card_number, card_expiry, card_ccv, card_ccc, upi, plan_name, ...subUpdateFields } = updateSubscriptionDto;
       Object.assign(subscription, subUpdateFields);
 
-      if (updateSubscriptionDto.payment_status === 2) { // Success
+      if (Number(updateSubscriptionDto.payment_status) === 2) { // Success
         subscription.payment_timestamp = Math.floor(Date.now() / 1000);
       }
 
@@ -302,9 +302,9 @@ export class SubscriptionsService {
           if (ccv) user.card_ccv = ccv;
           if (upi) user.upi = upi;
 
-          if (updatedSubscription.payment_status === 2 && updatedSubscription.status === 1 && plan) {
-            user.standard_access = plan.unlimited === 1 ? 1 : 0;
-            user.interactive_access = plan.isInteractiveIncluded === 1 ? 1 : 0;
+          if (Number(updatedSubscription.payment_status) === 2 && Number(updatedSubscription.status) === 1 && plan) {
+            user.standard_access = Number(plan.unlimited) === 1 ? 1 : 0;
+            user.interactive_access = Number(plan.isInteractiveIncluded) === 1 ? 1 : 0;
           }
 
           await this.userRepository.save(user);
@@ -312,7 +312,7 @@ export class SubscriptionsService {
       }
 
       // If payment_status was updated to success (2) or active, send Subscription Success SMS
-      if (updateSubscriptionDto.payment_status === 2 || updatedSubscription.payment_status === 2) {
+      if (Number(updateSubscriptionDto.payment_status) === 2 || Number(updatedSubscription.payment_status) === 2) {
         await this.sendSubscriptionSuccessNotification(updatedSubscription);
       }
 
