@@ -14,6 +14,9 @@ export class Transaction {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 
+  @Column({ length: 10, default: 'INR', name: 'currency', nullable: true })
+  currency?: string;
+
   @Column({ length: 1, default: 'P' })
   status: string;
 

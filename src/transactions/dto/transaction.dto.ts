@@ -16,6 +16,10 @@ export class CreateTransactionDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
 
 export class UpdateTransactionDto {
@@ -34,4 +38,8 @@ export class UpdateTransactionDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
 }
