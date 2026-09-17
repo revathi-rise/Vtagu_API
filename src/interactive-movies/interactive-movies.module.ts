@@ -8,6 +8,7 @@ import { Choice } from '../choices/entities/choice.entity';
 import { UserInteractiveMoviePurchase } from './entities/user-purchase.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
@@ -16,7 +17,8 @@ import { Plan } from '../plans/entities/plan.entity';
     Choice, 
     UserInteractiveMoviePurchase, 
     Subscription, 
-    Plan
+    Plan,
+    User
   ])],
   providers: [InteractiveMoviesService],
   controllers: [InteractiveMoviesController]

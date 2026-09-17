@@ -9,6 +9,8 @@ import { UserInteractiveMoviePurchase } from './entities/user-purchase.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
 
+import { User } from '../users/entities/user.entity';
+
 @Injectable()
 export class InteractiveMoviesService {
   constructor(
@@ -24,6 +26,8 @@ export class InteractiveMoviesService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
 
@@ -132,40 +136,14 @@ export class InteractiveMoviesService {
     }
 
     // 2. Check if the user has an active subscription that includes interactive movies
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const activeSubs = await this.subscriptionRepository.find({
-      where: { userId, status: 1 },
-    });
-    for (const activeSub of activeSubs) {
-      const fromSec = Number(activeSub.timestamp_from) || 0;
-      const toSec = Number(activeSub.timestamp_to) || 0;
-
-      if (toSec > 0 && toSec < currentTimestamp) {
-        activeSub.status = 0;
-        await this.subscriptionRepository.save(activeSub);
-        continue;
-      }
-
-      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
-      const isDateValid = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
-
-      if (isPaymentSuccess && isDateValid) {
-        const plan = await this.planRepository.findOne({
-          where: { planId: activeSub.planId },
-        });
-        if (plan) {
-          const parseBool = (val: any) => val === 1 || val === '1' || val === true || val === 'true';
-          const isInteractiveIncluded = parseBool(plan.isInteractiveIncluded) || parseBool((plan as any).is_interactive_included);
-          if (isInteractiveIncluded) {
-            return {
-              hasAccess: true,
-              reason: 'subscription',
-              price: movie.price,
-              currency: movie.currency,
-            };
-          }
-        }
-      }
+    const user = await this.userRepository.findOne({ where: { userId: userId } });
+    if (user && user.interactive_access === 1) {
+      return {
+        hasAccess: true,
+        reason: 'subscription',
+        price: movie.price,
+        currency: movie.currency,
+      };
     }
 
     // 3. Check if the user has purchased this movie individually

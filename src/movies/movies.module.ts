@@ -5,9 +5,10 @@ import { MoviesController } from './movies.controller';
 import { Movie } from './movie.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Movie, Subscription, Plan])],
+  imports: [TypeOrmModule.forFeature([Movie, Subscription, Plan, User])],
   providers: [MoviesService],
   controllers: [MoviesController],
   exports: [MoviesService],

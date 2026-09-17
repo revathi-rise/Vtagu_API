@@ -13,6 +13,8 @@ const parseBool = (val: any): boolean => {
   return false;
 };
 
+import { User } from '../users/entities/user.entity';
+
 @Injectable()
 export class EpisodesService {
   constructor(
@@ -22,6 +24,8 @@ export class EpisodesService {
     private readonly subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Plan)
     private readonly planRepository: Repository<Plan>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(dto: CreateEpisodeDto): Promise<EpisodeResponseDto> {
@@ -51,7 +55,7 @@ export class EpisodesService {
       const isFree = parseBool(e.free);
       const hasAccess = isFree || hasSubAccess;
       const res = this.mapToResponse(e);
-      if (userId !== undefined && !hasAccess) {
+      if (!hasAccess) {
         if (res.media && res.media.video) {
           res.media.video.url = "";
         }
@@ -62,34 +66,9 @@ export class EpisodesService {
 
   async checkStandardAccess(userId?: number): Promise<boolean> {
     if (!userId) return false;
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    const activeSubs = await this.subscriptionRepository.find({
-      where: { userId, status: 1 },
-    });
-    let hasAccess = false;
-    for (const activeSub of activeSubs) {
-      const fromSec = Number(activeSub.timestamp_from) || 0;
-      const toSec = Number(activeSub.timestamp_to) || 0;
-
-      if (toSec > 0 && toSec < currentTimestamp) {
-        activeSub.status = 0;
-        await this.subscriptionRepository.save(activeSub);
-        continue;
-      }
-
-      const isPaymentSuccess = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
-      const isDateValid = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
-
-      if (isPaymentSuccess && isDateValid) {
-        const plan = await this.planRepository.findOne({
-          where: { planId: activeSub.planId },
-        });
-        if (plan) {
-          hasAccess = true;
-        }
-      }
-    }
-    return hasAccess;
+    const user = await this.userRepository.findOne({ where: { userId: userId } });
+    if (!user) return false;
+    return user.standard_access === 1;
   }
 
   async findOne(idOrSlug: string | number, userId?: number): Promise<EpisodeResponseDto> {
@@ -106,7 +85,7 @@ export class EpisodesService {
     const hasAccess = isFree || hasSubAccess;
 
     const response = this.mapToResponse(episode);
-    if (userId !== undefined && !hasAccess) {
+    if (!hasAccess) {
       if (response.media && response.media.video) {
         response.media.video.url = "";
       }

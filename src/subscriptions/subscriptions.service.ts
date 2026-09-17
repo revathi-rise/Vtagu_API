@@ -93,6 +93,11 @@ export class SubscriptionsService {
           if (ccv) user.card_ccv = ccv;
           if (upi) user.upi = upi;
 
+          if (savedSubscription.payment_status === 2 && savedSubscription.status === 1 && plan) {
+            user.standard_access = plan.unlimited === 1 ? 1 : 0;
+            user.interactive_access = plan.isInteractiveIncluded === 1 ? 1 : 0;
+          }
+
           await this.userRepository.save(user);
         }
       }
@@ -220,6 +225,23 @@ export class SubscriptionsService {
       }
 
       if (!activeSub) {
+        // Revoke user access flags since there's no active subscription
+        const user = await this.userRepository.findOne({ where: { userId } });
+        if (user) {
+          let updated = false;
+          if (user.standard_access === 1) {
+            user.standard_access = 0;
+            updated = true;
+          }
+          if (user.interactive_access === 1) {
+            user.interactive_access = 0;
+            updated = true;
+          }
+          if (updated) {
+            await this.userRepository.save(user);
+          }
+        }
+
         return {
           status: true,
           message: 'No active subscription found',
@@ -279,6 +301,11 @@ export class SubscriptionsService {
           const ccv = card_ccv || card_ccc;
           if (ccv) user.card_ccv = ccv;
           if (upi) user.upi = upi;
+
+          if (updatedSubscription.payment_status === 2 && updatedSubscription.status === 1 && plan) {
+            user.standard_access = plan.unlimited === 1 ? 1 : 0;
+            user.interactive_access = plan.isInteractiveIncluded === 1 ? 1 : 0;
+          }
 
           await this.userRepository.save(user);
         }
@@ -388,6 +415,9 @@ export class SubscriptionsService {
 
       subscription.status = 0; // Cancelled
       await this.subscriptionRepository.save(subscription);
+
+      // Verify and revoke access if no other active subscriptions exist
+      await this.getActiveSubscription(subscription.userId);
 
       return { status: true, message: 'Subscription cancelled successfully' };
     } catch (error) {

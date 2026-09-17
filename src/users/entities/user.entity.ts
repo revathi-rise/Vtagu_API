@@ -66,6 +66,12 @@ export class User {
   @Column({ default: 'active' })
   status: string; // 'active', 'inactive', 'suspended'
 
+  @Column({ type: 'tinyint', default: 0 })
+  standard_access: number;
+
+  @Column({ type: 'tinyint', default: 0 })
+  interactive_access: number;
+
   @Column({ nullable: true, type: 'longtext' })
   user_movielist: string;
 
