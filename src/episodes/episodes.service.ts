@@ -68,6 +68,47 @@ export class EpisodesService {
     if (!userId) return false;
     const user = await this.userRepository.findOne({ where: { userId: userId } });
     if (!user) return false;
+
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const activeSub = await this.subscriptionRepository.findOne({
+      where: { userId, status: 1 },
+      relations: ['plan'],
+      order: { subscriptionId: 'DESC' },
+    });
+
+    if (activeSub && activeSub.plan) {
+      const fromSec = Number(activeSub.timestamp_from) || 0;
+      const toSec = Number(activeSub.timestamp_to) || 0;
+      const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
+      const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
+
+      if (isPaid && isValidDate) {
+        let expectedStandard = 0;
+        let expectedInteractive = 0;
+        if (Number(activeSub.plan.unlimited) === 1) {
+          expectedStandard = 1;
+          expectedInteractive = 1;
+        } else {
+          expectedStandard = Number(activeSub.plan.isStandardAccess) === 1 ? 1 : 0;
+          expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
+        }
+
+        if (Number(user.standard_access) !== expectedStandard || Number(user.interactive_access) !== expectedInteractive) {
+          user.standard_access = expectedStandard;
+          user.interactive_access = expectedInteractive;
+          await this.userRepository.save(user);
+        }
+
+        return expectedStandard === 1;
+      }
+    } else {
+      if (Number(user.standard_access) !== 0 || Number(user.interactive_access) !== 0) {
+        user.standard_access = 0;
+        user.interactive_access = 0;
+        await this.userRepository.save(user);
+      }
+    }
+
     return user.standard_access === 1;
   }
 

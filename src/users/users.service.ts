@@ -678,6 +678,7 @@ export class UsersService {
       order: { subscriptionId: 'DESC' },
     });
 
+    let activeSub: Subscription | null = null;
     for (const sub of activeSubs) {
       const fromSec = Number(sub.timestamp_from) || 0;
       const toSec = Number(sub.timestamp_to) || 0;
@@ -690,11 +691,47 @@ export class UsersService {
 
       const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
       const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
-      if (isPaid && isValidDate) {
-        return sub;
+      if (isPaid && isValidDate && !activeSub) {
+        activeSub = sub;
       }
     }
-    return null;
+
+    // Auto-sync user table flags in database
+    const user = await this.usersRepository.findOne({ where: { userId } });
+    if (user) {
+      let expectedStandard = 0;
+      let expectedInteractive = 0;
+
+      if (activeSub && activeSub.plan) {
+        if (Number(activeSub.plan.unlimited) === 1) {
+          expectedStandard = 1;
+          expectedInteractive = 1;
+        } else {
+          expectedStandard = Number(activeSub.plan.isStandardAccess) === 1 ? 1 : 0;
+          expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
+        }
+      }
+
+      let needSave = false;
+      if (Number(user.standard_access) !== expectedStandard) {
+        user.standard_access = expectedStandard;
+        needSave = true;
+      }
+      if (Number(user.interactive_access) !== expectedInteractive) {
+        user.interactive_access = expectedInteractive;
+        needSave = true;
+      }
+      if (activeSub && user.plan !== String(activeSub.planId)) {
+        user.plan = String(activeSub.planId);
+        needSave = true;
+      }
+
+      if (needSave) {
+        await this.usersRepository.save(user);
+      }
+    }
+
+    return activeSub;
   }
 
   /**
