@@ -121,13 +121,9 @@ export class TransactionsService {
         try {
           const subscription = await this.subscriptionRepository.findOne({
             where: { txnId: razorpayOrderId },
-            relations: ['user', 'plan'],
           });
           if (subscription) {
-            subscription.payment_status = 2; // Success
-            subscription.payment_timestamp = Math.floor(Date.now() / 1000);
-            const savedSub = await this.subscriptionRepository.save(subscription);
-            await this.subscriptionsService.sendSubscriptionSuccessNotification(savedSub);
+            await this.subscriptionsService.update(subscription.subscriptionId, { payment_status: 2 });
           }
         } catch (subErr) {
           console.error('[VERIFY PAYMENT] Error updating subscription:', subErr.message);
