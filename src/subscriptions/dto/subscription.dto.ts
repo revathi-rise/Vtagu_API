@@ -41,6 +41,10 @@ export class CreateSubscriptionDto {
   @IsOptional()
   payment_status?: number;
 
+  @IsInt()
+  @IsOptional()
+  payment_timestamp?: number;
+
   @IsString()
   @IsOptional()
   txnId?: string;
@@ -86,6 +90,10 @@ export class UpdateSubscriptionDto {
   @IsInt()
   @IsOptional()
   payment_status?: number;
+
+  @IsInt()
+  @IsOptional()
+  payment_timestamp?: number;
 
   @IsString()
   @IsOptional()

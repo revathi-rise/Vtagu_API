@@ -362,4 +362,79 @@ export class TransactionsService {
       };
     }
   }
+
+  async reconcileAllCapturedSubscriptions() {
+    const pendingSubs = await this.subscriptionRepository.find({
+      where: { payment_status: 1 },
+      order: { subscriptionId: 'DESC' },
+      take: 100,
+    });
+
+    let countReconciled = 0;
+    const reconciledList: any[] = [];
+
+    for (const sub of pendingSubs) {
+      let isCaptured = false;
+      let paymentObj: any = null;
+
+      try {
+        if (sub.payment_details && sub.payment_details.startsWith('pay_')) {
+          paymentObj = await this.razorpay.payments.fetch(sub.payment_details);
+          if (paymentObj && (paymentObj.status === 'captured' || paymentObj.status === 'authorized')) {
+            isCaptured = true;
+          }
+        }
+
+        if (!isCaptured && sub.txnId && sub.txnId.startsWith('order_')) {
+          const orderPayments = await this.razorpay.orders.fetchPayments(sub.txnId);
+          const payments = Array.isArray(orderPayments) ? orderPayments : (orderPayments?.items || []);
+          paymentObj = payments.find((p: any) => p.status === 'captured' || p.status === 'authorized');
+          if (paymentObj) {
+            isCaptured = true;
+          }
+        }
+
+        if (isCaptured && paymentObj) {
+          if (paymentObj.status === 'authorized') {
+            try {
+              await this.razorpay.payments.capture(paymentObj.id, paymentObj.amount, paymentObj.currency || 'INR');
+            } catch (capErr: any) {}
+          }
+
+          await this.subscriptionsService.update(sub.subscriptionId, {
+            payment_status: 2,
+            payment_timestamp: Math.floor(Date.now() / 1000),
+            payment_details: paymentObj.id || sub.payment_details,
+            paid_amount: paymentObj.amount ? paymentObj.amount / 100 : sub.paid_amount,
+          });
+
+          if (sub.txnId) {
+            const txn = await this.repository.findOne({ where: { txn_id: sub.txnId } });
+            if (txn && txn.status !== 'C') {
+              txn.status = 'C';
+              await this.repository.save(txn);
+            }
+          }
+
+          countReconciled++;
+          reconciledList.push({
+            subscriptionId: sub.subscriptionId,
+            userId: sub.userId,
+            planId: sub.planId,
+            paymentId: paymentObj.id,
+            amount: paymentObj.amount ? paymentObj.amount / 100 : sub.paid_amount,
+          });
+        }
+      } catch (err: any) {
+        console.error(`[RECONCILE ERROR] Sub ID ${sub.subscriptionId}:`, err.message);
+      }
+    }
+
+    return {
+      success: true,
+      message: `Reconciled ${countReconciled} subscription(s) successfully!`,
+      countReconciled,
+      reconciledList,
+    };
+  }
 }

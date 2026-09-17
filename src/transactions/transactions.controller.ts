@@ -119,4 +119,14 @@ export class TransactionsController {
       return { status: false, message: error.message, data: null };
     }
   }
+
+  @Post('reconcile-all')
+  async reconcileAll() {
+    try {
+      const data = await this.service.reconcileAllCapturedSubscriptions();
+      return { status: data.success, message: data.message, data };
+    } catch (error) {
+      return { status: false, message: error.message, data: null };
+    }
+  }
 }
