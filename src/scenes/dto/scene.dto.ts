@@ -45,6 +45,9 @@ export class CreateSceneDto {
   @Type(() => SubtitleDto)
   @IsOptional()
   subtitles?: SubtitleDto[];
+
+  @IsOptional()
+  is_free?: boolean | number;
 }
 
 export class UpdateSceneDto {
@@ -73,4 +76,7 @@ export class UpdateSceneDto {
   @Type(() => SubtitleDto)
   @IsOptional()
   subtitles?: SubtitleDto[];
+
+  @IsOptional()
+  is_free?: boolean | number;
 }

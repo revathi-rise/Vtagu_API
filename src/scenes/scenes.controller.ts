@@ -7,8 +7,12 @@ export class ScenesController {
   constructor(private readonly scenesService: ScenesService) {}
 
   @Get()
-  async findByMovie(@Query('id', ParseIntPipe) id: number) {
-    const scenes = await this.scenesService.findByMovieId(id);
+  async findByMovie(
+    @Query('id', ParseIntPipe) id: number,
+    @Query('userId') userId?: string,
+  ) {
+    const parsedUserId = userId ? Number(userId) : undefined;
+    const scenes = await this.scenesService.findByMovieId(id, parsedUserId);
     return {
       status: 'success',
       total_count: scenes.length,

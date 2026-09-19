@@ -107,6 +107,8 @@ export class InteractiveMoviesService {
     reason: 'free' | 'subscription' | 'single_purchase' | 'none';
     price: number;
     currency: string;
+    freeSceneCount: number;
+    totalSceneCount: number;
   }> {
     const movie = await this.moviesRepository.findOne({
       where: { interactive_movie_id: movieId },
@@ -115,6 +117,14 @@ export class InteractiveMoviesService {
       throw new NotFoundException(`Interactive movie with ID ${movieId} not found`);
     }
 
+    // Get scene counts
+    const scenes = await this.scenesRepository.find({
+      where: { movie_id: movieId },
+      select: ['scene_id', 'is_free'],
+    });
+    const totalSceneCount = scenes.length;
+    const freeSceneCount = scenes.filter(s => Number(s.is_free) === 1).length;
+
     // 1. If movie is free, allow access
     if (Number(movie.is_free) === 1 || Boolean(movie.is_free) === true || String(movie.is_free) === '1') {
       return {
@@ -122,6 +132,8 @@ export class InteractiveMoviesService {
         reason: 'free',
         price: 0,
         currency: movie.currency,
+        freeSceneCount,
+        totalSceneCount,
       };
     }
 
@@ -132,6 +144,8 @@ export class InteractiveMoviesService {
         reason: 'none',
         price: movie.price,
         currency: movie.currency,
+        freeSceneCount,
+        totalSceneCount,
       };
     }
 
@@ -174,6 +188,8 @@ export class InteractiveMoviesService {
               reason: 'subscription',
               price: movie.price,
               currency: movie.currency,
+              freeSceneCount,
+              totalSceneCount,
             };
           }
         }
@@ -191,6 +207,8 @@ export class InteractiveMoviesService {
           reason: 'subscription',
           price: movie.price,
           currency: movie.currency,
+          freeSceneCount,
+          totalSceneCount,
         };
       }
     }
@@ -205,6 +223,8 @@ export class InteractiveMoviesService {
         reason: 'single_purchase',
         price: movie.price,
         currency: movie.currency,
+        freeSceneCount,
+        totalSceneCount,
       };
     }
 
@@ -214,6 +234,8 @@ export class InteractiveMoviesService {
       reason: 'none',
       price: movie.price,
       currency: movie.currency,
+      freeSceneCount,
+      totalSceneCount,
     };
   }
 

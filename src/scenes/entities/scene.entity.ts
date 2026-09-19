@@ -28,6 +28,9 @@ export class Scene {
   @Column({ type: 'json', nullable: true })
   subtitles: any;
 
+  @Column({ name: 'is_free', type: 'tinyint', default: 0 })
+  is_free: number;
+
   @ManyToOne(() => Movie)
   @JoinColumn({ name: 'movie_id' })
   movie: Movie;
