@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto, MobileLoginDto, VerifyMobileOtpDto, SetParentalPinDto, KidsLoginDto, ExitKidsModeDto } from './dto/user.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
+import { RateLimiterGuard } from '../guards/rate-limiter.guard';
 import { Public } from '../decorators/public.decorator';
 import { Roles } from '../decorators/roles.decorator';
 
@@ -35,6 +36,7 @@ export class UsersController {
    * POST /users/verify-otp
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('verify-otp')
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.usersService.verifyOtp(verifyOtpDto);
@@ -45,6 +47,7 @@ export class UsersController {
    * POST /users/resend-otp
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('resend-otp')
   async resendOtp(@Body() resendOtpDto: ResendOtpDto) {
     return this.usersService.resendOtp(resendOtpDto);
@@ -55,6 +58,7 @@ export class UsersController {
    * POST /users/login
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Request() req) {
     const ipAddress = this.getIpAddress(req);
@@ -77,6 +81,7 @@ export class UsersController {
    * POST /users/admin/login
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('admin/login')
   async adminLogin(@Body() adminLoginDto: AdminLoginDto, @Request() req) {
     const ipAddress = this.getIpAddress(req);
@@ -88,6 +93,7 @@ export class UsersController {
    * POST /users/mobile-login
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('mobile-login')
   async mobileLogin(@Body() mobileLoginDto: MobileLoginDto) {
     return this.usersService.sendMobileOtp(mobileLoginDto);
@@ -98,6 +104,7 @@ export class UsersController {
    * POST /users/verify-mobile-login
    */
   @Public()
+  @UseGuards(RateLimiterGuard)
   @Post('verify-mobile-login')
   async verifyMobileLogin(@Body() verifyDto: VerifyMobileOtpDto, @Request() req) {
     const ipAddress = this.getIpAddress(req);

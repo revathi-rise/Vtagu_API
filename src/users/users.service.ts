@@ -10,6 +10,7 @@ import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, UserResponseDto, AdminLoginDto, AdminResponseDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
 
 import { SmsService } from '../sms/sms.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,7 @@ export class UsersService {
     private subscriptionRepository: Repository<Subscription>,
     private readonly mailerService: MailerService,
     private readonly smsService: SmsService,
+    private readonly auditLogsService: AuditLogsService,
   ) { }
 
   /**
@@ -870,9 +872,19 @@ export class UsersService {
       const user = await this.usersRepository.findOne({ where: { userId }, relations: ['permissions'] });
       if (!user) throw new NotFoundException('User not found');
 
+      const oldPermissions = user.permissions?.map(p => p.module_name) || [];
       const permissions = await this.permissionRepository.findByIds(permissionIds);
       user.permissions = permissions;
       const updatedUser = await this.usersRepository.save(user);
+
+      await this.auditLogsService.createLog({
+        userId: user.userId,
+        userEmail: user.email,
+        action: 'UPDATE_PERMISSIONS',
+        module: 'USER_MANAGEMENT',
+        resourceId: String(userId),
+        details: { oldPermissions, newPermissionIds: permissionIds },
+      });
 
       return { status: true, message: 'User permissions updated successfully', data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
@@ -888,8 +900,18 @@ export class UsersService {
       const user = await this.usersRepository.findOne({ where: { userId }, relations: ['permissions'] });
       if (!user) throw new NotFoundException('User not found');
 
+      const oldRole = user.type;
       user.type = type;
       const updatedUser = await this.usersRepository.save(user);
+
+      await this.auditLogsService.createLog({
+        userId: user.userId,
+        userEmail: user.email,
+        action: 'UPDATE_USER_ROLE',
+        module: 'USER_MANAGEMENT',
+        resourceId: String(userId),
+        details: { oldRole, newRole: type },
+      });
 
       return { status: true, message: 'User role updated successfully', data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
@@ -907,6 +929,15 @@ export class UsersService {
 
       user.is_locked = is_locked;
       const updatedUser = await this.usersRepository.save(user);
+
+      await this.auditLogsService.createLog({
+        userId: user.userId,
+        userEmail: user.email,
+        action: is_locked ? 'LOCK_USER_ACCOUNT' : 'UNLOCK_USER_ACCOUNT',
+        module: 'USER_MANAGEMENT',
+        resourceId: String(userId),
+        details: { is_locked },
+      });
 
       return { status: true, message: `User account ${is_locked ? 'locked' : 'unlocked'} successfully`, data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {

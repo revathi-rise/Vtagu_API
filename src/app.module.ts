@@ -58,6 +58,8 @@ import { SvodRevenueModule } from './svod-revenue/svod-revenue.module';
 import { UsersSubscription } from './svod-revenue/entities/users-subscription.entity';
 import { WatchSessionLog } from './svod-revenue/entities/watch-session-log.entity';
 import { TitleLedger } from './svod-revenue/entities/title-ledger.entity';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { AuditLog } from './audit-logs/entities/audit-log.entity';
 
 
 @Module({
@@ -98,6 +100,7 @@ import { TitleLedger } from './svod-revenue/entities/title-ledger.entity';
         UsersSubscription,
         WatchSessionLog,
         TitleLedger,
+        AuditLog,
       ],
       synchronize: false,
     }),
@@ -146,6 +149,7 @@ import { TitleLedger } from './svod-revenue/entities/title-ledger.entity';
     WatchlistModule,
     SmsModule,
     SvodRevenueModule,
+    AuditLogsModule,
   ],
 })
 export class AppModule {}
