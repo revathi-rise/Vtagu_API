@@ -28,6 +28,12 @@ export class MoviesService {
     private userRepository: Repository<User>,
   ) { }
 
+  async isKidsModeActive(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.userRepository.findOne({ where: { userId } });
+    return !!user?.is_kids_mode;
+  }
+
   async findAll(languageSlug?: string, userId?: number): Promise<MovieResponseDto[]> {
     let movies: Movie[];
     if (languageSlug) {
@@ -40,6 +46,12 @@ export class MoviesService {
     } else {
       movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
     }
+
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      movies = movies.filter(m => !parseBool(m.kids_restriction));
+    }
+
     const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
     const interactiveAccess = userId ? await this.checkStandardAccess(userId, true) : false;
 
@@ -62,7 +74,13 @@ export class MoviesService {
   }
 
   async findForHome(limit = 10, userId?: number): Promise<MovieResponseDto[]> {
-    const movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit });
+    let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2 });
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      movies = movies.filter(m => !parseBool(m.kids_restriction));
+    }
+    movies = movies.slice(0, limit);
+
     const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
     const interactiveAccess = userId ? await this.checkStandardAccess(userId, true) : false;
 

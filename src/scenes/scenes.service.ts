@@ -94,7 +94,7 @@ export class ScenesService {
     return false;
   }
 
-  async findByMovieId(movieId: number, userId?: number): Promise<any[]> {
+  async findByMovieId(movieId: number, userId?: number, isAdmin: boolean = false): Promise<any[]> {
     const scenes = await this.scenesRepository.find({
       where: { movie_id: movieId },
       relations: ['choices', 'choices.targetScene'],
@@ -109,13 +109,14 @@ export class ScenesService {
     // Transform to match PHP logic if needed, although ORM relations are cleaner
     return scenes.map((scene) => {
       const sceneIsFree = Number(scene.is_free) === 1;
-      const canAccessScene = hasFullAccess || sceneIsFree;
+      const canAccessScene = isAdmin || hasFullAccess || sceneIsFree;
 
       return {
         scene_id: scene.scene_id,
         movie_id: scene.movie_id,
         scene_text: scene.scene_name,
         poster_url: canAccessScene ? scene.scene_url : '',
+        scene_url: canAccessScene ? scene.scene_url : '',
         is_ending: Boolean(scene.is_ending),
         end_text: scene.end_text || null,
         show_choices_on: scene.show_choices_on,

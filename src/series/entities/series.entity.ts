@@ -38,6 +38,9 @@ export class Series {
   @Column({ default: 0 })
   featured: number;
 
+  @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
+  kids_restriction: boolean;
+
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon: boolean;
 }

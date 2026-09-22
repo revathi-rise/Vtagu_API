@@ -41,6 +41,9 @@ export class CreateInteractiveMovieDto {
 
   @IsOptional()
   revenue_share_percent?: number;
+
+  @IsOptional()
+  kids_restriction?: number;
 }
 
 export class UpdateInteractiveMovieDto {
@@ -85,4 +88,7 @@ export class UpdateInteractiveMovieDto {
 
   @IsOptional()
   revenue_share_percent?: number;
+
+  @IsOptional()
+  kids_restriction?: number;
 }

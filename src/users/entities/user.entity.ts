@@ -33,8 +33,14 @@ export class User {
   @Column({ nullable: true })
   dob: string;
 
+  @Column({ nullable: true, name: 'parental_pin' })
+  parental_pin: string;
+
   @Column({ nullable: true, default: 'U' })
-  type: string; // '1' = admin, 'U' = user
+  type: string; // '1' = admin, 'U' = user, 'K' = kids
+
+  @Column({ name: 'is_kids_mode', type: 'tinyint', default: 0 })
+  is_kids_mode: boolean;
 
   @Column({ nullable: true })
   gender: string;

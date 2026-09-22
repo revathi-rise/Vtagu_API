@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, Request, UseGuards, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto, MobileLoginDto, VerifyMobileOtpDto } from './dto/user.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto, MobileLoginDto, VerifyMobileOtpDto, SetParentalPinDto, KidsLoginDto, ExitKidsModeDto } from './dto/user.dto';
 import { AuthGuard } from '../guards/auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Public } from '../decorators/public.decorator';
@@ -214,6 +214,33 @@ export class UsersController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.usersService.remove(Number(id));
+  }
+
+  /**
+   * Set / Update Parental PIN
+   * POST /users/parental-pin
+   */
+  @Post('parental-pin')
+  async setParentalPin(@Body() dto: SetParentalPinDto, @Request() req: any) {
+    return this.usersService.setParentalPin(req.user.userId, dto.pin);
+  }
+
+  /**
+   * Switch account to Kids Mode (Kids Login)
+   * POST /users/kids-login
+   */
+  @Post('kids-login')
+  async kidsLogin(@Request() req: any) {
+    return this.usersService.kidsLogin(req.user.userId);
+  }
+
+  /**
+   * Exit Kids Mode with Parental PIN verification
+   * POST /users/exit-kids
+   */
+  @Post('exit-kids')
+  async exitKidsMode(@Body() dto: ExitKidsModeDto, @Request() req: any) {
+    return this.usersService.exitKidsMode(req.user.userId, dto.pin);
   }
 
   /**

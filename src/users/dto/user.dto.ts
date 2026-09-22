@@ -181,6 +181,39 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   login_otp?: string;
+
+  @IsString()
+  @IsOptional()
+  parental_pin?: string;
+
+  @IsOptional()
+  is_kids_mode?: boolean;
+}
+
+export class SetParentalPinDto {
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{4}$/, { message: 'Parental PIN must be a 4-digit number' })
+  pin: string;
+}
+
+export class VerifyParentalPinDto {
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d{4}$/, { message: 'Parental PIN must be a 4-digit number' })
+  pin: string;
+}
+
+export class KidsLoginDto {
+  @IsString()
+  @IsOptional()
+  user_session?: string;
+}
+
+export class ExitKidsModeDto {
+  @IsString()
+  @IsOptional()
+  pin?: string;
 }
 
 export class UserResponseDto {
@@ -208,6 +241,8 @@ export class UserResponseDto {
   card_ccv?: string;
   upi?: string;
   type: string;
+  is_kids_mode: boolean;
+  has_parental_pin: boolean;
   logged_in: boolean;
   last_login_ip_address: string;
   createdAt: Date;

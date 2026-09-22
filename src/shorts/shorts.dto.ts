@@ -60,6 +60,10 @@ export class CreateShortDto {
   @IsOptional()
   is_active?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  kids_restriction?: boolean;
+
   @IsNumber()
   @IsOptional()
   sort_order?: number;
@@ -80,6 +84,7 @@ export class ShortResponseDto {
   is_free: boolean;
   is_featured: boolean;
   is_active: boolean;
+  kids_restriction: boolean;
   view_count: number;
   sort_order: number;
   created_at: Date;

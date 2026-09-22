@@ -10,9 +10,11 @@ export class ScenesController {
   async findByMovie(
     @Query('id', ParseIntPipe) id: number,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
   ) {
     const parsedUserId = userId ? Number(userId) : undefined;
-    const scenes = await this.scenesService.findByMovieId(id, parsedUserId);
+    const isAdmin = admin === 'true' || admin === '1';
+    const scenes = await this.scenesService.findByMovieId(id, parsedUserId, isAdmin);
     return {
       status: 'success',
       total_count: scenes.length,

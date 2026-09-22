@@ -44,6 +44,9 @@ export class InteractiveMovie {
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'revenue_share_percent' })
   revenue_share_percent: number;
 
+  @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
+  kids_restriction: number;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 }

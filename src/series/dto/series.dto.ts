@@ -44,6 +44,9 @@ export class CreateSeriesDto {
   @IsNumber()
   @IsOptional()
   featured?: number;
+
+  @IsOptional()
+  kids_restriction?: boolean;
 }
 
 export class UpdateSeriesDto extends CreateSeriesDto {}

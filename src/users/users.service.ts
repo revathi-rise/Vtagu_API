@@ -799,6 +799,8 @@ export class UsersService {
       card_ccv: user.card_ccv || null,
       upi: user.upi || null,
       type: user.type,
+      is_kids_mode: !!user.is_kids_mode,
+      has_parental_pin: !!user.parental_pin,
       logged_in: user.logged_in,
       last_login_ip_address: user.last_login_ip_address,
       createdAt: user.createdAt || new Date(),
@@ -908,6 +910,92 @@ export class UsersService {
 
       return { status: true, message: `User account ${is_locked ? 'locked' : 'unlocked'} successfully`, data: await this.mapUserToResponse(updatedUser) };
     } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Set or update 4-digit Parental PIN
+   */
+  async setParentalPin(userId: number, pin: string): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId } });
+      if (!user) throw new NotFoundException('User not found');
+
+      const hashedPin = await bcrypt.hash(pin, 10);
+      user.parental_pin = hashedPin;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Parental PIN updated successfully',
+        data: await this.mapUserToResponse(updatedUser),
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Verify Parental PIN
+   */
+  async verifyParentalPin(userId: number, pin: string): Promise<boolean> {
+    const user = await this.usersRepository.findOne({ where: { userId } });
+    if (!user || !user.parental_pin) {
+      return false;
+    }
+    return await bcrypt.compare(pin, user.parental_pin);
+  }
+
+  /**
+   * Switch to Kids Mode (Kids Login)
+   */
+  async kidsLogin(userId: number): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId } });
+      if (!user) throw new NotFoundException('User not found');
+
+      user.is_kids_mode = true;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Switched to Kids Mode successfully',
+        data: await this.mapUserToResponse(updatedUser),
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  /**
+   * Exit Kids Mode (Direct profile switch back to Standard User mode)
+   */
+  async exitKidsMode(userId: number, pin?: string): Promise<{ status: boolean; message: string; data: UserResponseDto }> {
+    try {
+      const user = await this.usersRepository.findOne({ where: { userId } });
+      if (!user) throw new NotFoundException('User not found');
+
+      // Note: Parental PIN verification bypassed as per client requirement for direct profile switching
+      if (pin && user.parental_pin) {
+        const isPinValid = await bcrypt.compare(pin, user.parental_pin);
+        if (!isPinValid) {
+          throw new UnauthorizedException('Invalid 4-digit Parental PIN');
+        }
+      }
+
+      user.is_kids_mode = false;
+      const updatedUser = await this.usersRepository.save(user);
+
+      return {
+        status: true,
+        message: 'Exited Kids Mode successfully',
+        data: await this.mapUserToResponse(updatedUser),
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new BadRequestException(error.message);
     }
   }

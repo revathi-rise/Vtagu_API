@@ -53,6 +53,9 @@ export class Short {
   @Column({ name: 'is_active', default: true })
   is_active: boolean;
 
+  @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
+  kids_restriction: boolean;
+
   @Column({ name: 'view_count', default: 0 })
   view_count: number;
 
