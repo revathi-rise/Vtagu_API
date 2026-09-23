@@ -197,12 +197,17 @@ export class TransactionsService {
     if (expectedSignature === signature) {
       const transaction = await this.repository.findOne({ where: { txn_id: razorpayOrderId } });
       if (transaction) {
+        const wasAlreadyCompleted = transaction.status === 'C' || String(transaction.status).toUpperCase() === 'COMPLETED';
         transaction.status = 'C'; // Complete
         if (!transaction.created_at || isNaN(new Date(transaction.created_at).getTime()) || new Date(transaction.created_at).getFullYear() < 2000) {
           transaction.created_at = new Date();
         }
         const savedTxn = await this.repository.save(transaction);
-        await this.syncTransactionCompletion(savedTxn);
+        if (!wasAlreadyCompleted) {
+          await this.syncTransactionCompletion(savedTxn);
+        } else {
+          console.log('[DEBUG] Transaction already completed previously. Skipping duplicate completion sync:', razorpayOrderId);
+        }
 
         return { success: true, message: 'Payment verified successfully' };
       } else {

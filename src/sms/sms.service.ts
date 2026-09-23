@@ -130,6 +130,23 @@ export class SmsService {
     return this.executeSmsRequest(formattedMobile, templateId, message);
   }
 
+  private readonly sentSmsCache = new Set<string>();
+
+  /**
+   * Helper: Deduplicate SMS dispatches within a 60-second window
+   */
+  private isDuplicateSms(key: string): boolean {
+    if (this.sentSmsCache.has(key)) {
+      this.logger.warn(`[SMS DUP PREVENTED] Duplicate SMS dispatch blocked for key: ${key}`);
+      return true;
+    }
+    this.sentSmsCache.add(key);
+    setTimeout(() => {
+      this.sentSmsCache.delete(key);
+    }, 60000);
+    return false;
+  }
+
   /**
    * 2. Send Subscription Success SMS
    * DLT Template ID 1 (Standard): 1277178997108097673
@@ -138,13 +155,19 @@ export class SmsService {
   async sendSubscriptionSuccessSms(
     mobile: string,
     rawCustomerName: string | undefined,
-    planName: string,
+    rawPlanName: string,
     amount: number | string,
     validTillDate: string,
     isInteractive: boolean = false,
   ): Promise<boolean> {
     const customerName = this.cleanCustomerName(rawCustomerName);
     const formattedMobile = this.formatMobileNumber(mobile);
+    const planName = (rawPlanName || 'Subscription').replace(/\s+plan$/i, '').trim();
+
+    const dedupKey = `sub_success_${formattedMobile}_${planName}_${amount}_${validTillDate}`;
+    if (this.isDuplicateSms(dedupKey)) {
+      return true;
+    }
 
     if (isInteractive) {
       // DLT Template ID: 1277178428254834650

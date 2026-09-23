@@ -24,6 +24,26 @@ export class SubscriptionsService {
    */
   async create(createSubscriptionDto: CreateSubscriptionDto): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto }> {
     try {
+      const targetTxnId = (createSubscriptionDto as any).txn_id || createSubscriptionDto.txnId;
+      if (targetTxnId) {
+        const existingSub = await this.subscriptionRepository.findOne({
+          where: { txnId: targetTxnId },
+          relations: ['user', 'plan'],
+        });
+        if (existingSub) {
+          if (Number(existingSub.payment_status) === 2) {
+            console.log(`[DEBUG] Subscription for transaction ${targetTxnId} is ALREADY payment_status: 2 (SubId: ${existingSub.subscriptionId}). Returning active subscription.`);
+            return {
+              status: true,
+              message: 'Subscription already active',
+              data: this.mapToResponse(existingSub),
+            };
+          }
+          console.log(`[DEBUG] Subscription for transaction ${targetTxnId} exists (SubId: ${existingSub.subscriptionId}). Updating existing subscription.`);
+          return await this.update(existingSub.subscriptionId, createSubscriptionDto as any);
+        }
+      }
+
       const { card_name, card_number, card_expiry, card_ccv, card_ccc, upi, plan_name, ...subscriptionFields } = createSubscriptionDto;
       const subscription = this.subscriptionRepository.create(subscriptionFields);
       subscription.status = 1; // Active
