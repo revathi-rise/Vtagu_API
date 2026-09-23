@@ -7,16 +7,19 @@ export class SmsService {
 
   private readonly baseUrl = 'http://app.mydreamstechnology.in/vb/apikey.php';
   private get apiKey(): string {
-    return process.env.SMS_API_KEY || 'rFqYJ3t98Qsn99d6';
+    return process.env.SMS_API_KEY;
   }
   private get senderId(): string {
-    return process.env.SMS_SENDER || 'VTAGPT';
+    return process.env.SMS_SENDER;
   }
   private get loginTemplateId(): string {
     return process.env.SMS_LOGIN_TEMPLATE_ID;
   }
   private get subscriptionSuccessTemplateId(): string {
     return process.env.SMS_SUBSCRIPTION_SUCCESS_TEMPLATE_ID;
+  }
+  private get subscriptionInteractiveTemplateId(): string {
+    return process.env.SMS_SUBSCRIPTION_INTERACTIVE_TEMPLATE_ID;
   }
   private get subscriptionExpiryTemplateId(): string {
     return process.env.SMS_SUBSCRIPTION_EXPIRY_TEMPLATE_ID;
@@ -50,7 +53,7 @@ export class SmsService {
   }
 
   /**
-   * Helper: Format date from unix timestamp (seconds) to DD-MMM-YYYY (e.g. 20-Jul-2026)
+   * Helper: Format date from unix timestamp (seconds) to DD-MMM-YYYY (e.g. 23-Sep-2026)
    */
   public formatDateForSms(timestampSec: number): string {
     if (!timestampSec || isNaN(timestampSec)) {
@@ -114,6 +117,7 @@ export class SmsService {
   /**
    * 1. Send Login OTP SMS
    * DLT Template ID: 1277178454507676243
+   * Approved DLT Format: Dear {#alphanumeric#}, Your OTP for login is {#number#}. Please use it to verify your login within 10 minutes. https://vtagu.com/ VtagU Primetime
    */
   async sendOtpSms(mobile: string, otp: string, rawCustomerName?: string): Promise<boolean> {
     const customerName = this.cleanCustomerName(rawCustomerName);
@@ -121,14 +125,15 @@ export class SmsService {
     const templateId = this.loginTemplateId;
     
     // Approved DLT text format
-    const message = `Dear ${customerName} , Your OTP for login is ${otp} . Please use it to verify your login within 10 minutes. https://vtagu.com/ VtagU Primetime`;
+    const message = `Dear ${customerName}, Your OTP for login is ${otp}. Please use it to verify your login within 10 minutes. https://vtagu.com/ VtagU Primetime`;
 
     return this.executeSmsRequest(formattedMobile, templateId, message);
   }
 
   /**
    * 2. Send Subscription Success SMS
-   * DLT Template ID: 1277178428254834650
+   * DLT Template ID 1 (Standard): 1277178997108097673
+   * DLT Template ID 3 (Interactive): 1277178428254834650
    */
   async sendSubscriptionSuccessSms(
     mobile: string,
@@ -136,20 +141,30 @@ export class SmsService {
     planName: string,
     amount: number | string,
     validTillDate: string,
+    isInteractive: boolean = false,
   ): Promise<boolean> {
     const customerName = this.cleanCustomerName(rawCustomerName);
     const formattedMobile = this.formatMobileNumber(mobile);
-    const templateId = this.subscriptionSuccessTemplateId;
 
-    // Approved DLT text format
-    const message = `Dear ${customerName} , your subscription for ${planName} plan is successful. You now have access to all interactive movies. Amount paid: INR ${amount}. Valid till: ${validTillDate}. Regards, VTAGU Prime Time`;
-
-    return this.executeSmsRequest(formattedMobile, templateId, message);
+    if (isInteractive) {
+      // DLT Template ID: 1277178428254834650
+      // Approved Format: Dear {#alphanumeric#}, your subscription for {#alphanumeric#} plan is successful. You now have access to all Interactive movies. Amount paid: INR {#number#}. Valid till: {#alphanumeric#}. Regards, Vtagu Prime Time
+      const templateId = this.subscriptionInteractiveTemplateId;
+      const message = `Dear ${customerName}, your subscription for ${planName} plan is successful. You now have access to all Interactive movies. Amount paid: INR ${amount}. Valid till: ${validTillDate}. Regards, Vtagu Prime Time`;
+      return this.executeSmsRequest(formattedMobile, templateId, message);
+    } else {
+      // DLT Template ID: 1277178997108097673
+      // Approved Format: Dear {#alphanumeric#}, your subscription for {#alphanumeric#} plan is successful.Valid till: {#alphanumeric#}. Regards, Vtagu
+      const templateId = this.subscriptionSuccessTemplateId;
+      const message = `Dear ${customerName}, your subscription for ${planName} plan is successful.Valid till: ${validTillDate}. Regards, Vtagu`;
+      return this.executeSmsRequest(formattedMobile, templateId, message);
+    }
   }
 
   /**
    * 3. Send Expiry Reminder Subscription SMS
    * DLT Template ID: 1277178428982461283
+   * Approved DLT Format: Dear {#alphanumeric#}, your VTAGU subscription for {#alphanumeric#} plan is expiring on {#alphanumeric#}. Please renew to continue enjoying unlimited streaming. Regards, VTAGU Prime Time
    */
   async sendExpiryReminderSms(
     mobile: string,
@@ -162,7 +177,7 @@ export class SmsService {
     const templateId = this.subscriptionExpiryTemplateId;
 
     // Approved DLT text format
-    const message = `Dear ${customerName} , your VTAGU subscription for ${planName} plan is expiring on ${expiryDate} . Please renew to continue enjoying unlimited streaming. Regards, VTAGU Prime Time`;
+    const message = `Dear ${customerName}, your VTAGU subscription for ${planName} plan is expiring on ${expiryDate}. Please renew to continue enjoying unlimited streaming. Regards, VTAGU Prime Time`;
 
     return this.executeSmsRequest(formattedMobile, templateId, message);
   }
@@ -180,7 +195,7 @@ export class SmsService {
     const templateId = this.contentUploadTemplateId;
 
     // Approved DLT text format
-    const message = `Exciting News, New ${contentTypeOrTitle} is now available on VTAGU. Watch it now: ${url} . Regards, VTAGU Prime Time.`;
+    const message = `Exciting News, New ${contentTypeOrTitle} is now available on VTAGU. Watch it now: ${url}. Regards, VTAGU Prime Time.`;
 
     return this.executeSmsRequest(formattedMobile, templateId, message);
   }

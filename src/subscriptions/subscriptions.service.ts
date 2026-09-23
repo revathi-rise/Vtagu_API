@@ -388,6 +388,9 @@ export class SubscriptionsService {
         const planName = plan ? plan.name : 'Subscription';
         const validTillDate = this.smsService.formatDateForSms(subscription.timestamp_to);
         const amount = subscription.paid_amount !== undefined ? subscription.paid_amount : (plan ? plan.price : 0);
+        const isInteractive = plan ? (Number(plan.isInteractiveIncluded) === 1 || Number(plan.unlimited) === 1) : false;
+
+        console.log(`[SMS DISPATCH] Triggering Subscription Success SMS for User ${user.userId} (${user.mobile}), Plan: ${planName}, Amount: ${amount}, IsInteractive: ${isInteractive}`);
 
         return await this.smsService.sendSubscriptionSuccessSms(
           user.mobile,
@@ -395,9 +398,12 @@ export class SubscriptionsService {
           planName,
           amount,
           validTillDate,
+          isInteractive,
         );
+      } else {
+        console.warn(`[SMS DISPATCH SKIPPED] User or mobile number is missing for Subscription ID ${subscription.subscriptionId}, User ID ${subscription.userId}`);
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('Error sending subscription success SMS:', error.message);
       return false;
