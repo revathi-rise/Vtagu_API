@@ -34,7 +34,7 @@ export class MoviesService {
     return !!user?.is_kids_mode;
   }
 
-  async findAll(languageSlug?: string, userId?: number): Promise<MovieResponseDto[]> {
+  async findAll(languageSlug?: string, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto[]> {
     let movies: Movie[];
     if (languageSlug) {
       movies = await this.moviesRepo.find({
@@ -59,7 +59,7 @@ export class MoviesService {
       const isFree = parseBool(m.free);
       const isInteractiveMovie = parseBool(m.is_interactive);
       const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
-      const hasAccess = isFree || hasSubAccess;
+      const hasAccess = isAdmin || isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (!hasAccess) {
         if (res.media && res.media.video) {
@@ -73,7 +73,7 @@ export class MoviesService {
     });
   }
 
-  async findForHome(limit = 10, userId?: number): Promise<MovieResponseDto[]> {
+  async findForHome(limit = 10, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto[]> {
     let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2 });
     const isKidsMode = await this.isKidsModeActive(userId);
     if (isKidsMode) {
@@ -88,7 +88,7 @@ export class MoviesService {
       const isFree = parseBool(m.free);
       const isInteractiveMovie = parseBool(m.is_interactive);
       const hasSubAccess = isInteractiveMovie ? interactiveAccess : standardAccess;
-      const hasAccess = isFree || hasSubAccess;
+      const hasAccess = isAdmin || isFree || hasSubAccess;
       const res = this.mapToResponse(m);
       if (userId !== undefined && !hasAccess) {
         if (res.media && res.media.video) {
@@ -153,7 +153,7 @@ export class MoviesService {
     return user.standard_access === 1;
   }
 
-  async findOneBySlug(slugOrId: string, userId?: number): Promise<MovieResponseDto> {
+  async findOneBySlug(slugOrId: string, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto> {
     let movie: Movie;
     if (!isNaN(Number(slugOrId))) {
       movie = await this.moviesRepo.findOne({ where: { movie_id: Number(slugOrId) } });
@@ -166,7 +166,7 @@ export class MoviesService {
     const isFree = parseBool(movie.free);
     const isInteractiveMovie = parseBool(movie.is_interactive);
     const hasSubAccess = userId ? await this.checkStandardAccess(userId, isInteractiveMovie) : false;
-    const hasAccess = isFree || hasSubAccess;
+    const hasAccess = isAdmin || isFree || hasSubAccess;
     
     const response = this.mapToResponse(movie);
     if (!hasAccess) {

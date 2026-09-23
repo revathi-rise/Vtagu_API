@@ -20,10 +20,12 @@ export class MoviesController {
   async findAll(
     @Query('language') language?: string,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.moviesService.findAll(language, parsedUserId);
+      const isAdmin = admin === 'true' || admin === '1';
+      const data = await this.moviesService.findAll(language, parsedUserId, isAdmin);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -34,11 +36,13 @@ export class MoviesController {
   async getTrending(
     @Query('limit') limit?: string,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
   ) {
     try {
       const l = limit ? parseInt(limit, 10) : 10;
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.moviesService.findForHome(l, parsedUserId);
+      const isAdmin = admin === 'true' || admin === '1';
+      const data = await this.moviesService.findForHome(l, parsedUserId, isAdmin);
       return { status: true, message: 'Trending movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -49,10 +53,12 @@ export class MoviesController {
   async findOne(
     @Param('slug') slug: string,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.moviesService.findOneBySlug(slug, parsedUserId);
+      const isAdmin = admin === 'true' || admin === '1';
+      const data = await this.moviesService.findOneBySlug(slug, parsedUserId, isAdmin);
       return { status: true, message: 'Movie fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
