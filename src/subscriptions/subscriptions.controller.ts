@@ -75,8 +75,10 @@ export class SubscriptionsController {
   /**
    * Manually trigger Subscription Success SMS for a subscription ID
    * POST /subscriptions/:id/send-success-sms
+   * GET /subscriptions/:id/send-success-sms
    */
   @Post(':id/send-success-sms')
+  @Get(':id/send-success-sms')
   async sendSuccessSms(@Param('id') id: string) {
     const subRes = await this.subscriptionsService.findOne(Number(id));
     if (!subRes || !subRes.data) {
@@ -90,7 +92,7 @@ export class SubscriptionsController {
       return { status: false, message: 'Subscription entity not found' };
     }
     const sent = await this.subscriptionsService.sendSubscriptionSuccessNotification(fullSub);
-    return { status: sent, message: sent ? 'Subscription success SMS sent' : 'Failed to send SMS (check user mobile number)' };
+    return { status: sent, message: sent ? 'Subscription success SMS sent successfully' : 'Failed to send SMS (check user mobile number in DB)' };
   }
 
   /**

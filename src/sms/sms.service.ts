@@ -7,25 +7,25 @@ export class SmsService {
 
   private readonly baseUrl = 'http://app.mydreamstechnology.in/vb/apikey.php';
   private get apiKey(): string {
-    return process.env.SMS_API_KEY;
+    return process.env.SMS_API_KEY || 'rFqYJ3t98Qsn99d6';
   }
   private get senderId(): string {
-    return process.env.SMS_SENDER;
+    return process.env.SMS_SENDER || 'VTAGPT';
   }
   private get loginTemplateId(): string {
-    return process.env.SMS_LOGIN_TEMPLATE_ID;
+    return process.env.SMS_LOGIN_TEMPLATE_ID || '1277178454507676243';
   }
   private get subscriptionSuccessTemplateId(): string {
-    return process.env.SMS_SUBSCRIPTION_SUCCESS_TEMPLATE_ID;
+    return process.env.SMS_SUBSCRIPTION_SUCCESS_TEMPLATE_ID || '1277178997108097673';
   }
   private get subscriptionInteractiveTemplateId(): string {
-    return process.env.SMS_SUBSCRIPTION_INTERACTIVE_TEMPLATE_ID;
+    return process.env.SMS_SUBSCRIPTION_INTERACTIVE_TEMPLATE_ID || '1277178428254834650';
   }
   private get subscriptionExpiryTemplateId(): string {
-    return process.env.SMS_SUBSCRIPTION_EXPIRY_TEMPLATE_ID;
+    return process.env.SMS_SUBSCRIPTION_EXPIRY_TEMPLATE_ID || '1277178428982461283';
   }
   private get contentUploadTemplateId(): string {
-    return process.env.SMS_CONTENT_UPLOAD_TEMPLATE_ID;
+    return process.env.SMS_CONTENT_UPLOAD_TEMPLATE_ID || '1277178428132372645';
   }
 
   /**
