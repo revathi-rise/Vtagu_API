@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { MoviesService } from './movies.service';
 import { CreateMovieDto, UpdateMovieDto, MovieResponseDto } from './movies.dto';
 
@@ -21,11 +21,14 @@ export class MoviesController {
     @Query('language') language?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const isAdmin = admin === 'true' || admin === '1';
-      const data = await this.moviesService.findAll(language, parsedUserId, isAdmin);
+      const isAdminQuery = admin === 'true' || admin === '1';
+      const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
+      const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
+      const data = await this.moviesService.findAll(language, parsedUserId, isAdminQuery, authHeader, originHeader);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -37,12 +40,15 @@ export class MoviesController {
     @Query('limit') limit?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Req() req?: any,
   ) {
     try {
       const l = limit ? parseInt(limit, 10) : 10;
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const isAdmin = admin === 'true' || admin === '1';
-      const data = await this.moviesService.findForHome(l, parsedUserId, isAdmin);
+      const isAdminQuery = admin === 'true' || admin === '1';
+      const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
+      const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
+      const data = await this.moviesService.findForHome(l, parsedUserId, isAdminQuery, authHeader, originHeader);
       return { status: true, message: 'Trending movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -54,11 +60,14 @@ export class MoviesController {
     @Param('slug') slug: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const isAdmin = admin === 'true' || admin === '1';
-      const data = await this.moviesService.findOneBySlug(slug, parsedUserId, isAdmin);
+      const isAdminQuery = admin === 'true' || admin === '1';
+      const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
+      const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
+      const data = await this.moviesService.findOneBySlug(slug, parsedUserId, isAdminQuery, authHeader, originHeader);
       return { status: true, message: 'Movie fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

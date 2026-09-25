@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Param, Patch, Delete,
-  Query, HttpCode, HttpStatus, ParseIntPipe,
+  Query, HttpCode, HttpStatus, ParseIntPipe, Req,
 } from '@nestjs/common';
 import { EpisodesService } from './episodes.service';
 import { CreateEpisodeDto, UpdateEpisodeDto } from './episode.dto';
@@ -20,10 +20,18 @@ export class EpisodesController {
   async findAll(
     @Query('season_id') seasonId?: string,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
+    @Req() req?: any,
   ) {
+    const isAdminQuery = admin === 'true' || admin === '1';
+    const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
+    const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
     const data = await this.episodesService.findAll(
       seasonId ? Number(seasonId) : undefined,
       userId ? Number(userId) : undefined,
+      isAdminQuery,
+      authHeader,
+      originHeader,
     );
     return { status: true, message: 'Episodes fetched successfully', data };
   }
@@ -32,8 +40,19 @@ export class EpisodesController {
   async findOne(
     @Param('idOrSlug') idOrSlug: string,
     @Query('userId') userId?: string,
+    @Query('admin') admin?: string,
+    @Req() req?: any,
   ) {
-    const data = await this.episodesService.findOne(idOrSlug, userId ? Number(userId) : undefined);
+    const isAdminQuery = admin === 'true' || admin === '1';
+    const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
+    const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
+    const data = await this.episodesService.findOne(
+      idOrSlug,
+      userId ? Number(userId) : undefined,
+      isAdminQuery,
+      authHeader,
+      originHeader,
+    );
     return { status: true, message: 'Episode fetched successfully', data };
   }
 

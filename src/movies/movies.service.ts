@@ -34,7 +34,35 @@ export class MoviesService {
     return !!user?.is_kids_mode;
   }
 
-  async findAll(languageSlug?: string, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto[]> {
+  async checkIsAdminUser(
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<boolean> {
+    if (isAdminQuery) return true;
+    if (originHeader && typeof originHeader === 'string' && originHeader.toLowerCase().includes('admin')) {
+      return true;
+    }
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && (String(user.type) === '1' || String(user.type) === '2')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async findAll(
+    languageSlug?: string,
+    userId?: number,
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<MovieResponseDto[]> {
+    const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies: Movie[];
     if (languageSlug) {
       movies = await this.moviesRepo.find({
@@ -73,7 +101,14 @@ export class MoviesService {
     });
   }
 
-  async findForHome(limit = 10, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto[]> {
+  async findForHome(
+    limit = 10,
+    userId?: number,
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<MovieResponseDto[]> {
+    const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2 });
     const isKidsMode = await this.isKidsModeActive(userId);
     if (isKidsMode) {
@@ -153,7 +188,14 @@ export class MoviesService {
     return user.standard_access === 1;
   }
 
-  async findOneBySlug(slugOrId: string, userId?: number, isAdmin: boolean = false): Promise<MovieResponseDto> {
+  async findOneBySlug(
+    slugOrId: string,
+    userId?: number,
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<MovieResponseDto> {
+    const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movie: Movie;
     if (!isNaN(Number(slugOrId))) {
       movie = await this.moviesRepo.findOne({ where: { movie_id: Number(slugOrId) } });

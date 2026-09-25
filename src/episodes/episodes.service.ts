@@ -44,7 +44,35 @@ export class EpisodesService {
     return this.mapToResponse(saved);
   }
 
-  async findAll(seasonId?: number, userId?: number): Promise<EpisodeResponseDto[]> {
+  async checkIsAdminUser(
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<boolean> {
+    if (isAdminQuery) return true;
+    if (originHeader && typeof originHeader === 'string' && originHeader.toLowerCase().includes('admin')) {
+      return true;
+    }
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && (String(user.type) === '1' || String(user.type) === '2')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  async findAll(
+    seasonId?: number,
+    userId?: number,
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<EpisodeResponseDto[]> {
+    const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     const where = seasonId ? { season_id: seasonId } : {};
     const episodes = await this.episodeRepository.find({
       where,
@@ -53,7 +81,7 @@ export class EpisodesService {
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return episodes.map(e => {
       const isFree = parseBool(e.free);
-      const hasAccess = isFree || hasSubAccess;
+      const hasAccess = isAdmin || isFree || hasSubAccess;
       const res = this.mapToResponse(e);
       if (!hasAccess) {
         if (res.media && res.media.video) {
@@ -112,7 +140,14 @@ export class EpisodesService {
     return user.standard_access === 1;
   }
 
-  async findOne(idOrSlug: string | number, userId?: number): Promise<EpisodeResponseDto> {
+  async findOne(
+    idOrSlug: string | number,
+    userId?: number,
+    isAdminQuery: boolean = false,
+    authHeader?: string,
+    originHeader?: string,
+  ): Promise<EpisodeResponseDto> {
+    const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let episode: Episode;
     if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
       episode = await this.episodeRepository.findOneBy({ episode_id: Number(idOrSlug) });
@@ -123,7 +158,7 @@ export class EpisodesService {
 
     const isFree = parseBool(episode.free);
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
-    const hasAccess = isFree || hasSubAccess;
+    const hasAccess = isAdmin || isFree || hasSubAccess;
 
     const response = this.mapToResponse(episode);
     if (!hasAccess) {
