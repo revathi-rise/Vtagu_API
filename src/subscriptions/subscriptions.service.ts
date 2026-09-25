@@ -408,7 +408,7 @@ export class SubscriptionsService {
         const planName = plan ? plan.name : 'Subscription';
         const validTillDate = this.smsService.formatDateForSms(subscription.timestamp_to);
         const amount = subscription.paid_amount !== undefined ? subscription.paid_amount : (plan ? plan.price : 0);
-        const isInteractive = plan ? (Number(plan.isInteractiveIncluded) === 1 || Number(plan.unlimited) === 1) : false;
+        const isInteractive = plan ? Number(plan.isInteractiveIncluded) === 1 : false;
 
         console.log(`[SMS DISPATCH] Triggering Subscription Success SMS for User ${user.userId} (${user.mobile}), Plan: ${planName}, Amount: ${amount}, IsInteractive: ${isInteractive}`);
 
