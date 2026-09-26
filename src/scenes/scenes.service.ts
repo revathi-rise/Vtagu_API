@@ -31,6 +31,11 @@ export class ScenesService {
     private planRepository: Repository<Plan>,
   ) {}
 
+  async getUserBySessionToken(token: string): Promise<User | null> {
+    if (!token) return null;
+    return this.userRepository.findOne({ where: { user_session: token } });
+  }
+
   /**
    * Check if a user has full access to all scenes of an interactive movie.
    * Returns true if the movie is free, or user has a subscription/purchase.
@@ -58,27 +63,18 @@ export class ScenesService {
         order: { subscriptionId: 'DESC' },
       });
 
-      if (activeSub && activeSub.plan) {
+      if (activeSub) {
         const fromSec = Number(activeSub.timestamp_from) || 0;
         const toSec = Number(activeSub.timestamp_to) || 0;
         const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
         const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
         if (isPaid && isValidDate) {
-          let expectedInteractive = 0;
-          if (Number(activeSub.plan.unlimited) === 1) {
-            expectedInteractive = 1;
-          } else {
-            expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
-          }
-
-          if (expectedInteractive === 1) {
-            return true;
-          }
+          return true;
         }
       }
 
-      if (Number(user.interactive_access) === 1) {
+      if (Number(user.interactive_access) === 1 || Number(user.standard_access) === 1) {
         return true;
       }
     }

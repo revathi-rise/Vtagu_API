@@ -12,6 +12,9 @@ export class SmsService {
   private get senderId(): string {
     return process.env.SMS_SENDER || 'VTAGPT';
   }
+  private get peId(): string {
+    return process.env.SMS_PE_ID || '1201161510718734856';
+  }
   private get loginTemplateId(): string {
     return process.env.SMS_LOGIN_TEMPLATE_ID || '1277178454507676243';
   }
@@ -82,6 +85,8 @@ export class SmsService {
     const queryParams = new URLSearchParams({
       apikey: this.apiKey,
       senderid: this.senderId,
+      peid: this.peId,
+      entityid: this.peId,
       templateid: templateId,
       number: formattedMobile,
       message: message,
