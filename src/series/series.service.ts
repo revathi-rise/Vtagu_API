@@ -11,8 +11,8 @@ export class SeriesService {
     private repository: Repository<Series>,
   ) {}
 
-  async findAll(): Promise<Series[]> {
-    return this.repository.find();
+  async findAll(limit?: number): Promise<Series[]> {
+    return this.repository.find(limit ? { take: limit } : {});
   }
 
   async findOne(id: number): Promise<Series> {

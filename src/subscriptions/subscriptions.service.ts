@@ -188,12 +188,16 @@ export class SubscriptionsService {
   /**
    * Get all subscriptions
    */
-  async findAll(): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto[] }> {
+  async findAll(limit?: number): Promise<{ status: boolean; message: string; data: SubscriptionResponseDto[] }> {
     try {
-      const subscriptions = await this.subscriptionRepository.find({
+      const options: any = {
         relations: ['user', 'plan'],
         order: { subscriptionId: 'DESC' },
-      });
+      };
+      if (limit) {
+        options.take = limit;
+      }
+      const subscriptions = await this.subscriptionRepository.find(options);
       return {
         status: true,
         message: 'Subscriptions fetched successfully',

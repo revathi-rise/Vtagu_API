@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Delete, Param, Query } from '@nestjs/common';
 import { CurrenciesService } from './currencies.service';
 import { CreateCurrencyDto, UpdateCurrencyDto } from './dto/currency.dto';
 
@@ -7,8 +7,9 @@ export class CurrenciesController {
   constructor(private readonly currenciesService: CurrenciesService) {}
 
   @Get()
-  async findAll() {
-    const data = await this.currenciesService.findAll();
+  async findAll(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
+    const data = await this.currenciesService.findAll(parsedLimit);
     return { status: true, message: 'Currencies fetched successfully', data };
   }
 

@@ -61,19 +61,17 @@ export class MoviesService {
     isAdminQuery: boolean = false,
     authHeader?: string,
     originHeader?: string,
+    limit?: number,
   ): Promise<MovieResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies: Movie[];
+    const options: any = { order: { movie_id: 'DESC' } };
+    if (limit) options.take = limit;
+
     if (languageSlug) {
-      movies = await this.moviesRepo.find({
-        where: {
-          languages: Like(`%${languageSlug}%`),
-        },
-        order: { movie_id: 'DESC' },
-      });
-    } else {
-      movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' } });
+      options.where = { languages: Like(`%${languageSlug}%`) };
     }
+    movies = await this.moviesRepo.find(options);
 
     const isKidsMode = await this.isKidsModeActive(userId);
     if (isKidsMode) {

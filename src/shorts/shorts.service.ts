@@ -54,10 +54,12 @@ export class ShortsService {
     return false;
   }
 
-  async findAll(userId?: number): Promise<ShortResponseDto[]> {
-    const shorts = await this.shortsRepo.find({
+  async findAll(userId?: number, limit?: number): Promise<ShortResponseDto[]> {
+    const options: any = {
       order: { sort_order: 'ASC', short_id: 'DESC' },
-    });
+    };
+    if (limit) options.take = limit;
+    const shorts = await this.shortsRepo.find(options);
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);

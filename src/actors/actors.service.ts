@@ -11,8 +11,8 @@ export class ActorsService {
     private repository: Repository<Actor>,
   ) {}
 
-  async findAll(): Promise<Actor[]> {
-    return this.repository.find();
+  async findAll(limit?: number): Promise<Actor[]> {
+    return this.repository.find(limit ? { take: limit } : {});
   }
 
   async findOne(id: number): Promise<Actor> {

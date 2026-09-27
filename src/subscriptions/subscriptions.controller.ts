@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionDto, UpdateSubscriptionDto } from './dto/subscription.dto';
 
@@ -20,8 +20,9 @@ export class SubscriptionsController {
    * GET /subscriptions
    */
   @Get()
-  async findAll() {
-    return this.subscriptionsService.findAll();
+  async findAll(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.min(Number(limit), 500) : undefined;
+    return this.subscriptionsService.findAll(parsedLimit);
   }
 
   /**

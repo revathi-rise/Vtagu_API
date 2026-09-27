@@ -31,12 +31,14 @@ export class InteractiveMoviesService {
   ) {}
 
 
-  async findAll(): Promise<InteractiveMovie[]> {
-    return this.moviesRepository.find({
+  async findAll(limit?: number): Promise<InteractiveMovie[]> {
+    const options: any = {
       order: {
         created_at: 'DESC',
       },
-    });
+    };
+    if (limit) options.take = limit;
+    return this.moviesRepository.find(options);
   }
 
   async findOne(id: number): Promise<InteractiveMovie> {

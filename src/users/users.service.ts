@@ -349,11 +349,16 @@ export class UsersService {
   /**
    * Get all users
    */
-  async findAll(): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
+  async findAll(limit?: number): Promise<{ status: boolean; message: string; data: UserResponseDto[] }> {
     try {
-      const users = await this.usersRepository.find({
-        relations: ['permissions']
-      });
+      const options: any = {
+        relations: ['permissions'],
+        order: { userId: 'DESC' },
+      };
+      if (limit) {
+        options.take = limit;
+      }
+      const users = await this.usersRepository.find(options);
       const plans = await this.planRepository.find();
       const planMap = new Map(plans.map(p => [p.planId.toString(), p.price]));
 

@@ -23,9 +23,13 @@ export class LanguagesService {
     private readonly episodesService: EpisodesService,
   ) {}
 
-  async findAll(includeHidden = false) {
+  async findAll(includeHidden = false, limit?: number) {
     const where = includeHidden ? {} : { is_visible: true };
-    const languages = await this.languagesRepo.find({ where, order: { id: 'ASC' } });
+    const options: any = { where, order: { id: 'ASC' } };
+    if (limit) {
+      options.take = limit;
+    }
+    const languages = await this.languagesRepo.find(options);
     return languages.map(l => ({
       id: l.id,
       name: l.name,

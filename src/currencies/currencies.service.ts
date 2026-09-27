@@ -11,8 +11,10 @@ export class CurrenciesService {
     private readonly currencyRepo: Repository<Currency>,
   ) {}
 
-  async findAll() {
-    const list = await this.currencyRepo.find({ order: { id: 'ASC' } });
+  async findAll(limit?: number) {
+    const options: any = { order: { id: 'ASC' } };
+    if (limit) options.take = limit;
+    const list = await this.currencyRepo.find(options);
     return list.map(c => c.code.toUpperCase() === 'INR' ? { ...c, symbol: '₹' } : c);
   }
 

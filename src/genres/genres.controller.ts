@@ -17,9 +17,10 @@ export class GenresController {
   }
 
   @Get()
-  async getAll() {
+  async getAll(@Query('limit') limit?: string) {
     try {
-      const data = await this.service.findAll();
+      const l = limit ? parseInt(limit, 10) : undefined;
+      const data = await this.service.findAll(l);
       return { status: true, message: 'Genres fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

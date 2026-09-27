@@ -21,9 +21,11 @@ export class EpisodesController {
     @Query('season_id') seasonId?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Query('limit') limit?: string,
     @Req() req?: any,
   ) {
     const isAdminQuery = admin === 'true' || admin === '1';
+    const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
     const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
     const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
     const data = await this.episodesService.findAll(
@@ -32,6 +34,7 @@ export class EpisodesController {
       isAdminQuery,
       authHeader,
       originHeader,
+      parsedLimit,
     );
     return { status: true, message: 'Episodes fetched successfully', data };
   }

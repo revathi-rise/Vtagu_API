@@ -21,14 +21,16 @@ export class MoviesController {
     @Query('language') language?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Query('limit') limit?: string,
     @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
       const isAdminQuery = admin === 'true' || admin === '1';
       const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
       const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
-      const data = await this.moviesService.findAll(language, parsedUserId, isAdminQuery, authHeader, originHeader);
+      const data = await this.moviesService.findAll(language, parsedUserId, isAdminQuery, authHeader, originHeader, parsedLimit);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

@@ -17,7 +17,7 @@ export class AuditLogsController {
   @Get()
   async findAll(@Query('limit') limit?: string, @Query('offset') offset?: string) {
     try {
-      const parsedLimit = limit ? Math.min(Number(limit), 100) : 50;
+      const parsedLimit = limit ? Math.min(Number(limit), 500) : 50;
       const parsedOffset = offset ? Number(offset) : 0;
       return await this.auditLogsService.findAll(parsedLimit, parsedOffset);
     } catch (error) {

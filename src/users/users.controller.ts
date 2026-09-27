@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Request, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Request, UseGuards, ForbiddenException, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { RegisterDto, LoginDto, GoogleLoginDto, VerifyOtpDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto, UpdateUserDto, AdminLoginDto, MobileLoginDto, VerifyMobileOtpDto, SetParentalPinDto, KidsLoginDto, ExitKidsModeDto } from './dto/user.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -27,8 +27,9 @@ export class UsersController {
    * GET /users
    */
   @Get()
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@Query('limit') limit?: string) {
+    const parsedLimit = limit ? Math.min(Number(limit), 500) : undefined;
+    return this.usersService.findAll(parsedLimit);
   }
 
   /**

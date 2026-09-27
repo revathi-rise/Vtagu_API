@@ -31,10 +31,14 @@ export class ShortsController {
    * Admin endpoint — returns all shorts (active + inactive)
    */
   @Get()
-  async findAll(@Query('userId') userId?: string): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
+  async findAll(
+    @Query('userId') userId?: string,
+    @Query('limit') limit?: string,
+  ): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.shortsService.findAll(parsedUserId);
+      const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
+      const data = await this.shortsService.findAll(parsedUserId, parsedLimit);
       return { status: true, message: 'Shorts fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: [] };

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { SeriesService } from './series.service';
 import { CreateSeriesDto, UpdateSeriesDto } from './dto/series.dto';
 
@@ -7,9 +7,10 @@ export class SeriesController {
   constructor(private readonly service: SeriesService) {}
 
   @Get()
-  async findAll() {
+  async findAll(@Query('limit') limit?: string) {
     try {
-      const data = await this.service.findAll();
+      const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
+      const data = await this.service.findAll(parsedLimit);
       return { status: true, message: 'Series fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message, data: null };

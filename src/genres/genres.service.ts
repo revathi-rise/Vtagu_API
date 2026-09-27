@@ -10,8 +10,12 @@ export class GenresService {
     private repo: Repository<Genre>,
   ) { }
 
-  async findAll() {
-    const genres = await this.repo.find({ order: { genre_id: 'ASC' } });
+  async findAll(limit?: number) {
+    const options: any = { order: { genre_id: 'ASC' } };
+    if (limit) {
+      options.take = limit;
+    }
+    const genres = await this.repo.find(options);
     return genres.map(g => this.mapToResponse(g));
   }
 

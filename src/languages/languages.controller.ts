@@ -6,9 +6,10 @@ export class LanguagesController {
   constructor(private readonly languagesService: LanguagesService) {}
 
   @Get()
-  async findAll(@Query('all') all?: string) {
+  async findAll(@Query('all') all?: string, @Query('limit') limit?: string) {
     const includeHidden = all === 'true' || all === '1';
-    const data = await this.languagesService.findAll(includeHidden);
+    const l = limit ? parseInt(limit, 10) : undefined;
+    const data = await this.languagesService.findAll(includeHidden, l);
     return { status: true, message: 'Languages fetched successfully', data };
   }
 

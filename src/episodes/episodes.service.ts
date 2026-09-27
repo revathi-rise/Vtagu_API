@@ -71,13 +71,15 @@ export class EpisodesService {
     isAdminQuery: boolean = false,
     authHeader?: string,
     originHeader?: string,
+    limit?: number,
   ): Promise<EpisodeResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
-    const where = seasonId ? { season_id: seasonId } : {};
-    const episodes = await this.episodeRepository.find({
-      where,
+    const options: any = {
+      where: seasonId ? { season_id: seasonId } : {},
       order: { season_id: 'ASC', episode_number: 'ASC' },
-    });
+    };
+    if (limit) options.take = limit;
+    const episodes = await this.episodeRepository.find(options);
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return episodes.map(e => {
       const isFree = parseBool(e.free);

@@ -7,9 +7,10 @@ export class InteractiveMoviesController {
   constructor(private readonly moviesService: InteractiveMoviesService) {}
 
   @Get()
-  async findAll() {
+  async findAll(@Query('limit') limit?: string) {
     try {
-      const movies = await this.moviesService.findAll();
+      const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
+      const movies = await this.moviesService.findAll(parsedLimit);
       return {
         status: 'success',
         total_count: movies.length,
