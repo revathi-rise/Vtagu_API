@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsIn } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator';
 
 export class CreatePosterDto {
   @IsString()
@@ -7,14 +7,33 @@ export class CreatePosterDto {
 
   @IsString()
   @IsOptional()
-  description?: string;
+  title?: string;
 
   @IsString()
   @IsOptional()
-  genres_list?: string;
+  description?: string;
+
+  @IsOptional()
+  genres_list?: any;
+
+  @IsOptional()
+  genres?: any;
 
   @IsString()
-  path: string;
+  @IsOptional()
+  path?: string;
+
+  @IsString()
+  @IsOptional()
+  url?: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @IsOptional()
+  poster_image?: string;
 
   @IsString()
   @IsOptional()
@@ -22,19 +41,28 @@ export class CreatePosterDto {
 
   @IsString()
   @IsOptional()
-  link?: string;
+  trailerUrl?: string;
 
   @IsString()
   @IsOptional()
-  languages?: string;
+  link?: string;
+
+  @IsOptional()
+  languages?: any;
 
   @IsString()
   @IsOptional()
   page_type?: string;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  reference_id?: number;
+  pageType?: string;
+
+  @IsOptional()
+  reference_id?: any;
+
+  @IsOptional()
+  referenceId?: any;
 
   @IsString()
   @IsOptional()
@@ -42,8 +70,13 @@ export class CreatePosterDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['A', 'I'])
-  status?: string;
+  referenceType?: string;
+
+  @IsOptional()
+  status?: any;
+
+  @IsOptional()
+  is_coming_soon?: any;
 }
 
 export class UpdatePosterDto {
@@ -53,11 +86,17 @@ export class UpdatePosterDto {
 
   @IsString()
   @IsOptional()
-  description?: string;
+  title?: string;
 
   @IsString()
   @IsOptional()
-  genres_list?: string;
+  description?: string;
+
+  @IsOptional()
+  genres_list?: any;
+
+  @IsOptional()
+  genres?: any;
 
   @IsString()
   @IsOptional()
@@ -65,23 +104,44 @@ export class UpdatePosterDto {
 
   @IsString()
   @IsOptional()
+  url?: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @IsOptional()
+  poster_image?: string;
+
+  @IsString()
+  @IsOptional()
   trailer_url?: string;
+
+  @IsString()
+  @IsOptional()
+  trailerUrl?: string;
 
   @IsString()
   @IsOptional()
   link?: string;
 
-  @IsString()
   @IsOptional()
-  languages?: string;
+  languages?: any;
 
   @IsString()
   @IsOptional()
   page_type?: string;
 
-  @IsInt()
+  @IsString()
   @IsOptional()
-  reference_id?: number;
+  pageType?: string;
+
+  @IsOptional()
+  reference_id?: any;
+
+  @IsOptional()
+  referenceId?: any;
 
   @IsString()
   @IsOptional()
@@ -89,6 +149,11 @@ export class UpdatePosterDto {
 
   @IsString()
   @IsOptional()
-  @IsIn(['A', 'I'])
-  status?: string;
+  referenceType?: string;
+
+  @IsOptional()
+  status?: any;
+
+  @IsOptional()
+  is_coming_soon?: any;
 }
