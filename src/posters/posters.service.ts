@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Poster } from './poster.entity';
 import { CreatePosterDto, UpdatePosterDto } from './dto/poster.dto';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class PostersService {
   constructor(
     @InjectRepository(Poster)
     private postersRepo: Repository<Poster>,
+    @Optional()
+    private auditLogsService?: AuditLogsService,
   ) { }
 
   private mapToResponse(poster: Poster) {
@@ -171,6 +174,18 @@ export class PostersService {
     }
     const poster = this.postersRepo.create(data);
     const saved = await this.postersRepo.save(poster);
+
+    if (this.auditLogsService) {
+      await this.auditLogsService.createLog({
+        userId: 1,
+        userEmail: 'admin@vtagu.com',
+        action: 'CREATE_BANNER',
+        module: 'BANNERS',
+        resourceId: String(saved.poster_id),
+        details: { title: saved.poster_title, page_type: saved.page_type },
+      }).catch(() => null);
+    }
+
     return this.mapToResponse(saved);
   }
 
@@ -182,6 +197,18 @@ export class PostersService {
     const data = this.mapFromDto(dto, poster);
     Object.assign(poster, data);
     const saved = await this.postersRepo.save(poster);
+
+    if (this.auditLogsService) {
+      await this.auditLogsService.createLog({
+        userId: 1,
+        userEmail: 'admin@vtagu.com',
+        action: 'UPDATE_BANNER',
+        module: 'BANNERS',
+        resourceId: String(saved.poster_id),
+        details: { title: saved.poster_title, page_type: saved.page_type },
+      }).catch(() => null);
+    }
+
     return this.mapToResponse(saved);
   }
 
@@ -191,6 +218,18 @@ export class PostersService {
       throw new NotFoundException(`Poster with ID ${id} not found`);
     }
     await this.postersRepo.remove(poster);
+
+    if (this.auditLogsService) {
+      await this.auditLogsService.createLog({
+        userId: 1,
+        userEmail: 'admin@vtagu.com',
+        action: 'DELETE_BANNER',
+        module: 'BANNERS',
+        resourceId: String(id),
+        details: { title: poster.poster_title },
+      }).catch(() => null);
+    }
   }
 }
+
 
