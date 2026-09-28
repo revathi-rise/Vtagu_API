@@ -203,6 +203,11 @@ export class MoviesService {
     }
     if (!movie) throw new NotFoundException('Movie not found');
     
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode && parseBool(movie.kids_restriction)) {
+      throw new NotFoundException('Movie not found');
+    }
+
     const isFree = parseBool(movie.free);
     const isInteractiveMovie = parseBool(movie.is_interactive);
     const hasSubAccess = userId ? await this.checkStandardAccess(userId, isInteractiveMovie) : false;

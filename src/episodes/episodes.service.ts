@@ -65,6 +65,12 @@ export class EpisodesService {
     return false;
   }
 
+  async isKidsModeActive(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.userRepository.findOne({ where: { userId } });
+    return user ? !!user.is_kids_mode : false;
+  }
+
   async findAll(
     seasonId?: number,
     userId?: number,
@@ -79,7 +85,11 @@ export class EpisodesService {
       order: { season_id: 'ASC', episode_number: 'ASC' },
     };
     if (limit) options.take = limit;
-    const episodes = await this.episodeRepository.find(options);
+    let episodes = await this.episodeRepository.find(options);
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      episodes = episodes.filter(e => !parseBool(e.kids_restriction));
+    }
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return episodes.map(e => {
       const isFree = parseBool(e.free);
@@ -157,6 +167,10 @@ export class EpisodesService {
       episode = await this.episodeRepository.findOneBy({ slug: String(idOrSlug) });
     }
     if (!episode) throw new NotFoundException('Episode not found');
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode && parseBool(episode.kids_restriction)) {
+      throw new NotFoundException('Episode not found');
+    }
 
     const isFree = parseBool(episode.free);
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
@@ -202,6 +216,11 @@ export class EpisodesService {
     const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : isRevenueShared));
     if (revenueManagedInput !== undefined) {
       episode.is_revenue_managed = parseBool(revenueManagedInput);
+    }
+
+    const kidsInput = (rest as any).kids_restriction !== undefined ? (rest as any).kids_restriction : (rest as any).kidsRestriction;
+    if (kidsInput !== undefined) {
+      episode.kids_restriction = parseBool(kidsInput);
     }
 
     const freeInput = free !== undefined ? free : (isFree !== undefined ? isFree : is_free);
@@ -253,6 +272,8 @@ export class EpisodesService {
       isFree: isFreeBool,
       isComingSoon: e.is_coming_soon,
       is_coming_soon: e.is_coming_soon,
+      kids_restriction: parseBool(e.kids_restriction),
+      kidsRestriction: parseBool(e.kids_restriction),
       is_revenue_managed: parseBool(e.is_revenue_managed),
       is_svod_eligible: parseBool(e.is_svod_eligible),
       revenue_share_percent: e.revenue_share_percent ? parseFloat(e.revenue_share_percent.toString()) : null,

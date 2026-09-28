@@ -118,6 +118,10 @@ export class CreateEpisodeDto {
 
   @IsBoolean()
   @IsOptional()
+  kids_restriction?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   is_revenue_managed?: boolean;
 
   @IsBoolean()
@@ -296,6 +300,8 @@ export class EpisodeResponseDto {
   isFree: boolean;
   isComingSoon: boolean;
   is_coming_soon: boolean;
+  kids_restriction: boolean;
+  kidsRestriction: boolean;
   is_revenue_managed: boolean;
   is_svod_eligible: boolean;
   revenue_share_percent: number;

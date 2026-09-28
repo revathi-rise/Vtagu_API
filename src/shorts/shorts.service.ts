@@ -5,6 +5,7 @@ import { Short } from './short.entity';
 import { CreateShortDto, ShortResponseDto, UpdateShortDto } from './shorts.dto';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
+import { User } from '../users/entities/user.entity';
 
 const parseBool = (val: any): boolean => {
   if (val === true || val === false) return val;
@@ -22,7 +23,15 @@ export class ShortsService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
+
+  async isKidsModeActive(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.userRepository.findOne({ where: { userId } });
+    return user ? !!user.is_kids_mode : false;
+  }
 
   async checkShortsAccess(userId?: number): Promise<boolean> {
     if (!userId) return false;
@@ -59,7 +68,11 @@ export class ShortsService {
       order: { sort_order: 'ASC', short_id: 'DESC' },
     };
     if (limit) options.take = limit;
-    const shorts = await this.shortsRepo.find(options);
+    let shorts = await this.shortsRepo.find(options);
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      shorts = shorts.filter(s => !parseBool(s.kids_restriction));
+    }
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
@@ -80,7 +93,11 @@ export class ShortsService {
       query.take(limit);
     }
 
-    const shorts = await query.getMany();
+    let shorts = await query.getMany();
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      shorts = shorts.filter(s => !parseBool(s.kids_restriction));
+    }
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
       const res = this.mapToResponse(s);
@@ -94,6 +111,10 @@ export class ShortsService {
   async findOne(id: number, userId?: number): Promise<ShortResponseDto> {
     const short = await this.shortsRepo.findOne({ where: { short_id: id } });
     if (!short) throw new NotFoundException('Short not found');
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode && parseBool(short.kids_restriction)) {
+      throw new NotFoundException('Short not found');
+    }
     const isFree = parseBool(short.is_free);
     const hasAccess = isFree || (userId ? await this.checkShortsAccess(userId) : false);
     const res = this.mapToResponse(short);
@@ -108,6 +129,7 @@ export class ShortsService {
     if (shortData.is_free !== undefined) shortData.is_free = parseBool(shortData.is_free) as any;
     if (shortData.is_featured !== undefined) shortData.is_featured = parseBool(shortData.is_featured) as any;
     if (shortData.is_active !== undefined) shortData.is_active = parseBool(shortData.is_active) as any;
+    if (shortData.kids_restriction !== undefined) shortData.kids_restriction = parseBool(shortData.kids_restriction) as any;
     
     const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
     if (shortData.is_revenue_managed !== undefined) shortData.is_revenue_managed = parseBoolToNum(shortData.is_revenue_managed);
@@ -134,6 +156,7 @@ export class ShortsService {
     if (updateData.is_free !== undefined) updateData.is_free = parseBool(updateData.is_free) as any;
     if (updateData.is_featured !== undefined) updateData.is_featured = parseBool(updateData.is_featured) as any;
     if (updateData.is_active !== undefined) updateData.is_active = parseBool(updateData.is_active) as any;
+    if (updateData.kids_restriction !== undefined) updateData.kids_restriction = parseBool(updateData.kids_restriction) as any;
 
     const parseBoolToNum = (val: any) => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
     if (updateData.is_revenue_managed !== undefined) updateData.is_revenue_managed = parseBoolToNum(updateData.is_revenue_managed);

@@ -31,21 +31,36 @@ export class InteractiveMoviesService {
   ) {}
 
 
-  async findAll(limit?: number): Promise<InteractiveMovie[]> {
+  async isKidsModeActive(userId?: number): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.userRepository.findOne({ where: { userId } });
+    return user ? !!user.is_kids_mode : false;
+  }
+
+  async findAll(limit?: number, userId?: number): Promise<InteractiveMovie[]> {
     const options: any = {
       order: {
         created_at: 'DESC',
       },
     };
     if (limit) options.take = limit;
-    return this.moviesRepository.find(options);
+    let movies = await this.moviesRepository.find(options);
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode) {
+      movies = movies.filter(m => Number(m.kids_restriction) === 0 || Boolean(m.kids_restriction) === false);
+    }
+    return movies;
   }
 
-  async findOne(id: number): Promise<InteractiveMovie> {
+  async findOne(id: number, userId?: number): Promise<InteractiveMovie> {
     const movie = await this.moviesRepository.findOne({
       where: { interactive_movie_id: id },
     });
     if (!movie) {
+      throw new NotFoundException(`Interactive movie with ID ${id} not found`);
+    }
+    const isKidsMode = await this.isKidsModeActive(userId);
+    if (isKidsMode && (Number(movie.kids_restriction) === 1 || Boolean(movie.kids_restriction) === true)) {
       throw new NotFoundException(`Interactive movie with ID ${id} not found`);
     }
     return movie;
@@ -60,6 +75,7 @@ export class InteractiveMoviesService {
       data.is_revenue_managed = parseBoolToNum(data.isRevenueManaged);
       delete data.isRevenueManaged;
     }
+    if (data.kids_restriction !== undefined) data.kids_restriction = parseBoolToNum(data.kids_restriction);
 
     const movie = this.moviesRepository.create(data as CreateInteractiveMovieDto);
     return this.moviesRepository.save(movie);
@@ -74,6 +90,7 @@ export class InteractiveMoviesService {
       data.is_revenue_managed = parseBoolToNum(data.isRevenueManaged);
       delete data.isRevenueManaged;
     }
+    if (data.kids_restriction !== undefined) data.kids_restriction = parseBoolToNum(data.kids_restriction);
 
     await this.moviesRepository.update(id, data as UpdateInteractiveMovieDto);
     return this.findOne(id);
