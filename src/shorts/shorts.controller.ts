@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { ShortsService } from './shorts.service';
 import { CreateShortDto, UpdateShortDto, ShortResponseDto } from './shorts.dto';
 
@@ -15,11 +15,15 @@ export class ShortsController {
   async findActive(
     @Query('limit') limit?: string,
     @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
     try {
       const l = limit ? parseInt(limit, 10) : undefined;
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.shortsService.findActive(l, parsedUserId);
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.shortsService.findActive(l, parsedUserId, authHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Active shorts fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: [] };
@@ -34,11 +38,15 @@ export class ShortsController {
   async findAll(
     @Query('userId') userId?: string,
     @Query('limit') limit?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: ShortResponseDto[] }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
       const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
-      const data = await this.shortsService.findAll(parsedUserId, parsedLimit);
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.shortsService.findAll(parsedUserId, parsedLimit, authHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Shorts fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: [] };
@@ -53,10 +61,14 @@ export class ShortsController {
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: ShortResponseDto }> {
     try {
       const parsedUserId = userId ? parseInt(userId, 10) : undefined;
-      const data = await this.shortsService.findOne(id, parsedUserId);
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.shortsService.findOne(id, parsedUserId, authHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Short fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

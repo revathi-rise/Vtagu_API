@@ -39,7 +39,7 @@ export class WatchProgressService {
   /**
    * Get all progress for a user with content details
    */
-  async getUserProgress(userId: number): Promise<any[]> {
+  async getUserProgress(userId: number, isKidsMode: boolean = false): Promise<any[]> {
     const progresses = await this.watchProgressRepository.find({
       where: { userId },
       order: { lastWatchedAt: 'DESC' },
@@ -51,12 +51,12 @@ export class WatchProgressService {
         if (p.contentType === ContentType.MOVIE) {
           contentInfo = await this.moviesRepository.findOne({
             where: { movie_id: p.contentId },
-            select: ['movie_id', 'slug', 'title', 'movie_image', 'duration'],
+            select: ['movie_id', 'slug', 'title', 'movie_image', 'duration', 'kids_restriction'],
           });
         } else if (p.contentType === ContentType.EPISODE) {
           contentInfo = await this.episodesRepository.findOne({
             where: { episode_id: p.contentId },
-            select: ['episode_id', 'slug', 'title', 'image'],
+            select: ['episode_id', 'slug', 'title', 'image', 'kids_restriction'],
           });
         }
 
@@ -67,7 +67,13 @@ export class WatchProgressService {
       }),
     );
 
-    return result.filter((item) => item.content !== null);
+    return result.filter((item) => {
+      if (!item.content) return false;
+      if (isKidsMode) {
+        return item.content.kids_restriction === true || item.content.kids_restriction === 1 || item.content.kids_restriction === '1';
+      }
+      return true;
+    });
   }
 
   /**

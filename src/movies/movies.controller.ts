@@ -22,6 +22,7 @@ export class MoviesController {
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
     @Query('limit') limit?: string,
+    @Query('kidsMode') kidsMode?: string,
     @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto[] }> {
     try {
@@ -30,7 +31,8 @@ export class MoviesController {
       const isAdminQuery = admin === 'true' || admin === '1';
       const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
       const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
-      const data = await this.moviesService.findAll(language, parsedUserId, isAdminQuery, authHeader, originHeader, parsedLimit);
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.moviesService.findAll(language, parsedUserId, isAdminQuery, authHeader, originHeader, parsedLimit, kidsMode, kidsHeader);
       return { status: true, message: 'Movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -42,6 +44,7 @@ export class MoviesController {
     @Query('limit') limit?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Query('kidsMode') kidsMode?: string,
     @Req() req?: any,
   ) {
     try {
@@ -50,7 +53,8 @@ export class MoviesController {
       const isAdminQuery = admin === 'true' || admin === '1';
       const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
       const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
-      const data = await this.moviesService.findForHome(l, parsedUserId, isAdminQuery, authHeader, originHeader);
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.moviesService.findForHome(l, parsedUserId, isAdminQuery, authHeader, originHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Trending movies fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -62,6 +66,7 @@ export class MoviesController {
     @Param('slug') slug: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
+    @Query('kidsMode') kidsMode?: string,
     @Req() req?: any,
   ): Promise<{ status: boolean; message: string; data: MovieResponseDto }> {
     try {
@@ -69,7 +74,8 @@ export class MoviesController {
       const isAdminQuery = admin === 'true' || admin === '1';
       const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
       const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
-      const data = await this.moviesService.findOneBySlug(slug, parsedUserId, isAdminQuery, authHeader, originHeader);
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.moviesService.findOneBySlug(slug, parsedUserId, isAdminQuery, authHeader, originHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Movie fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };

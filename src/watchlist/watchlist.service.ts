@@ -132,14 +132,14 @@ export class WatchlistService {
   /**
    * Get all watchlist items for user with details
    */
-  async getUserWatchlist(userId: number): Promise<{ status: boolean; message: string; data: WatchlistResponseDto[] }> {
+  async getUserWatchlist(userId: number, isKidsMode: boolean = false): Promise<{ status: boolean; message: string; data: WatchlistResponseDto[] }> {
     try {
       const watchlistItems = await this.watchlistRepository.find({
         where: { userId },
         order: { createdAt: 'DESC' },
       });
 
-      const itemsWithDetails: WatchlistResponseDto[] = [];
+      let itemsWithDetails: WatchlistResponseDto[] = [];
 
       for (const item of watchlistItems) {
         let details: any = null;
@@ -152,6 +152,11 @@ export class WatchlistService {
           details = await this.interactiveMovieRepository.findOne({ where: { interactive_movie_id: item.contentId } });
         } else if (item.contentType === 'short') {
           details = await this.shortRepository.findOne({ where: { short_id: item.contentId } });
+        }
+
+        if (isKidsMode && details) {
+          const isKids = details.kids_restriction === true || details.kids_restriction === 1 || details.kids_restriction === '1';
+          if (!isKids) continue;
         }
 
         itemsWithDetails.push({

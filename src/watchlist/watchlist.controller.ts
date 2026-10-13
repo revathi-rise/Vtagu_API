@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { WatchlistService } from './watchlist.service';
 import { AddToWatchlistDto, RemoveFromWatchlistDto } from './dto/watchlist.dto';
 
@@ -55,7 +55,12 @@ export class WatchlistController {
    * GET /watchlist/user/:userId
    */
   @Get('user/:userId')
-  async getUserWatchlist(@Param('userId') userId: string) {
-    return this.watchlistService.getUserWatchlist(Number(userId));
+  async getUserWatchlist(
+    @Param('userId') userId: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
+  ) {
+    const isKids = kidsMode === 'true' || kidsMode === '1' || req?.headers?.['x-kids-mode'] === 'true' || req?.headers?.['x-kids-mode'] === '1';
+    return this.watchlistService.getUserWatchlist(Number(userId), isKids);
   }
 }

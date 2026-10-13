@@ -302,6 +302,8 @@ export class EpisodeResponseDto {
   is_coming_soon: boolean;
   kids_restriction: boolean;
   kidsRestriction: boolean;
+  isKidsApproved?: boolean;
+  is_kids_approved?: boolean;
   is_revenue_managed: boolean;
   is_svod_eligible: boolean;
   revenue_share_percent: number;

@@ -2,17 +2,58 @@ import { Injectable, NotFoundException, Inject, Optional } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Poster } from './poster.entity';
+import { Movie } from '../movies/movie.entity';
+import { Series } from '../series/entities/series.entity';
+import { Episode } from '../episodes/episode.entity';
+import { User } from '../users/entities/user.entity';
 import { CreatePosterDto, UpdatePosterDto } from './dto/poster.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+
+const parseBool = (val: any): boolean => {
+  if (val === true || val === false) return val;
+  if (val === 1 || val === '1' || val === 'true') return true;
+  if (val === 0 || val === '0' || val === 'false') return false;
+  return false;
+};
 
 @Injectable()
 export class PostersService {
   constructor(
     @InjectRepository(Poster)
     private postersRepo: Repository<Poster>,
+    @InjectRepository(Movie)
+    private moviesRepo: Repository<Movie>,
+    @InjectRepository(Series)
+    private seriesRepo: Repository<Series>,
+    @InjectRepository(Episode)
+    private episodesRepo: Repository<Episode>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
     @Optional()
     private auditLogsService?: AuditLogsService,
   ) { }
+
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepo.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepo.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
+  }
 
   private mapToResponse(poster: Poster) {
     if (!poster) return null;
@@ -120,7 +161,35 @@ export class PostersService {
     return data;
   }
 
-  async findAll(limit?: number, pageType?: string, language?: string): Promise<any[]> {
+  private async filterPostersForKids(posters: Poster[]): Promise<Poster[]> {
+    const approvedPosters: Poster[] = [];
+    for (const poster of posters) {
+      const refType = (poster.reference_type || '').toLowerCase();
+      const refId = poster.reference_id;
+      if (!refId) {
+        continue;
+      }
+      if (refType === 'movie') {
+        const movie = await this.moviesRepo.findOne({ where: { movie_id: refId } });
+        if (movie && parseBool(movie.kids_restriction)) {
+          approvedPosters.push(poster);
+        }
+      } else if (refType === 'series') {
+        const series = await this.seriesRepo.findOne({ where: { series_id: refId } });
+        if (series && parseBool(series.kids_restriction)) {
+          approvedPosters.push(poster);
+        }
+      } else if (refType === 'episode') {
+        const episode = await this.episodesRepo.findOne({ where: { episode_id: refId } });
+        if (episode && parseBool(episode.kids_restriction)) {
+          approvedPosters.push(poster);
+        }
+      }
+    }
+    return approvedPosters;
+  }
+
+  async findAll(limit?: number, pageType?: string, language?: string, isKidsMode: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
       .where('1=1');
 
@@ -134,15 +203,19 @@ export class PostersService {
 
     query.orderBy('posters.poster_id', 'DESC');
 
-    if (limit) {
+    if (limit && !isKidsMode) {
       query.take(limit);
     }
 
-    const items = await query.getMany();
+    let items = await query.getMany();
+    if (isKidsMode) {
+      items = await this.filterPostersForKids(items);
+      if (limit) items = items.slice(0, limit);
+    }
     return items.map((item) => this.mapToResponse(item));
   }
 
-  async findByPageType(pageType: string, language?: string): Promise<any[]> {
+  async findByPageType(pageType: string, language?: string, isKidsMode: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
       .where('posters.page_type = :pageType', { pageType })
       .andWhere('posters.status = :status', { status: 'A' });
@@ -152,7 +225,10 @@ export class PostersService {
     }
 
     query.orderBy('posters.poster_id', 'DESC');
-    const items = await query.getMany();
+    let items = await query.getMany();
+    if (isKidsMode) {
+      items = await this.filterPostersForKids(items);
+    }
     return items.map((item) => this.mapToResponse(item));
   }
 
@@ -169,67 +245,44 @@ export class PostersService {
     if (!data.path) {
       data.path = '';
     }
-    if (!data.status) {
-      data.status = 'A';
-    }
     const poster = this.postersRepo.create(data);
     const saved = await this.postersRepo.save(poster);
 
     if (this.auditLogsService) {
-      await this.auditLogsService.createLog({
-        userId: 1,
-        userEmail: 'admin@vtagu.com',
-        action: 'CREATE_BANNER',
-        module: 'BANNERS',
-        resourceId: String(saved.poster_id),
-        details: { title: saved.poster_title, page_type: saved.page_type },
-      }).catch(() => null);
+      this.auditLogsService.createLog({ action: 'CREATE', module: 'Posters', resourceId: String(saved.poster_id), details: { newData: saved } }).catch(err => console.error('Failed to log audit:', err));
     }
 
     return this.mapToResponse(saved);
   }
 
   async update(id: number, dto: UpdatePosterDto): Promise<any> {
-    const poster = await this.postersRepo.findOne({ where: { poster_id: id } });
-    if (!poster) {
+    const existing = await this.postersRepo.findOne({ where: { poster_id: id } });
+    if (!existing) {
       throw new NotFoundException(`Poster with ID ${id} not found`);
     }
-    const data = this.mapFromDto(dto, poster);
-    Object.assign(poster, data);
-    const saved = await this.postersRepo.save(poster);
+
+    const oldData = { ...existing };
+    const data = this.mapFromDto(dto, existing);
+    await this.postersRepo.update(id, data);
+    const updated = await this.postersRepo.findOne({ where: { poster_id: id } });
 
     if (this.auditLogsService) {
-      await this.auditLogsService.createLog({
-        userId: 1,
-        userEmail: 'admin@vtagu.com',
-        action: 'UPDATE_BANNER',
-        module: 'BANNERS',
-        resourceId: String(saved.poster_id),
-        details: { title: saved.poster_title, page_type: saved.page_type },
-      }).catch(() => null);
+      this.auditLogsService.createLog({ action: 'UPDATE', module: 'Posters', resourceId: String(id), details: { oldData, newData: updated } }).catch(err => console.error('Failed to log audit:', err));
     }
 
-    return this.mapToResponse(saved);
+    return this.mapToResponse(updated!);
   }
 
   async remove(id: number): Promise<void> {
-    const poster = await this.postersRepo.findOne({ where: { poster_id: id } });
-    if (!poster) {
+    const existing = await this.postersRepo.findOne({ where: { poster_id: id } });
+    if (!existing) {
       throw new NotFoundException(`Poster with ID ${id} not found`);
     }
-    await this.postersRepo.remove(poster);
 
     if (this.auditLogsService) {
-      await this.auditLogsService.createLog({
-        userId: 1,
-        userEmail: 'admin@vtagu.com',
-        action: 'DELETE_BANNER',
-        module: 'BANNERS',
-        resourceId: String(id),
-        details: { title: poster.poster_title },
-      }).catch(() => null);
+      this.auditLogsService.createLog({ action: 'DELETE', module: 'Posters', resourceId: String(id), details: { oldData: existing } }).catch(err => console.error('Failed to log audit:', err));
     }
+
+    await this.postersRepo.delete(id);
   }
 }
-
-

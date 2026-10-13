@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Delete, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Delete, Param, Query, Req } from '@nestjs/common';
 import { LanguagesService } from './languages.service';
 
 @Controller('languages')
@@ -34,7 +34,13 @@ export class LanguagesController {
   }
 
   @Get(':slug/movies')
-  async getMoviesByLanguage(@Param('slug') slug: string) {
-    return this.languagesService.getMovies(slug);
+  async getMoviesByLanguage(
+    @Param('slug') slug: string,
+    @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
+  ) {
+    const isKids = kidsMode === 'true' || kidsMode === '1' || req?.headers?.['x-kids-mode'] === 'true' || req?.headers?.['x-kids-mode'] === '1';
+    return this.languagesService.getMovies(slug, isKids);
   }
 }

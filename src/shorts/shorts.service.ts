@@ -27,10 +27,26 @@ export class ShortsService {
     private userRepository: Repository<User>,
   ) {}
 
-  async isKidsModeActive(userId?: number): Promise<boolean> {
-    if (!userId) return false;
-    const user = await this.userRepository.findOne({ where: { userId } });
-    return user ? !!user.is_kids_mode : false;
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
   }
 
   async checkShortsAccess(userId?: number): Promise<boolean> {
@@ -63,15 +79,21 @@ export class ShortsService {
     return false;
   }
 
-  async findAll(userId?: number, limit?: number): Promise<ShortResponseDto[]> {
+  async findAll(
+    userId?: number,
+    limit?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<ShortResponseDto[]> {
     const options: any = {
       order: { sort_order: 'ASC', short_id: 'DESC' },
     };
     if (limit) options.take = limit;
     let shorts = await this.shortsRepo.find(options);
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
-      shorts = shorts.filter(s => !parseBool(s.kids_restriction));
+      shorts = shorts.filter(s => parseBool(s.kids_restriction));
     }
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
@@ -83,7 +105,13 @@ export class ShortsService {
     });
   }
 
-  async findActive(limit?: number, userId?: number): Promise<ShortResponseDto[]> {
+  async findActive(
+    limit?: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<ShortResponseDto[]> {
     const query = this.shortsRepo.createQueryBuilder('short')
       .where('short.is_active = :active', { active: true })
       .orderBy('short.sort_order', 'ASC')
@@ -94,9 +122,9 @@ export class ShortsService {
     }
 
     let shorts = await query.getMany();
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
-      shorts = shorts.filter(s => !parseBool(s.kids_restriction));
+      shorts = shorts.filter(s => parseBool(s.kids_restriction));
     }
     const hasAccess = userId ? await this.checkShortsAccess(userId) : false;
     return shorts.map((s) => {
@@ -108,11 +136,17 @@ export class ShortsService {
     });
   }
 
-  async findOne(id: number, userId?: number): Promise<ShortResponseDto> {
+  async findOne(
+    id: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<ShortResponseDto> {
     const short = await this.shortsRepo.findOne({ where: { short_id: id } });
     if (!short) throw new NotFoundException('Short not found');
-    const isKidsMode = await this.isKidsModeActive(userId);
-    if (isKidsMode && parseBool(short.kids_restriction)) {
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
+    if (isKidsMode && !parseBool(short.kids_restriction)) {
       throw new NotFoundException('Short not found');
     }
     const isFree = parseBool(short.is_free);

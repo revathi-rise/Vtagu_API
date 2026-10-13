@@ -21,28 +21,56 @@ export class SeriesService {
     private userRepository: Repository<User>,
   ) {}
 
-  async isKidsModeActive(userId?: number): Promise<boolean> {
-    if (!userId) return false;
-    const user = await this.userRepository.findOne({ where: { userId } });
-    return user ? !!user.is_kids_mode : false;
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
   }
 
-  async findAll(limit?: number, userId?: number): Promise<Series[]> {
+  async findAll(
+    limit?: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<Series[]> {
     let seriesList = await this.repository.find(limit ? { take: limit } : {});
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
-      seriesList = seriesList.filter(s => !parseBool(s.kids_restriction));
+      seriesList = seriesList.filter(s => parseBool(s.kids_restriction));
     }
     return seriesList;
   }
 
-  async findOne(id: number, userId?: number): Promise<Series> {
+  async findOne(
+    id: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<Series> {
     const series = await this.repository.findOne({ where: { series_id: id } });
     if (!series) {
       throw new NotFoundException(`Series with ID ${id} not found`);
     }
-    const isKidsMode = await this.isKidsModeActive(userId);
-    if (isKidsMode && parseBool(series.kids_restriction)) {
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
+    if (isKidsMode && !parseBool(series.kids_restriction)) {
       throw new NotFoundException(`Series with ID ${id} not found`);
     }
     return series;

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, Query, NotFoundException, Req } from '@nestjs/common';
 import { WatchProgressService } from './watch-progress.service';
 import { SaveWatchProgressDto } from './dto/watch-progress.dto';
 import { ContentType } from './entities/watch-progress.entity';
@@ -78,9 +78,14 @@ export class WatchProgressController {
    * GET /watch-progress/user/:userId
    */
   @Get('user/:userId')
-  async getUserProgress(@Param('userId') userId: string) {
+  async getUserProgress(
+    @Param('userId') userId: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
+  ) {
     try {
-      const data = await this.watchProgressService.getUserProgress(Number(userId));
+      const isKids = kidsMode === 'true' || kidsMode === '1' || req?.headers?.['x-kids-mode'] === 'true' || req?.headers?.['x-kids-mode'] === '1';
+      const data = await this.watchProgressService.getUserProgress(Number(userId), isKids);
       return {
         status: true,
         message: 'User watch progress list fetched successfully',

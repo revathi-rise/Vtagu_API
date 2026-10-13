@@ -1,3 +1,4 @@
+import { User } from '../users/entities/user.entity';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Language } from './language.entity';
@@ -11,7 +12,7 @@ import { LanguagesController } from './languages.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Language, Movie, Episode, InteractiveMovie]),
+    TypeOrmModule.forFeature([Language, Movie, Episode, InteractiveMovie, User]),
     MoviesModule,
     EpisodesModule,
   ],

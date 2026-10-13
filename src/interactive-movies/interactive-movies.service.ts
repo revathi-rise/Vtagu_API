@@ -1,3 +1,4 @@
+import { parseBool } from '../common/kids-mode.util';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -31,13 +32,35 @@ export class InteractiveMoviesService {
   ) {}
 
 
-  async isKidsModeActive(userId?: number): Promise<boolean> {
-    if (!userId) return false;
-    const user = await this.userRepository.findOne({ where: { userId } });
-    return user ? !!user.is_kids_mode : false;
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
   }
 
-  async findAll(limit?: number, userId?: number): Promise<InteractiveMovie[]> {
+  async findAll(
+    limit?: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<InteractiveMovie[]> {
     const options: any = {
       order: {
         created_at: 'DESC',
@@ -45,22 +68,28 @@ export class InteractiveMoviesService {
     };
     if (limit) options.take = limit;
     let movies = await this.moviesRepository.find(options);
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
-      movies = movies.filter(m => Number(m.kids_restriction) === 0 || Boolean(m.kids_restriction) === false);
+      movies = movies.filter(m => Number(m.kids_restriction) === 1 || Boolean(m.kids_restriction) === true);
     }
     return movies;
   }
 
-  async findOne(id: number, userId?: number): Promise<InteractiveMovie> {
+  async findOne(
+    id: number,
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<InteractiveMovie> {
     const movie = await this.moviesRepository.findOne({
       where: { interactive_movie_id: id },
     });
     if (!movie) {
       throw new NotFoundException(`Interactive movie with ID ${id} not found`);
     }
-    const isKidsMode = await this.isKidsModeActive(userId);
-    if (isKidsMode && (Number(movie.kids_restriction) === 1 || Boolean(movie.kids_restriction) === true)) {
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
+    if (isKidsMode && (Number(movie.kids_restriction) !== 1 && Boolean(movie.kids_restriction) !== true)) {
       throw new NotFoundException(`Interactive movie with ID ${id} not found`);
     }
     return movie;

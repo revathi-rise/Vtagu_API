@@ -73,7 +73,7 @@ export class LanguagesService {
     return { status: true, message: 'Language deleted successfully' };
   }
 
-  async getMovies(slug: string) {
+  async getMovies(slug: string, isKidsMode: boolean = false) {
     // Find the language by its slug
     const language = await this.languagesRepo.findOne({ where: { slug } });
     if (!language) {
@@ -127,14 +127,16 @@ export class LanguagesService {
 
     let mappedMovies = [];
     try {
-      mappedMovies = movies.map(m => this.moviesService.mapToResponse(m));
+      if (isKidsMode) movies = movies.filter(m => (m as any).kids_restriction === true || (m as any).kids_restriction === 1 || (m as any).kids_restriction === '1');
+    mappedMovies = movies.map(m => this.moviesService.mapToResponse(m));
     } catch (error) {
       console.error('Error mapping movies to response:', error);
     }
 
     let mappedEpisodes = [];
     try {
-      mappedEpisodes = episodes.map(e => this.episodesService.mapToResponse(e));
+      if (isKidsMode) episodes = episodes.filter(e => (e as any).kids_restriction === true || (e as any).kids_restriction === 1 || (e as any).kids_restriction === '1');
+    mappedEpisodes = episodes.map(e => this.episodesService.mapToResponse(e));
     } catch (error) {
       console.error('Error mapping episodes to response:', error);
     }
@@ -145,7 +147,7 @@ export class LanguagesService {
       data: {
         language: language.name,
         movies: mappedMovies,
-        Interactive: interactiveMovies,
+        Interactive: isKidsMode ? interactiveMovies.filter(m => Number(m.kids_restriction) === 1 || Boolean(m.kids_restriction) === true) : interactiveMovies,
         episodes: mappedEpisodes,
       }
     };

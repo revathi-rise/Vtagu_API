@@ -28,10 +28,26 @@ export class MoviesService {
     private userRepository: Repository<User>,
   ) { }
 
-  async isKidsModeActive(userId?: number): Promise<boolean> {
-    if (!userId) return false;
-    const user = await this.userRepository.findOne({ where: { userId } });
-    return !!user?.is_kids_mode;
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
   }
 
   async checkIsAdminUser(
@@ -62,6 +78,8 @@ export class MoviesService {
     authHeader?: string,
     originHeader?: string,
     limit?: number,
+    kidsModeQuery?: boolean | string,
+    kidsModeHeader?: boolean | string,
   ): Promise<MovieResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies: Movie[];
@@ -73,9 +91,9 @@ export class MoviesService {
     }
     movies = await this.moviesRepo.find(options);
 
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
     if (isKidsMode) {
-      movies = movies.filter(m => !parseBool(m.kids_restriction));
+      movies = movies.filter(m => parseBool(m.kids_restriction));
     }
 
     const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
@@ -105,12 +123,14 @@ export class MoviesService {
     isAdminQuery: boolean = false,
     authHeader?: string,
     originHeader?: string,
+    kidsModeQuery?: boolean | string,
+    kidsModeHeader?: boolean | string,
   ): Promise<MovieResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2 });
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
     if (isKidsMode) {
-      movies = movies.filter(m => !parseBool(m.kids_restriction));
+      movies = movies.filter(m => parseBool(m.kids_restriction));
     }
     movies = movies.slice(0, limit);
 
@@ -192,6 +212,8 @@ export class MoviesService {
     isAdminQuery: boolean = false,
     authHeader?: string,
     originHeader?: string,
+    kidsModeQuery?: boolean | string,
+    kidsModeHeader?: boolean | string,
   ): Promise<MovieResponseDto> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movie: Movie;
@@ -203,8 +225,8 @@ export class MoviesService {
     }
     if (!movie) throw new NotFoundException('Movie not found');
     
-    const isKidsMode = await this.isKidsModeActive(userId);
-    if (isKidsMode && parseBool(movie.kids_restriction)) {
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
+    if (isKidsMode && !parseBool(movie.kids_restriction)) {
       throw new NotFoundException('Movie not found');
     }
 
@@ -348,7 +370,7 @@ export class MoviesService {
       movie.is_interactive = parseBool(interactiveInput);
     }
 
-    const kidsInput = kids_restriction !== undefined ? kids_restriction : kidsRestriction;
+    const kidsInput = kids_restriction !== undefined ? kids_restriction : ((dto as any).is_kids_approved !== undefined ? (dto as any).is_kids_approved : ((dto as any).isKidsApproved !== undefined ? (dto as any).isKidsApproved : kidsRestriction));
     if (kidsInput !== undefined) {
       movie.kids_restriction = parseBool(kidsInput);
     }
@@ -430,6 +452,9 @@ export class MoviesService {
       contentType: m.type,
       ageRestriction: m.age_restriction,
       kidsRestriction: kidsRestrictionBool,
+      kids_restriction: kidsRestrictionBool,
+      isKidsApproved: kidsRestrictionBool,
+      is_kids_approved: kidsRestrictionBool,
       duration: m.duration,
       languages: m.languages,
       viewCount: m.view_count,

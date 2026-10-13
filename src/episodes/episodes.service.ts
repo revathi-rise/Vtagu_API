@@ -65,10 +65,26 @@ export class EpisodesService {
     return false;
   }
 
-  async isKidsModeActive(userId?: number): Promise<boolean> {
-    if (!userId) return false;
-    const user = await this.userRepository.findOne({ where: { userId } });
-    return user ? !!user.is_kids_mode : false;
+  async isKidsModeActive(
+    userId?: number,
+    authHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
+  ): Promise<boolean> {
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepository.findOne({ where: { user_session: token } });
+        if (user && parseBool(user.is_kids_mode)) return true;
+      }
+    }
+    if (userId) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user && parseBool(user.is_kids_mode)) return true;
+    }
+    if (kidsQueryFlag !== undefined && parseBool(kidsQueryFlag)) return true;
+    if (kidsHeaderFlag !== undefined && parseBool(kidsHeaderFlag)) return true;
+    return false;
   }
 
   async findAll(
@@ -78,6 +94,8 @@ export class EpisodesService {
     authHeader?: string,
     originHeader?: string,
     limit?: number,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
   ): Promise<EpisodeResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     const options: any = {
@@ -86,9 +104,9 @@ export class EpisodesService {
     };
     if (limit) options.take = limit;
     let episodes = await this.episodeRepository.find(options);
-    const isKidsMode = await this.isKidsModeActive(userId);
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
-      episodes = episodes.filter(e => !parseBool(e.kids_restriction));
+      episodes = episodes.filter(e => parseBool(e.kids_restriction));
     }
     const hasSubAccess = userId ? await this.checkStandardAccess(userId) : false;
     return episodes.map(e => {
@@ -158,6 +176,8 @@ export class EpisodesService {
     isAdminQuery: boolean = false,
     authHeader?: string,
     originHeader?: string,
+    kidsQueryFlag?: boolean | string,
+    kidsHeaderFlag?: boolean | string,
   ): Promise<EpisodeResponseDto> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let episode: Episode;
@@ -167,8 +187,8 @@ export class EpisodesService {
       episode = await this.episodeRepository.findOneBy({ slug: String(idOrSlug) });
     }
     if (!episode) throw new NotFoundException('Episode not found');
-    const isKidsMode = await this.isKidsModeActive(userId);
-    if (isKidsMode && parseBool(episode.kids_restriction)) {
+    const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
+    if (isKidsMode && !parseBool(episode.kids_restriction)) {
       throw new NotFoundException('Episode not found');
     }
 

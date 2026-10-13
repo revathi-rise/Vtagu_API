@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { PostersService } from './posters.service';
 import { CreatePosterDto, UpdatePosterDto } from './dto/poster.dto';
 
@@ -12,11 +12,18 @@ export class PostersController {
     @Query('page_type') pageType?: string,
     @Query('pageType') altPageType?: string,
     @Query('language') language?: string,
+    @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
   ) {
     try {
       const l = limit ? parseInt(limit, 10) : undefined;
       const targetPageType = pageType || altPageType;
-      const data = await this.postersService.findAll(l, targetPageType, language);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const isKids = await this.postersService.isKidsModeActive(parsedUserId, authHeader, kidsMode, kidsHeader);
+      const data = await this.postersService.findAll(l, targetPageType, language, isKids);
       return { status: true, message: 'Posters fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message || 'An error occurred', data: null };
@@ -27,6 +34,9 @@ export class PostersController {
   async getBySlug(
     @Param('slug') slug: string,
     @Query('language') language?: string,
+    @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
   ) {
     try {
       const id = parseInt(slug, 10);
@@ -34,7 +44,11 @@ export class PostersController {
         const data = await this.postersService.findOne(id);
         return { status: true, message: 'Poster fetched successfully', data };
       } else {
-        const data = await this.postersService.findByPageType(slug, language);
+        const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+        const authHeader = req?.headers?.['authorization'];
+        const kidsHeader = req?.headers?.['x-kids-mode'];
+        const isKids = await this.postersService.isKidsModeActive(parsedUserId, authHeader, kidsMode, kidsHeader);
+        const data = await this.postersService.findByPageType(slug, language, isKids);
         return { status: true, message: 'Posters fetched successfully', data };
       }
     } catch (error) {
@@ -78,27 +92,13 @@ export class PostersController {
     }
   }
 
-  @Post(':id')
-  async updateViaPost(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateDto: UpdatePosterDto,
-  ) {
-    try {
-      const data = await this.postersService.update(id, updateDto);
-      return { status: true, message: 'Poster updated successfully', data };
-    } catch (error) {
-      return { status: false, message: error.message || 'An error occurred', data: null };
-    }
-  }
-
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     try {
       await this.postersService.remove(id);
-      return { status: true, message: 'Poster deleted successfully', data: null };
+      return { status: true, message: 'Poster deleted successfully' };
     } catch (error) {
-      return { status: false, message: error.message || 'An error occurred', data: null };
+      return { status: false, message: error.message || 'An error occurred' };
     }
   }
 }
-

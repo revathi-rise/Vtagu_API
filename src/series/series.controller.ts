@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { SeriesService } from './series.service';
 import { CreateSeriesDto, UpdateSeriesDto } from './dto/series.dto';
 
@@ -7,10 +7,18 @@ export class SeriesController {
   constructor(private readonly service: SeriesService) {}
 
   @Get()
-  async findAll(@Query('limit') limit?: string) {
+  async findAll(
+    @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
+  ) {
     try {
       const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
-      const data = await this.service.findAll(parsedLimit);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.service.findAll(parsedLimit, parsedUserId, authHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Series fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
@@ -18,9 +26,17 @@ export class SeriesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Query('userId') userId?: string,
+    @Query('kidsMode') kidsMode?: string,
+    @Req() req?: any,
+  ) {
     try {
-      const data = await this.service.findOne(+id);
+      const parsedUserId = userId ? parseInt(userId, 10) : undefined;
+      const authHeader = req?.headers?.['authorization'];
+      const kidsHeader = req?.headers?.['x-kids-mode'];
+      const data = await this.service.findOne(+id, parsedUserId, authHeader, kidsMode, kidsHeader);
       return { status: true, message: 'Series fetched successfully', data };
     } catch (error) {
       return { status: false, message: error.message, data: null };
