@@ -86,6 +86,8 @@ export class PostersService {
       is_coming_soon: Boolean(poster.is_coming_soon),
       kids_restriction: parseBool(poster.kids_restriction),
       kidsRestriction: parseBool(poster.kids_restriction),
+      kids_only: parseBool(poster.kids_only) || poster.page_type === 'kids',
+      kidsOnly: parseBool(poster.kids_only) || poster.page_type === 'kids',
     };
   }
 
@@ -165,13 +167,18 @@ export class PostersService {
       data.kids_restriction = parseBool(kVal);
     }
 
+    if (dto.kids_only !== undefined || dto.kidsOnly !== undefined) {
+      const kOnly = dto.kids_only ?? dto.kidsOnly;
+      data.kids_only = parseBool(kOnly);
+    }
+
     return data;
   }
 
   private async filterPostersForKids(posters: Poster[]): Promise<Poster[]> {
     const approvedPosters: Poster[] = [];
     for (const poster of posters) {
-      if (parseBool(poster.kids_restriction)) {
+      if (parseBool(poster.kids_restriction) || parseBool(poster.kids_only) || poster.page_type === 'kids') {
         approvedPosters.push(poster);
         continue;
       }
@@ -222,6 +229,8 @@ export class PostersService {
     if (isKidsMode) {
       items = await this.filterPostersForKids(items);
       if (limit) items = items.slice(0, limit);
+    } else {
+      items = items.filter(item => !parseBool(item.kids_only) && item.page_type !== 'kids');
     }
     return items.map((item) => this.mapToResponse(item));
   }
@@ -239,6 +248,8 @@ export class PostersService {
     let items = await query.getMany();
     if (isKidsMode) {
       items = await this.filterPostersForKids(items);
+    } else {
+      items = items.filter(item => !parseBool(item.kids_only) && item.page_type !== 'kids');
     }
     return items.map((item) => this.mapToResponse(item));
   }

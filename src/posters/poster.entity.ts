@@ -41,6 +41,9 @@ export class Poster {
   @Column({ name: 'kids_restriction', default: false })
   kids_restriction?: boolean;
 
+  @Column({ name: 'kids_only', default: false })
+  kids_only?: boolean;
+
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon?: boolean;
 

@@ -82,6 +82,12 @@ export class CreatePosterDto {
   kidsRestriction?: any;
 
   @IsOptional()
+  kids_only?: any;
+
+  @IsOptional()
+  kidsOnly?: any;
+
+  @IsOptional()
   is_coming_soon?: any;
 }
 
@@ -165,6 +171,12 @@ export class UpdatePosterDto {
 
   @IsOptional()
   kidsRestriction?: any;
+
+  @IsOptional()
+  kids_only?: any;
+
+  @IsOptional()
+  kidsOnly?: any;
 
   @IsOptional()
   is_coming_soon?: any;
