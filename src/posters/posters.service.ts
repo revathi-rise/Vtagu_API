@@ -84,6 +84,8 @@ export class PostersService {
       trailerUrl: poster.trailer_url || '',
       status: poster.status || 'A',
       is_coming_soon: Boolean(poster.is_coming_soon),
+      kids_restriction: parseBool(poster.kids_restriction),
+      kidsRestriction: parseBool(poster.kids_restriction),
     };
   }
 
@@ -158,12 +160,21 @@ export class PostersService {
       data.is_coming_soon = dto.is_coming_soon === true || dto.is_coming_soon === 'true' || dto.is_coming_soon === 1 || dto.is_coming_soon === '1';
     }
 
+    if (dto.kids_restriction !== undefined || dto.kidsRestriction !== undefined) {
+      const kVal = dto.kids_restriction ?? dto.kidsRestriction;
+      data.kids_restriction = parseBool(kVal);
+    }
+
     return data;
   }
 
   private async filterPostersForKids(posters: Poster[]): Promise<Poster[]> {
     const approvedPosters: Poster[] = [];
     for (const poster of posters) {
+      if (parseBool(poster.kids_restriction)) {
+        approvedPosters.push(poster);
+        continue;
+      }
       const refType = (poster.reference_type || '').toLowerCase();
       const refId = poster.reference_id;
       if (!refId) {
