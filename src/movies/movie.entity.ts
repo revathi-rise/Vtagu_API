@@ -56,6 +56,9 @@ export class Movie {
   @Column({ name: 'kids_restriction', default: false })
   kids_restriction: boolean;
 
+  @Column({ name: 'kids_only', default: false })
+  kids_only?: boolean;
+
   @Column({ nullable: true })
   url: string;
 

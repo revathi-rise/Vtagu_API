@@ -55,6 +55,22 @@ export class PostersService {
     return false;
   }
 
+  async checkIsAdmin(authHeader?: string, originHeader?: string): Promise<boolean> {
+    if (originHeader && typeof originHeader === 'string' && originHeader.toLowerCase().includes('admin')) {
+      return true;
+    }
+    if (authHeader && typeof authHeader === 'string') {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token) {
+        const user = await this.userRepo.findOne({ where: { user_session: token } });
+        if (user && (String(user.type) === '1' || String(user.type) === '2')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private mapToResponse(poster: Poster) {
     if (!poster) return null;
     const id = poster.poster_id;
@@ -86,8 +102,8 @@ export class PostersService {
       is_coming_soon: Boolean(poster.is_coming_soon),
       kids_restriction: parseBool(poster.kids_restriction),
       kidsRestriction: parseBool(poster.kids_restriction),
-      kids_only: parseBool(poster.kids_only) || poster.page_type === 'kids',
-      kidsOnly: parseBool(poster.kids_only) || poster.page_type === 'kids',
+      kids_only: parseBool(poster.kids_only),
+      kidsOnly: parseBool(poster.kids_only),
     };
   }
 
@@ -207,12 +223,24 @@ export class PostersService {
     return approvedPosters;
   }
 
-  async findAll(limit?: number, pageType?: string, language?: string, isKidsMode: boolean = false): Promise<any[]> {
+  async findAll(limit?: number, pageType?: string, language?: string, isKidsMode: boolean = false, isAdmin: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
       .where('1=1');
 
     if (pageType) {
-      query.andWhere('posters.page_type = :pageType', { pageType });
+      if (!isAdmin && pageType === 'home' && !isKidsMode) {
+        query.andWhere(
+          '(posters.page_type = :pageType OR (posters.page_type = :kidsType AND (posters.kids_only = 0 OR posters.kids_only IS NULL)))',
+          { pageType: 'home', kidsType: 'kids' }
+        );
+      } else if (!isAdmin && pageType === 'kids' && isKidsMode) {
+        query.andWhere(
+          '(posters.page_type = :pageType OR (posters.page_type = :homeType AND (posters.kids_restriction = 1 OR posters.kids_only = 1)))',
+          { pageType: 'kids', homeType: 'home' }
+        );
+      } else {
+        query.andWhere('posters.page_type = :pageType', { pageType });
+      }
     }
 
     if (language) {
@@ -226,19 +254,38 @@ export class PostersService {
     }
 
     let items = await query.getMany();
+    if (isAdmin || !pageType) {
+      return items.map((item) => this.mapToResponse(item));
+    }
     if (isKidsMode) {
       items = await this.filterPostersForKids(items);
       if (limit) items = items.slice(0, limit);
     } else {
-      items = items.filter(item => !parseBool(item.kids_only) && item.page_type !== 'kids');
+      if (pageType === 'kids') {
+        return items.map((item) => this.mapToResponse(item));
+      }
+      items = items.filter(item => !parseBool(item.kids_only));
     }
     return items.map((item) => this.mapToResponse(item));
   }
 
-  async findByPageType(pageType: string, language?: string, isKidsMode: boolean = false): Promise<any[]> {
+  async findByPageType(pageType: string, language?: string, isKidsMode: boolean = false, isAdmin: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
-      .where('posters.page_type = :pageType', { pageType })
       .andWhere('posters.status = :status', { status: 'A' });
+
+    if (!isAdmin && pageType === 'home' && !isKidsMode) {
+      query.andWhere(
+        '(posters.page_type = :pageType OR (posters.page_type = :kidsType AND (posters.kids_only = 0 OR posters.kids_only IS NULL)))',
+        { pageType: 'home', kidsType: 'kids' }
+      );
+    } else if (!isAdmin && pageType === 'kids' && isKidsMode) {
+      query.andWhere(
+        '(posters.page_type = :pageType OR (posters.page_type = :homeType AND (posters.kids_restriction = 1 OR posters.kids_only = 1)))',
+        { pageType: 'kids', homeType: 'home' }
+      );
+    } else {
+      query.andWhere('posters.page_type = :pageType', { pageType });
+    }
 
     if (language) {
       query.andWhere('posters.languages LIKE :language', { language: `%${language}%` });
@@ -246,10 +293,16 @@ export class PostersService {
 
     query.orderBy('posters.poster_id', 'DESC');
     let items = await query.getMany();
+    if (isAdmin) {
+      return items.map((item) => this.mapToResponse(item));
+    }
     if (isKidsMode) {
       items = await this.filterPostersForKids(items);
     } else {
-      items = items.filter(item => !parseBool(item.kids_only) && item.page_type !== 'kids');
+      if (pageType === 'kids') {
+        return items.map((item) => this.mapToResponse(item));
+      }
+      items = items.filter(item => !parseBool(item.kids_only));
     }
     return items.map((item) => this.mapToResponse(item));
   }

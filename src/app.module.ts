@@ -71,6 +71,7 @@ import { AuditLog } from './audit-logs/entities/audit-log.entity';
       username: process.env.DB_USER || 'root',
       password: process.env.DB_PASS || '',
       database: process.env.DB_NAME || 'vtaqu',
+      charset: 'utf8mb4',
       entities: [
         Movie,
         Poster,

@@ -94,6 +94,8 @@ export class MoviesService {
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
     if (isKidsMode) {
       movies = movies.filter(m => parseBool(m.kids_restriction));
+    } else if (!isAdmin) {
+      movies = movies.filter(m => !parseBool(m.kids_only));
     }
 
     const standardAccess = userId ? await this.checkStandardAccess(userId, false) : false;
@@ -131,6 +133,8 @@ export class MoviesService {
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
     if (isKidsMode) {
       movies = movies.filter(m => parseBool(m.kids_restriction));
+    } else if (!isAdmin) {
+      movies = movies.filter(m => !parseBool(m.kids_only));
     }
     movies = movies.slice(0, limit);
 
@@ -375,6 +379,11 @@ export class MoviesService {
       movie.kids_restriction = parseBool(kidsInput);
     }
 
+    const kidsOnlyInput = (dto as any).kids_only !== undefined ? (dto as any).kids_only : ((dto as any).kidsOnly !== undefined ? (dto as any).kidsOnly : undefined);
+    if (kidsOnlyInput !== undefined) {
+      movie.kids_only = parseBool(kidsOnlyInput);
+    }
+
     const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : is_pro_rata_included));
     if (revenueManagedInput !== undefined) {
       movie.is_revenue_managed = parseBool(revenueManagedInput);
@@ -426,6 +435,7 @@ export class MoviesService {
     const isRevenueManagedBool = parseBool(m.is_revenue_managed);
     const isInteractiveBool = parseBool(m.is_interactive);
     const kidsRestrictionBool = parseBool(m.kids_restriction);
+    const kidsOnlyBool = parseBool(m.kids_only);
 
     return {
       id: m.movie_id,
@@ -455,6 +465,8 @@ export class MoviesService {
       kids_restriction: kidsRestrictionBool,
       isKidsApproved: kidsRestrictionBool,
       is_kids_approved: kidsRestrictionBool,
+      kids_only: kidsOnlyBool,
+      kidsOnly: kidsOnlyBool,
       duration: m.duration,
       languages: m.languages,
       viewCount: m.view_count,

@@ -132,6 +132,12 @@ export class CreateMovieDto {
   @IsBoolean()
   @IsOptional()
   isKidsApproved?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  kids_only?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  kidsOnly?: boolean;
 
   @IsString()
   @IsOptional()
@@ -246,6 +252,8 @@ export class MovieResponseDto {
   kids_restriction?: boolean;
   isKidsApproved?: boolean;
   is_kids_approved?: boolean;
+  kids_only?: boolean;
+  kidsOnly?: boolean;
   duration: string;
   languages: string;
   viewCount: number;
