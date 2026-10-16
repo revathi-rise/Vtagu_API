@@ -36,26 +36,42 @@ export class ScenesService {
     return this.userRepository.findOne({ where: { user_session: token } });
   }
 
+  async getUserById(userId: number): Promise<User | null> {
+    if (!userId) return null;
+    return this.userRepository.findOne({ where: { userId } });
+  }
+
   /**
    * Check if a user has full access to all scenes of an interactive movie.
-   * Returns true if the movie is free, or user has a subscription/purchase.
+   * Returns true if the movie is free, or user has a subscription/purchase, or user is admin.
    */
   private async checkFullAccess(movieId: number, userId?: number): Promise<boolean> {
-    // 1. Check if movie is free
+    // 1. Check if movie is free or has 0 price
     const movie = await this.moviesRepository.findOne({
       where: { interactive_movie_id: movieId },
     });
     if (!movie) return false;
 
-    if (Number(movie.is_free) === 1) {
+    if (
+      Number(movie.is_free) === 1 ||
+      Boolean(movie.is_free) === true ||
+      String(movie.is_free) === '1' ||
+      Number(movie.price) === 0 ||
+      movie.price === 0
+    ) {
       return true;
     }
 
     if (!userId) return false;
 
-    // 2. Check subscription access
+    // 2. Check user permissions / subscription access
     const user = await this.userRepository.findOne({ where: { userId: userId } });
     if (user) {
+      // Admins (type 1 or 2) have full bypass access
+      if (String(user.type) === '1' || String(user.type) === '2') {
+        return true;
+      }
+
       const currentTimestamp = Math.floor(Date.now() / 1000);
       const activeSub = await this.subscriptionRepository.findOne({
         where: { userId, status: 1 },
@@ -66,7 +82,14 @@ export class ScenesService {
       if (activeSub) {
         const fromSec = Number(activeSub.timestamp_from) || 0;
         const toSec = Number(activeSub.timestamp_to) || 0;
-        const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
+        const isPaid =
+          Number(activeSub.payment_status) === 2 ||
+          Number(activeSub.payment_status) === 1 ||
+          String(activeSub.payment_status) === '2' ||
+          String(activeSub.payment_status) === '1' ||
+          String(activeSub.payment_method).toUpperCase() === 'FREE' ||
+          String(activeSub.payment_status).toLowerCase() === 'completed' ||
+          String(activeSub.payment_status).toLowerCase() === 'active';
         const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
         if (isPaid && isValidDate) {
@@ -104,7 +127,11 @@ export class ScenesService {
 
     // Transform to match PHP logic if needed, although ORM relations are cleaner
     return scenes.map((scene) => {
-      const sceneIsFree = Number(scene.is_free) === 1;
+      const sceneIsFree =
+        Number(scene.is_free) === 1 ||
+        String(scene.is_free) === '1' ||
+        String(scene.is_free).toLowerCase() === 'true' ||
+        (scene.is_free as any) === true;
       const canAccessScene = isAdmin || hasFullAccess || sceneIsFree;
 
       return {
@@ -208,7 +235,13 @@ export class ScenesService {
     const scenes = await this.scenesRepository.find({
       where: { movie_id: movieId },
     });
-    const freeCount = scenes.filter(s => Number(s.is_free) === 1).length;
+    const freeCount = scenes.filter(
+      (s) =>
+        Number(s.is_free) === 1 ||
+        String(s.is_free) === '1' ||
+        String(s.is_free).toLowerCase() === 'true' ||
+        (s.is_free as any) === true,
+    ).length;
     return {
       freeSceneCount: freeCount,
       totalSceneCount: scenes.length,

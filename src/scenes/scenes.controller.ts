@@ -43,6 +43,13 @@ export class ScenesController {
       }
     }
 
+    if (!isAdmin && parsedUserId) {
+      const user = await this.scenesService.getUserById(parsedUserId);
+      if (user && (String(user.type) === '1' || String(user.type) === '2')) {
+        isAdmin = true;
+      }
+    }
+
     const scenes = await this.scenesService.findByMovieId(id, parsedUserId, isAdmin);
     return {
       status: 'success',
