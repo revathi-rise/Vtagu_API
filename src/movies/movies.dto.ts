@@ -290,6 +290,18 @@ export class CreateMovieDto {
   @IsString()
   @IsOptional()
   release_date?: string;
+
+  @IsString()
+  @IsOptional()
+  quality?: string;
+
+  @IsString()
+  @IsOptional()
+  play_quality?: string;
+
+  @IsString()
+  @IsOptional()
+  video_quality?: string;
 }
 
 export class UpdateMovieDto extends CreateMovieDto {}
@@ -354,6 +366,9 @@ export class MovieResponseDto {
   kids_only?: boolean;
   kidsOnly?: boolean;
   duration: string;
+  quality?: string;
+  play_quality?: string;
+  video_quality?: string;
   languages: string;
   viewCount: number;
   isInteractive: boolean;

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Poster } from './poster.entity';
 import { Movie } from '../movies/movie.entity';
 import { Series } from '../series/entities/series.entity';
@@ -104,6 +104,16 @@ export class PostersService {
       kidsRestriction: parseBool(poster.kids_restriction),
       kids_only: parseBool(poster.kids_only),
       kidsOnly: parseBool(poster.kids_only),
+      certificate_id: poster.certificate_id || (poster.certificate ? poster.certificate.id : null),
+      certificateId: poster.certificate_id || (poster.certificate ? poster.certificate.id : null),
+      certificate: poster.certificate ? {
+        id: poster.certificate.id,
+        code: poster.certificate.code,
+        name: poster.certificate.name,
+        certification_system: poster.certificate.certification_system,
+        maturity_level: poster.certificate.maturity_level,
+        badge_color: poster.certificate.badge_color,
+      } : null,
     };
   }
 
@@ -188,6 +198,16 @@ export class PostersService {
       data.kids_only = parseBool(kOnly);
     }
 
+    const certIdInput = dto.certificate_id ?? dto.certificateId;
+    if (certIdInput !== undefined) {
+      if (certIdInput === '' || certIdInput === null || certIdInput === 'none' || certIdInput === 0) {
+        data.certificate_id = null as any;
+      } else {
+        const parsed = parseInt(String(certIdInput), 10);
+        data.certificate_id = isNaN(parsed) ? (null as any) : parsed;
+      }
+    }
+
     return data;
   }
 
@@ -223,8 +243,33 @@ export class PostersService {
     return approvedPosters;
   }
 
+  private async enrichPostersWithCertificates(items: Poster[]): Promise<void> {
+    const movieRefIds = items
+      .filter(p => !p.certificate && (p.reference_type || '').toLowerCase() === 'movie' && p.reference_id)
+      .map(p => Number(p.reference_id))
+      .filter(id => !isNaN(id) && id > 0);
+
+    if (movieRefIds.length > 0) {
+      const refMovies = await this.moviesRepo.find({
+        where: { movie_id: In(movieRefIds) },
+        relations: ['certificate'],
+      });
+      const movieMap = new Map(refMovies.map(m => [m.movie_id, m]));
+      for (const p of items) {
+        if (!p.certificate && (p.reference_type || '').toLowerCase() === 'movie' && p.reference_id) {
+          const m = movieMap.get(Number(p.reference_id));
+          if (m && m.certificate) {
+            p.certificate = m.certificate;
+            p.certificate_id = m.certificate.id;
+          }
+        }
+      }
+    }
+  }
+
   async findAll(limit?: number, pageType?: string, language?: string, isKidsMode: boolean = false, isAdmin: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
+      .leftJoinAndSelect('posters.certificate', 'certificate')
       .where('1=1');
 
     if (pageType) {
@@ -254,6 +299,7 @@ export class PostersService {
     }
 
     let items = await query.getMany();
+    await this.enrichPostersWithCertificates(items);
     if (isAdmin || !pageType) {
       return items.map((item) => this.mapToResponse(item));
     }
@@ -271,6 +317,7 @@ export class PostersService {
 
   async findByPageType(pageType: string, language?: string, isKidsMode: boolean = false, isAdmin: boolean = false): Promise<any[]> {
     const query = this.postersRepo.createQueryBuilder('posters')
+      .leftJoinAndSelect('posters.certificate', 'certificate')
       .andWhere('posters.status = :status', { status: 'A' });
 
     if (!isAdmin && pageType === 'home' && !isKidsMode) {
@@ -293,6 +340,7 @@ export class PostersService {
 
     query.orderBy('posters.poster_id', 'DESC');
     let items = await query.getMany();
+    await this.enrichPostersWithCertificates(items);
     if (isAdmin) {
       return items.map((item) => this.mapToResponse(item));
     }
@@ -308,10 +356,14 @@ export class PostersService {
   }
 
   async findOne(id: number): Promise<any> {
-    const poster = await this.postersRepo.findOne({ where: { poster_id: id } });
+    const poster = await this.postersRepo.findOne({
+      where: { poster_id: id },
+      relations: ['certificate'],
+    });
     if (!poster) {
       throw new NotFoundException(`Poster with ID ${id} not found`);
     }
+    await this.enrichPostersWithCertificates([poster]);
     return this.mapToResponse(poster);
   }
 
@@ -327,7 +379,7 @@ export class PostersService {
       this.auditLogsService.createLog({ action: 'CREATE', module: 'Posters', resourceId: String(saved.poster_id), details: { newData: saved } }).catch(err => console.error('Failed to log audit:', err));
     }
 
-    return this.mapToResponse(saved);
+    return this.findOne(saved.poster_id);
   }
 
   async update(id: number, dto: UpdatePosterDto): Promise<any> {
@@ -339,13 +391,13 @@ export class PostersService {
     const oldData = { ...existing };
     const data = this.mapFromDto(dto, existing);
     await this.postersRepo.update(id, data);
-    const updated = await this.postersRepo.findOne({ where: { poster_id: id } });
+    const updated = await this.findOne(id);
 
     if (this.auditLogsService) {
       this.auditLogsService.createLog({ action: 'UPDATE', module: 'Posters', resourceId: String(id), details: { oldData, newData: updated } }).catch(err => console.error('Failed to log audit:', err));
     }
 
-    return this.mapToResponse(updated!);
+    return updated;
   }
 
   async remove(id: number): Promise<void> {

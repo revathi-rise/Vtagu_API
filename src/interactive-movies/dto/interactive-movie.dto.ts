@@ -24,6 +24,18 @@ export class CreateInteractiveMovieDto {
   @IsOptional()
   languages?: string;
 
+  @IsString()
+  @IsOptional()
+  quality?: string;
+
+  @IsString()
+  @IsOptional()
+  play_quality?: string;
+
+  @IsString()
+  @IsOptional()
+  video_quality?: string;
+
   @IsOptional()
   is_free?: number;
 
@@ -44,8 +56,15 @@ export class CreateInteractiveMovieDto {
 
   @IsOptional()
   kids_restriction?: number;
+
+  @IsOptional()
+  certificate_id?: number;
+
+  @IsOptional()
+  certificateId?: number;
 }
 
+// Update DTO inherits quality optional fields
 export class UpdateInteractiveMovieDto {
   @IsString()
   @IsOptional()
@@ -91,4 +110,10 @@ export class UpdateInteractiveMovieDto {
 
   @IsOptional()
   kids_restriction?: number;
+
+  @IsOptional()
+  certificate_id?: number;
+
+  @IsOptional()
+  certificateId?: number;
 }

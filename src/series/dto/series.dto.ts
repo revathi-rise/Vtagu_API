@@ -47,6 +47,14 @@ export class CreateSeriesDto {
 
   @IsOptional()
   kids_restriction?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  certificate_id?: number;
+
+  @IsNumber()
+  @IsOptional()
+  certificateId?: number;
 }
 
 export class UpdateSeriesDto extends CreateSeriesDto {}

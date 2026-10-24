@@ -62,6 +62,7 @@ export class InteractiveMoviesService {
     kidsHeaderFlag?: boolean | string,
   ): Promise<InteractiveMovie[]> {
     const options: any = {
+      relations: ['certificate'],
       order: {
         created_at: 'DESC',
       },
@@ -84,6 +85,7 @@ export class InteractiveMoviesService {
   ): Promise<InteractiveMovie> {
     const movie = await this.moviesRepository.findOne({
       where: { interactive_movie_id: id },
+      relations: ['certificate'],
     });
     if (!movie) {
       throw new NotFoundException(`Interactive movie with ID ${id} not found`);
@@ -105,6 +107,14 @@ export class InteractiveMoviesService {
       delete data.isRevenueManaged;
     }
     if (data.kids_restriction !== undefined) data.kids_restriction = parseBoolToNum(data.kids_restriction);
+    if (data.quality === undefined && (data.play_quality !== undefined || data.video_quality !== undefined)) {
+      data.quality = data.play_quality ?? data.video_quality;
+    }
+    if (data.certificate_id !== undefined || data.certificateId !== undefined) {
+      const cId = data.certificate_id ?? data.certificateId;
+      data.certificate_id = cId ? Number(cId) : null;
+      delete data.certificateId;
+    }
 
     const movie = this.moviesRepository.create(data as CreateInteractiveMovieDto);
     return this.moviesRepository.save(movie);
@@ -120,6 +130,11 @@ export class InteractiveMoviesService {
       delete data.isRevenueManaged;
     }
     if (data.kids_restriction !== undefined) data.kids_restriction = parseBoolToNum(data.kids_restriction);
+    if (data.certificate_id !== undefined || data.certificateId !== undefined) {
+      const cId = data.certificate_id ?? data.certificateId;
+      data.certificate_id = cId ? Number(cId) : null;
+      delete data.certificateId;
+    }
 
     await this.moviesRepository.update(id, data as UpdateInteractiveMovieDto);
     return this.findOne(id);

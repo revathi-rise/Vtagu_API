@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Certificate } from '../certificates/entities/certificate.entity';
 
 @Entity('posters')
 export class Poster {
@@ -46,6 +47,13 @@ export class Poster {
 
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon?: boolean;
+
+  @Column({ name: 'certificate_id', nullable: true })
+  certificate_id?: number;
+
+  @ManyToOne(() => Certificate, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'certificate_id' })
+  certificate?: Certificate;
 
   @CreateDateColumn({ type: 'datetime', name: 'createdon', nullable: true })
   createdon?: Date;

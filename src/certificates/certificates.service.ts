@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Certificate } from './entities/certificate.entity';
 import { Movie } from '../movies/movie.entity';
+import { Episode } from '../episodes/episode.entity';
+import { Series } from '../series/entities/series.entity';
+import { InteractiveMovie } from '../interactive-movies/entities/interactive-movie.entity';
+import { Poster } from '../posters/poster.entity';
 import { CreateCertificateDto } from './dto/create-certificate.dto';
 import { UpdateCertificateDto } from './dto/update-certificate.dto';
 
@@ -25,6 +29,14 @@ export class CertificatesService {
     private readonly certificateRepo: Repository<Certificate>,
     @InjectRepository(Movie)
     private readonly movieRepo: Repository<Movie>,
+    @InjectRepository(Episode)
+    private readonly episodeRepo: Repository<Episode>,
+    @InjectRepository(Series)
+    private readonly seriesRepo: Repository<Series>,
+    @InjectRepository(InteractiveMovie)
+    private readonly interactiveMovieRepo: Repository<InteractiveMovie>,
+    @InjectRepository(Poster)
+    private readonly posterRepo: Repository<Poster>,
   ) {}
 
   /**
@@ -34,6 +46,10 @@ export class CertificatesService {
     const qb = this.certificateRepo
       .createQueryBuilder('c')
       .leftJoin('movie', 'm', 'm.certificate_id = c.id')
+      .leftJoin('episode', 'e', 'e.certificate_id = c.id')
+      .leftJoin('series', 's', 's.certificate_id = c.id')
+      .leftJoin('interactive_movies', 'im', 'im.certificate_id = c.id')
+      .leftJoin('posters', 'p', 'p.certificate_id = c.id')
       .select([
         'c.id AS id',
         'c.code AS code',
@@ -46,7 +62,11 @@ export class CertificatesService {
         'c.status AS status',
         'c.created_at AS created_at',
         'c.updated_at AS updated_at',
-        'COUNT(m.movie_id) AS movie_count',
+        'COUNT(DISTINCT m.movie_id) AS movie_count',
+        'COUNT(DISTINCT e.episode_id) AS episode_count',
+        'COUNT(DISTINCT s.series_id) AS series_count',
+        'COUNT(DISTINCT im.interactive_movie_id) AS interactive_count',
+        'COUNT(DISTINCT p.poster_id) AS poster_count',
       ])
       .groupBy('c.id');
 
@@ -252,14 +272,35 @@ export class CertificatesService {
       throw new NotFoundException(`Certificate with ID #${id} not found`);
     }
 
-    // Check referential integrity with movies
-    const movieCount = await this.movieRepo.count({ where: { certificate_id: id } });
-    if (movieCount > 0) {
+    // Check referential integrity across all content modules
+    const [movieCount, episodeCount, seriesCount, interactiveCount, posterCount] = await Promise.all([
+      this.movieRepo.count({ where: { certificate_id: id } }),
+      this.episodeRepo.count({ where: { certificate_id: id } }),
+      this.seriesRepo.count({ where: { certificate_id: id } }),
+      this.interactiveMovieRepo.count({ where: { certificate_id: id } }),
+      this.posterRepo.count({ where: { certificate_id: id } }),
+    ]);
+
+    const totalUsage = movieCount + episodeCount + seriesCount + interactiveCount + posterCount;
+
+    if (totalUsage > 0) {
+      const breakdown: string[] = [];
+      if (movieCount > 0) breakdown.push(`${movieCount} movie(s)`);
+      if (seriesCount > 0) breakdown.push(`${seriesCount} web series`);
+      if (episodeCount > 0) breakdown.push(`${episodeCount} episode(s)`);
+      if (interactiveCount > 0) breakdown.push(`${interactiveCount} interactive movie(s)`);
+      if (posterCount > 0) breakdown.push(`${posterCount} banner(s)/poster(s)`);
+
       throw new BadRequestException({
         statusCode: 400,
-        error: 'REFERENCED_BY_MOVIES',
-        message: `Cannot delete certificate "${certificate.code}" because it is currently assigned to ${movieCount} movie(s). To preserve data integrity, please deactivate this certificate instead so it is hidden from new assignments, or reassign those movies first.`,
+        error: 'REFERENCED_BY_CONTENT',
+        message: `Cannot delete certificate "${certificate.code}" because it is currently assigned to ${breakdown.join(', ')}. To preserve data integrity, please deactivate this certificate instead so it is hidden from new assignments, or reassign those items first.`,
         movie_count: movieCount,
+        episode_count: episodeCount,
+        series_count: seriesCount,
+        interactive_count: interactiveCount,
+        poster_count: posterCount,
+        total_usage_count: totalUsage,
         certificate_id: id,
         certificate_code: certificate.code,
       });
@@ -321,6 +362,16 @@ export class CertificatesService {
       created_at: row.created_at,
       updated_at: row.updated_at,
       movie_count: parseInt(row.movie_count || '0', 10),
+      episode_count: parseInt(row.episode_count || '0', 10),
+      series_count: parseInt(row.series_count || '0', 10),
+      interactive_count: parseInt(row.interactive_count || '0', 10),
+      poster_count: parseInt(row.poster_count || '0', 10),
+      total_usage_count:
+        parseInt(row.movie_count || '0', 10) +
+        parseInt(row.episode_count || '0', 10) +
+        parseInt(row.series_count || '0', 10) +
+        parseInt(row.interactive_count || '0', 10) +
+        parseInt(row.poster_count || '0', 10),
     };
   }
 

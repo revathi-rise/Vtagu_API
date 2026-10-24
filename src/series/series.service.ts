@@ -50,7 +50,7 @@ export class SeriesService {
     kidsQueryFlag?: boolean | string,
     kidsHeaderFlag?: boolean | string,
   ): Promise<Series[]> {
-    let seriesList = await this.repository.find(limit ? { take: limit } : {});
+    let seriesList = await this.repository.find({ ...(limit ? { take: limit } : {}), relations: ['certificate'] });
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
       seriesList = seriesList.filter(s => parseBool(s.kids_restriction));
@@ -65,7 +65,7 @@ export class SeriesService {
     kidsQueryFlag?: boolean | string,
     kidsHeaderFlag?: boolean | string,
   ): Promise<Series> {
-    const series = await this.repository.findOne({ where: { series_id: id } });
+    const series = await this.repository.findOne({ where: { series_id: id }, relations: ['certificate'] });
     if (!series) {
       throw new NotFoundException(`Series with ID ${id} not found`);
     }
@@ -79,16 +79,28 @@ export class SeriesService {
   async create(dto: CreateSeriesDto): Promise<Series> {
     const data: any = { ...dto };
     if (data.kids_restriction !== undefined) data.kids_restriction = parseBool(data.kids_restriction);
+    if (data.certificate_id !== undefined || data.certificateId !== undefined) {
+      const cId = data.certificate_id ?? data.certificateId;
+      data.certificate_id = cId ? Number(cId) : null;
+      delete data.certificateId;
+    }
     const series = this.repository.create(data as CreateSeriesDto);
-    return this.repository.save(series);
+    const saved = await this.repository.save(series);
+    return this.findOne(saved.series_id);
   }
 
   async update(id: number, dto: UpdateSeriesDto): Promise<Series> {
     const series = await this.findOne(id);
     const data: any = { ...dto };
     if (data.kids_restriction !== undefined) data.kids_restriction = parseBool(data.kids_restriction);
+    if (data.certificate_id !== undefined || data.certificateId !== undefined) {
+      const cId = data.certificate_id ?? data.certificateId;
+      data.certificate_id = cId ? Number(cId) : null;
+      delete data.certificateId;
+    }
     Object.assign(series, data);
-    return this.repository.save(series);
+    await this.repository.save(series);
+    return this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {

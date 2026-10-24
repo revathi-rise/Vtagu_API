@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Certificate } from '../../certificates/entities/certificate.entity';
 
 @Entity('interactive_movies')
 export class InteractiveMovie {
@@ -23,6 +24,9 @@ export class InteractiveMovie {
   @Column({ type: 'text', nullable: true })
   languages: string;
 
+  @Column({ nullable: true })
+  quality: string;
+
   @Column({ type: 'tinyint', default: 0, name: 'is_free' })
   is_free: number;
 
@@ -46,6 +50,13 @@ export class InteractiveMovie {
 
   @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
   kids_restriction: number;
+
+  @Column({ name: 'certificate_id', nullable: true })
+  certificate_id: number;
+
+  @ManyToOne(() => Certificate, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'certificate_id' })
+  certificate?: Certificate;
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;

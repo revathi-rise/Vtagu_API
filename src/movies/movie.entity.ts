@@ -88,6 +88,9 @@ export class Movie {
   @Column({ nullable: true })
   duration: string;
 
+  @Column({ nullable: true })
+  quality: string;
+
   @Column({ type: 'text', nullable: true })
   languages: string;
 

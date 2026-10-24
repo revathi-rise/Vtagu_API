@@ -89,6 +89,12 @@ export class CreatePosterDto {
 
   @IsOptional()
   is_coming_soon?: any;
+
+  @IsOptional()
+  certificate_id?: any;
+
+  @IsOptional()
+  certificateId?: any;
 }
 
 export class UpdatePosterDto {
@@ -180,4 +186,10 @@ export class UpdatePosterDto {
 
   @IsOptional()
   is_coming_soon?: any;
+
+  @IsOptional()
+  certificate_id?: any;
+
+  @IsOptional()
+  certificateId?: any;
 }

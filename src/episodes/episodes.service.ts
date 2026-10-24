@@ -41,7 +41,7 @@ export class EpisodesService {
     const episodeData = this.mapFromDto(dto);
     const episode = this.episodeRepository.create(episodeData);
     const saved = await this.episodeRepository.save(episode);
-    return this.mapToResponse(saved);
+    return this.findOne(saved.episode_id, undefined, true);
   }
 
   async checkIsAdminUser(
@@ -100,6 +100,7 @@ export class EpisodesService {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     const options: any = {
       where: seasonId ? { season_id: seasonId } : {},
+      relations: ['certificate'],
       order: { season_id: 'ASC', episode_number: 'ASC' },
     };
     if (limit) options.take = limit;
@@ -182,9 +183,15 @@ export class EpisodesService {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let episode: Episode;
     if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
-      episode = await this.episodeRepository.findOneBy({ episode_id: Number(idOrSlug) });
+      episode = await this.episodeRepository.findOne({
+        where: { episode_id: Number(idOrSlug) },
+        relations: ['certificate'],
+      });
     } else {
-      episode = await this.episodeRepository.findOneBy({ slug: String(idOrSlug) });
+      episode = await this.episodeRepository.findOne({
+        where: { slug: String(idOrSlug) },
+        relations: ['certificate'],
+      });
     }
     if (!episode) throw new NotFoundException('Episode not found');
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
@@ -216,8 +223,8 @@ export class EpisodesService {
     delete (updateData as any).created_at;
     delete (updateData as any).updated_at;
     await this.episodeRepository.update({ episode_id: id }, updateData);
-    const updated = await this.episodeRepository.findOneBy({ episode_id: id });
-    return this.mapToResponse(updated);
+    return this.findOne(id, undefined, true);
+
   }
 
   async remove(id: number): Promise<void> {
@@ -253,6 +260,16 @@ export class EpisodesService {
       episode.featured = parseBool(featuredInput);
     }
 
+    const certInput = (rest as any).certificate_id !== undefined ? (rest as any).certificate_id : (rest as any).certificateId;
+    if (certInput !== undefined) {
+      if (certInput === '' || certInput === null || certInput === 'none' || certInput === 0) {
+        episode.certificate_id = null as any;
+      } else {
+        const parsed = parseInt(String(certInput), 10);
+        episode.certificate_id = isNaN(parsed) ? (null as any) : parsed;
+      }
+    }
+
     if (media) {
       if (media.image) {
         episode.image = media.image.url;
@@ -286,6 +303,9 @@ export class EpisodesService {
       shortDescription: e.description_short,
       longDescription: e.description_long,
       duration: e.duration,
+      quality: e.quality || null,
+      play_quality: e.quality || null,
+      video_quality: e.quality || null,
       languages: e.languages,
       rating: e.rating ? parseFloat(e.rating.toString()) : null,
       isFeatured: isFeaturedBool,
@@ -302,6 +322,16 @@ export class EpisodesService {
       viewCount: e.view_count,
       subtitles: e.subtitles,
       audio_tracks: e.audio_tracks,
+      certificate_id: e.certificate_id || (e.certificate ? e.certificate.id : null),
+      certificateId: e.certificate_id || (e.certificate ? e.certificate.id : null),
+      certificate: e.certificate ? {
+        id: e.certificate.id,
+        code: e.certificate.code,
+        name: e.certificate.name,
+        certification_system: e.certificate.certification_system,
+        maturity_level: e.certificate.maturity_level,
+        badge_color: e.certificate.badge_color,
+      } : null,
       media: {
         image: { url: e.image || '', alt: e.poster_alt || '' },
         poster_image: { url: e.poster_image || '', alt: '' },

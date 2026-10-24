@@ -70,6 +70,18 @@ export class CreateEpisodeDto {
 
   @IsString()
   @IsOptional()
+  quality?: string;
+
+  @IsString()
+  @IsOptional()
+  play_quality?: string;
+
+  @IsString()
+  @IsOptional()
+  video_quality?: string;
+
+  @IsString()
+  @IsOptional()
   url?: string;
 
   @IsString()
@@ -157,6 +169,14 @@ export class CreateEpisodeDto {
 
   @IsOptional()
   audio_tracks?: any;
+
+  @IsOptional()
+  @IsInt()
+  certificate_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  certificateId?: number;
 
   @ValidateNested()
   @IsOptional()
@@ -279,6 +299,14 @@ export class UpdateEpisodeDto {
   @IsOptional()
   audio_tracks?: any;
 
+  @IsOptional()
+  @IsInt()
+  certificate_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  certificateId?: number;
+
   @ValidateNested()
   @IsOptional()
   @Type(() => MediaDto)
@@ -294,6 +322,9 @@ export class EpisodeResponseDto {
   shortDescription: string;
   longDescription: string;
   duration: string;
+  quality?: string;
+  play_quality?: string;
+  video_quality?: string;
   languages: string;
   rating: number;
   isFeatured: boolean;
@@ -310,6 +341,16 @@ export class EpisodeResponseDto {
   price: number;
   currency: string;
   viewCount: number;
+  certificate_id?: number;
+  certificateId?: number;
+  certificate?: {
+    id: number;
+    code: string;
+    name: string;
+    certification_system: string;
+    maturity_level?: string;
+    badge_color?: string;
+  } | null;
   media: {
     image: { url: string; alt: string };
     poster_image: { url: string; alt: string };
