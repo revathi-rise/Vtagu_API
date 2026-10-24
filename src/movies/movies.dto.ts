@@ -81,6 +81,14 @@ export class CreateMovieDto {
   @IsOptional()
   country_id?: number;
 
+  @IsNumber()
+  @IsOptional()
+  certificate_id?: number;
+
+  @IsNumber()
+  @IsOptional()
+  certificateId?: number;
+
   @IsString()
   @IsOptional()
   age_group?: string;
@@ -122,6 +130,68 @@ export class CreateMovieDto {
   @IsString()
   @IsOptional()
   age_restriction?: string;
+
+  @IsString()
+  @IsOptional()
+  certificate_system?: string;
+
+  @IsString()
+  @IsOptional()
+  certificateSystem?: string;
+
+  @IsString()
+  @IsOptional()
+  official_certificate?: string;
+
+  @IsString()
+  @IsOptional()
+  officialCertificate?: string;
+
+  @IsString()
+  @IsOptional()
+  certificate_country?: string;
+
+  @IsString()
+  @IsOptional()
+  certificateCountry?: string;
+
+  @IsNumber()
+  @IsOptional()
+  certificate_year?: number;
+
+  @IsNumber()
+  @IsOptional()
+  certificateYear?: number;
+
+  @IsString()
+  @IsOptional()
+  platform_age_rating?: string;
+
+  @IsString()
+  @IsOptional()
+  platformAgeRating?: string;
+
+  @IsOptional()
+  content_advisories?: string[];
+
+  @IsOptional()
+  contentAdvisories?: string[];
+
+  @IsBoolean()
+  @IsOptional()
+  certification_verified?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  certificationVerified?: boolean;
+
+  @IsString()
+  @IsOptional()
+  certification_source?: string;
+
+  @IsString()
+  @IsOptional()
+  certificationSource?: string;
 
   @IsBoolean()
   @IsOptional()
@@ -248,6 +318,35 @@ export class MovieResponseDto {
   movieType: string;
   contentType: string;
   ageRestriction: string;
+  age_restriction?: string;
+  certificate_id?: number;
+  certificateId?: number;
+  certificate?: {
+    id: number;
+    code: string;
+    name: string;
+    certification_system: string;
+    country: string;
+    maturity_level?: string;
+    badge_color?: string;
+    description?: string;
+  } | null;
+  certificate_system?: string;
+  certificateSystem?: string;
+  official_certificate?: string;
+  officialCertificate?: string;
+  certificate_country?: string;
+  certificateCountry?: string;
+  certificate_year?: number;
+  certificateYear?: number;
+  platform_age_rating?: string;
+  platformAgeRating?: string;
+  content_advisories?: string[];
+  contentAdvisories?: string[];
+  certification_verified?: boolean;
+  certificationVerified?: boolean;
+  certification_source?: string;
+  certificationSource?: string;
   kidsRestriction: boolean;
   kids_restriction?: boolean;
   isKidsApproved?: boolean;

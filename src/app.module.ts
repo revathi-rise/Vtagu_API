@@ -60,6 +60,8 @@ import { WatchSessionLog } from './svod-revenue/entities/watch-session-log.entit
 import { TitleLedger } from './svod-revenue/entities/title-ledger.entity';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { AuditLog } from './audit-logs/entities/audit-log.entity';
+import { CertificatesModule } from './certificates/certificates.module';
+import { Certificate } from './certificates/entities/certificate.entity';
 
 
 @Module({
@@ -102,6 +104,7 @@ import { AuditLog } from './audit-logs/entities/audit-log.entity';
         WatchSessionLog,
         TitleLedger,
         AuditLog,
+        Certificate,
       ],
       synchronize: false,
     }),
@@ -151,6 +154,7 @@ import { AuditLog } from './audit-logs/entities/audit-log.entity';
     SmsModule,
     SvodRevenueModule,
     AuditLogsModule,
+    CertificatesModule,
   ],
 })
 export class AppModule {}

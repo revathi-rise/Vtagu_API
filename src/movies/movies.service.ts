@@ -83,7 +83,7 @@ export class MoviesService {
   ): Promise<MovieResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movies: Movie[];
-    const options: any = { order: { movie_id: 'DESC' } };
+    const options: any = { order: { movie_id: 'DESC' }, relations: ['certificate'] };
     if (limit) options.take = limit;
 
     if (languageSlug) {
@@ -129,7 +129,7 @@ export class MoviesService {
     kidsModeHeader?: boolean | string,
   ): Promise<MovieResponseDto[]> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
-    let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2 });
+    let movies = await this.moviesRepo.find({ order: { movie_id: 'DESC' }, take: limit * 2, relations: ['certificate'] });
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsModeQuery, kidsModeHeader);
     if (isKidsMode) {
       movies = movies.filter(m => parseBool(m.kids_restriction));
@@ -222,10 +222,10 @@ export class MoviesService {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
     let movie: Movie;
     if (!isNaN(Number(slugOrId))) {
-      movie = await this.moviesRepo.findOne({ where: { movie_id: Number(slugOrId) } });
+      movie = await this.moviesRepo.findOne({ where: { movie_id: Number(slugOrId) }, relations: ['certificate'] });
     }
     if (!movie) {
-      movie = await this.moviesRepo.findOne({ where: { slug: slugOrId } });
+      movie = await this.moviesRepo.findOne({ where: { slug: slugOrId }, relations: ['certificate'] });
     }
     if (!movie) throw new NotFoundException('Movie not found');
     
@@ -255,7 +255,8 @@ export class MoviesService {
     const movieData = this.mapFromDto(dto);
     const movie = this.moviesRepo.create(movieData);
     const saved = await this.moviesRepo.save(movie);
-    return this.mapToResponse(saved);
+    const full = await this.moviesRepo.findOne({ where: { movie_id: saved.movie_id }, relations: ['certificate'] });
+    return this.mapToResponse(full || saved);
   }
 
   async update(id: number, dto: UpdateMovieDto): Promise<MovieResponseDto> {
@@ -272,7 +273,7 @@ export class MoviesService {
     delete (updateData as any).genre_name;
 
     await this.moviesRepo.update({ movie_id: id }, updateData);
-    const updated = await this.moviesRepo.findOne({ where: { movie_id: id } });
+    const updated = await this.moviesRepo.findOne({ where: { movie_id: id }, relations: ['certificate'] });
     return this.mapToResponse(updated);
   }
 
@@ -321,6 +322,8 @@ export class MoviesService {
       is_revenue_shared,
       isRevenueShared,
       is_pro_rata_included,
+      certificate_id,
+      certificateId,
       movieType,
       contentType,
       ...rest
@@ -425,6 +428,11 @@ export class MoviesService {
     if (dto.subtitles !== undefined) movie.subtitles = dto.subtitles;
     if (dto.audio_tracks !== undefined) movie.audio_tracks = dto.audio_tracks;
 
+    const certId = certificate_id !== undefined ? certificate_id : certificateId;
+    if (certId !== undefined) {
+      movie.certificate_id = certId ? Number(certId) : null;
+    }
+
     return movie;
   }
 
@@ -460,7 +468,22 @@ export class MoviesService {
       isFree: isFreeBool,
       movieType: m.movie_type,
       contentType: m.type,
-      ageRestriction: m.age_restriction,
+      certificate_id: m.certificate_id,
+      certificateId: m.certificate_id,
+      certificate: m.certificate ? {
+        id: m.certificate.id,
+        code: m.certificate.code,
+        name: m.certificate.name,
+        certification_system: m.certificate.certification_system,
+        country: m.certificate.country,
+        maturity_level: m.certificate.maturity_level,
+        badge_color: m.certificate.badge_color,
+        description: m.certificate.description,
+      } : null,
+      certificate_system: m.certificate ? m.certificate.certification_system : 'CBFC',
+      official_certificate: m.certificate ? m.certificate.code : (m.age_restriction || ''),
+      ageRestriction: m.certificate ? m.certificate.code : (m.age_restriction || 'U'),
+      age_restriction: m.certificate ? m.certificate.code : m.age_restriction,
       kidsRestriction: kidsRestrictionBool,
       kids_restriction: kidsRestrictionBool,
       isKidsApproved: kidsRestrictionBool,

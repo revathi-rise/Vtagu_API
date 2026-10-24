@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Certificate } from '../certificates/entities/certificate.entity';
 
 @Entity('movie')
 export class Movie {
@@ -22,6 +23,13 @@ export class Movie {
 
   @Column({ name: 'country_id', nullable: true })
   country_id: number;
+
+  @Column({ name: 'certificate_id', nullable: true })
+  certificate_id: number;
+
+  @ManyToOne(() => Certificate, (cert) => cert.movies, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'certificate_id' })
+  certificate?: Certificate;
 
   @Column({ type: 'decimal', precision: 3, scale: 1, nullable: true })
   rating: number;
