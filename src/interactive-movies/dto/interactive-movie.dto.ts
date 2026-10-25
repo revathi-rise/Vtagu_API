@@ -26,6 +26,32 @@ export class CreateInteractiveMovieDto {
 
   @IsString()
   @IsOptional()
+  director?: string;
+
+  @IsString()
+  @IsOptional()
+  actors?: string;
+
+  @IsString()
+  @IsOptional()
+  duration?: string;
+
+  @IsOptional()
+  year?: number;
+
+  @IsString()
+  @IsOptional()
+  genre_id?: string;
+
+  @IsString()
+  @IsOptional()
+  genres?: string;
+
+  @IsOptional()
+  total_endings?: number;
+
+  @IsString()
+  @IsOptional()
   quality?: string;
 
   @IsString()
@@ -64,8 +90,33 @@ export class CreateInteractiveMovieDto {
   certificateId?: number;
 }
 
-// Update DTO inherits quality optional fields
+// Update DTO inherits fields
 export class UpdateInteractiveMovieDto {
+  @IsString()
+  @IsOptional()
+  director?: string;
+
+  @IsString()
+  @IsOptional()
+  actors?: string;
+
+  @IsString()
+  @IsOptional()
+  duration?: string;
+
+  @IsOptional()
+  year?: number;
+
+  @IsString()
+  @IsOptional()
+  genre_id?: string;
+
+  @IsString()
+  @IsOptional()
+  genres?: string;
+
+  @IsOptional()
+  total_endings?: number;
   @IsString()
   @IsOptional()
   title?: string;

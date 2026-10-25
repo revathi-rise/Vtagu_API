@@ -25,6 +25,24 @@ export class InteractiveMovie {
   languages: string;
 
   @Column({ nullable: true })
+  director: string;
+
+  @Column({ type: 'text', nullable: true })
+  actors: string;
+
+  @Column({ nullable: true })
+  duration: string;
+
+  @Column({ type: 'int', nullable: true })
+  year: number;
+
+  @Column({ name: 'genre_id', nullable: true })
+  genre_id: string;
+
+  @Column({ name: 'total_endings', type: 'int', default: 5, nullable: true })
+  total_endings: number;
+
+  @Column({ nullable: true })
   quality: string;
 
   @Column({ type: 'tinyint', default: 0, name: 'is_free' })

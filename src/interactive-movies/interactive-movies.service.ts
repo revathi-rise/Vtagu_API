@@ -107,6 +107,16 @@ export class InteractiveMoviesService {
       delete data.isRevenueManaged;
     }
     if (data.kids_restriction !== undefined) data.kids_restriction = parseBoolToNum(data.kids_restriction);
+    if (data.genres !== undefined && !data.genre_id) {
+      data.genre_id = data.genres;
+      delete data.genres;
+    }
+    if (data.year !== undefined && data.year !== null) {
+      data.year = parseInt(data.year, 10);
+    }
+    if (data.total_endings !== undefined && data.total_endings !== null) {
+      data.total_endings = parseInt(data.total_endings, 10);
+    }
     if (data.quality === undefined && (data.play_quality !== undefined || data.video_quality !== undefined)) {
       data.quality = data.play_quality ?? data.video_quality;
     }
@@ -136,6 +146,19 @@ export class InteractiveMoviesService {
       delete data.certificateId;
     }
 
+    if (data.quality === undefined && (data.play_quality !== undefined || data.video_quality !== undefined)) {
+      data.quality = data.play_quality ?? data.video_quality;
+    }
+    if (data.genres !== undefined && !data.genre_id) {
+      data.genre_id = data.genres;
+      delete data.genres;
+    }
+    if (data.year !== undefined && data.year !== null) {
+      data.year = parseInt(data.year, 10);
+    }
+    if (data.total_endings !== undefined && data.total_endings !== null) {
+      data.total_endings = parseInt(data.total_endings, 10);
+    }
     await this.moviesRepository.update(id, data as UpdateInteractiveMovieDto);
     return this.findOne(id);
   }
