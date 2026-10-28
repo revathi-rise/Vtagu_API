@@ -127,13 +127,47 @@ export class ScenesService {
     // Determine if user has full access to all scenes
     const hasFullAccess = userId ? await this.checkFullAccess(movieId, userId) : await this.checkFullAccess(movieId);
 
+    // Free Preview: Supports 3 scenes in depth (Scene 1 -> Choice -> Scene 2 -> Choice -> Scene 3 -> Choice)
+    const previewSceneIds = new Set<number>();
+    if (scenes.length > 0) {
+      const startScene = scenes.find((s) => (s as any).is_start) || scenes[0];
+      const depth1 = new Set<number>([startScene.scene_id]);
+      const depth2 = new Set<number>();
+      const depth3 = new Set<number>();
+
+      for (const s of scenes) {
+        if (depth1.has(s.scene_id) && s.choices) {
+          for (const c of s.choices) {
+            if (c.target_scene) depth2.add(Number(c.target_scene));
+          }
+        }
+      }
+
+      for (const s of scenes) {
+        if (depth2.has(s.scene_id) && s.choices) {
+          for (const c of s.choices) {
+            if (c.target_scene) depth3.add(Number(c.target_scene));
+          }
+        }
+      }
+
+      for (const id of depth1) previewSceneIds.add(id);
+      for (const id of depth2) previewSceneIds.add(id);
+      for (const id of depth3) previewSceneIds.add(id);
+
+      // Ensure first 3 sequential scenes are also included as fallback
+      scenes.slice(0, 3).forEach((s) => previewSceneIds.add(s.scene_id));
+    }
+
     // Transform to match PHP logic if needed, although ORM relations are cleaner
     return scenes.map((scene) => {
-      const sceneIsFree =
+      const isExplicitlyFree =
         Number(scene.is_free) === 1 ||
         String(scene.is_free) === '1' ||
         String(scene.is_free).toLowerCase() === 'true' ||
         (scene.is_free as any) === true;
+      const isFreePreview = previewSceneIds.has(scene.scene_id);
+      const sceneIsFree = isExplicitlyFree || isFreePreview;
       const canAccessScene = isAdmin || hasFullAccess || sceneIsFree;
 
       return {
