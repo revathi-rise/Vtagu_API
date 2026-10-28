@@ -253,7 +253,7 @@ export class SubscriptionsService {
           continue;
         }
 
-        const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+        const isPaid = Number(sub.payment_status) === 2 || String(sub.payment_method).toUpperCase() === 'FREE';
         const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
         if (isPaid && isValidDate && !activeSub) {
           activeSub = sub;
@@ -265,17 +265,34 @@ export class SubscriptionsService {
         const user = await this.userRepository.findOne({ where: { userId } });
         if (user) {
           let updated = false;
-          if (Number(user.standard_access) === 1) {
+          if (Number(user.standard_access) !== 0) {
             user.standard_access = 0;
             updated = true;
           }
-          if (Number(user.interactive_access) === 1) {
+          if (Number(user.interactive_access) !== 0) {
             user.interactive_access = 0;
             updated = true;
           }
           if (updated) {
             await this.userRepository.save(user);
           }
+        }
+
+        // Return latest expired subscription details with is_expired: true
+        const latestSub = await this.subscriptionRepository.findOne({
+          where: { userId },
+          relations: ['user', 'plan'],
+          order: { subscriptionId: 'DESC' },
+        });
+
+        if (latestSub) {
+          const resp = this.mapToResponse(latestSub);
+          resp.is_expired = true;
+          return {
+            status: true,
+            message: 'Subscription has expired',
+            data: resp,
+          };
         }
 
         return {
@@ -535,11 +552,15 @@ export class SubscriptionsService {
     const isStandard = hasQuality ? 1 : 0;
     const isInteractive = plan ? (plan.isInteractiveIncluded || 0) : 0;
 
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const toSec = Number(subscription.timestamp_to) || 0;
+    const isExpired = toSec > 0 && toSec < currentTimestamp;
+
     return {
       subscriptionId: subscription.subscriptionId,
       userId: subscription.userId,
       planId: subscription.planId,
-      status: subscription.status,
+      status: isExpired ? 0 : subscription.status,
       payment_status: subscription.payment_status,
       timestamp_from: subscription.timestamp_from,
       timestamp_to: subscription.timestamp_to,
@@ -548,6 +569,7 @@ export class SubscriptionsService {
       price_amount: Number(subscription.price_amount),
       paid_amount: Number(subscription.paid_amount),
       currency: subscription.currency,
+      is_expired: isExpired,
       is_interactive_included: isInteractive,
       isInteractiveIncluded: isInteractive,
       is_standard_included: isStandard,

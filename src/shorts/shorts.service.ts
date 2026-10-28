@@ -66,7 +66,7 @@ export class ShortsService {
         continue;
       }
 
-      const isPaid = Number(activeSub.payment_status) === 2 || Number(activeSub.payment_status) === 1 || String(activeSub.payment_method).toUpperCase() === 'FREE';
+      const isPaid = Number(activeSub.payment_status) === 2 || String(activeSub.payment_method).toUpperCase() === 'FREE';
       const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaid && isValidDate) {

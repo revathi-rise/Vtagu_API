@@ -43,7 +43,7 @@ export class WatchSessionsService {
         continue;
       }
 
-      const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+      const isPaid = Number(sub.payment_status) === 2 || String(sub.payment_method).toUpperCase() === 'FREE';
       const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
       if (isPaid && isValidDate) {

@@ -696,7 +696,7 @@ export class UsersService {
         continue;
       }
 
-      const isPaid = Number(sub.payment_status) === 2 || Number(sub.payment_status) === 1 || String(sub.payment_method).toUpperCase() === 'FREE';
+      const isPaid = Number(sub.payment_status) === 2 || String(sub.payment_method).toUpperCase() === 'FREE';
       const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
       if (isPaid && isValidDate && !activeSub) {
         activeSub = sub;
@@ -761,25 +761,46 @@ export class UsersService {
   private async mapUserToResponse(user: User, planPrice?: number): Promise<UserResponseDto> {
     const activeSub = await this.getActiveUserSubscription(user.userId);
     const isSubscribed = !!activeSub;
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+
+    let latestSub: Subscription | null = activeSub;
+    let isExpired = false;
+
+    if (!activeSub) {
+      latestSub = await this.subscriptionRepository.findOne({
+        where: { userId: user.userId },
+        relations: ['plan'],
+        order: { subscriptionId: 'DESC' },
+      });
+      if (latestSub) {
+        const toSec = Number(latestSub.timestamp_to) || 0;
+        if (toSec > 0 && toSec < currentTimestamp) {
+          isExpired = true;
+        }
+      }
+    }
 
     // Resolve numeric plan_id
     let planId: number | undefined;
     if (activeSub && activeSub.planId) {
       planId = activeSub.planId;
+    } else if (latestSub && latestSub.planId) {
+      planId = latestSub.planId;
     } else if (user.plan && !isNaN(Number(user.plan))) {
       planId = Number(user.plan);
     }
 
-    // Fetch Plan entity if not directly in activeSub
-    let planEntity: Plan | null = activeSub?.plan || null;
+    // Fetch Plan entity if not directly in activeSub or latestSub
+    let planEntity: Plan | null = activeSub?.plan || latestSub?.plan || null;
     if (!planEntity && planId) {
       planEntity = await this.planRepository.findOne({ where: { planId } });
     }
 
-    const planName = planEntity?.name || (activeSub ? `Plan ${activeSub.planId}` : undefined);
-    const qualityStr = planEntity?.quality || activeSub?.plan?.quality || '480p';
+    const planName = planEntity?.name || (activeSub ? `Plan ${activeSub.planId}` : (latestSub ? `Plan ${latestSub.planId}` : undefined));
+    const qualityStr = planEntity?.quality || activeSub?.plan?.quality || latestSub?.plan?.quality || '480p';
     const maxHeight = this.parseQualityToHeight(qualityStr);
-    const resolvedPrice = activeSub?.paid_amount ?? planEntity?.price ?? planPrice;
+    const resolvedPrice = activeSub?.paid_amount ?? latestSub?.paid_amount ?? planEntity?.price ?? planPrice;
+    const subToExpose = activeSub || (isExpired ? latestSub : null);
 
     return {
       userId: user.userId,
@@ -814,27 +835,31 @@ export class UsersService {
       is_locked: user.is_locked,
       permissions: user.permissions?.map(p => p.module_name) || [],
       is_subscribed: isSubscribed,
-      active_subscription: activeSub ? {
-        subscriptionId: activeSub.subscriptionId,
-        planId: activeSub.planId,
+      is_expired: isExpired,
+      subscription_status: isSubscribed ? 'ACTIVE' : (isExpired ? 'EXPIRED' : 'NONE'),
+      active_subscription: subToExpose ? {
+        subscriptionId: subToExpose.subscriptionId,
+        planId: subToExpose.planId,
         planName: planName,
-        screens: activeSub.plan?.screens || 1,
+        screens: subToExpose.plan?.screens || 1,
         quality: qualityStr,
         max_quality_height: maxHeight,
-        validity: activeSub.plan?.validity || '1 Year',
-        price: activeSub.paid_amount ?? activeSub.plan?.price,
-        unlimited: activeSub.plan?.unlimited || 0,
-        isStandardAccess: activeSub.plan?.isStandardAccess !== undefined ? Number(activeSub.plan.isStandardAccess) : 1,
-        is_standard_access: activeSub.plan?.isStandardAccess !== undefined ? Number(activeSub.plan.isStandardAccess) : 1,
-        isInteractiveIncluded: activeSub.plan?.isInteractiveIncluded || 0,
-        is_interactive_included: activeSub.plan?.isInteractiveIncluded || 0,
-        isStandardIncluded: activeSub.plan?.isStandardAccess !== undefined ? Number(activeSub.plan.isStandardAccess) : 1,
-        isShortsIncluded: activeSub.plan?.isShortsIncluded,
-        timestamp_from: activeSub.timestamp_from,
-        timestamp_to: activeSub.timestamp_to,
-        payment_status: activeSub.payment_status,
-        payment_method: activeSub.payment_method || null,
-        payment_details: activeSub.payment_details || null,
+        validity: subToExpose.plan?.validity || '1 Year',
+        price: subToExpose.paid_amount ?? subToExpose.plan?.price,
+        unlimited: subToExpose.plan?.unlimited || 0,
+        isStandardAccess: subToExpose.plan?.isStandardAccess !== undefined ? Number(subToExpose.plan.isStandardAccess) : 1,
+        is_standard_access: subToExpose.plan?.isStandardAccess !== undefined ? Number(subToExpose.plan.isStandardAccess) : 1,
+        isInteractiveIncluded: subToExpose.plan?.isInteractiveIncluded || 0,
+        is_interactive_included: subToExpose.plan?.isInteractiveIncluded || 0,
+        isStandardIncluded: subToExpose.plan?.isStandardAccess !== undefined ? Number(subToExpose.plan.isStandardAccess) : 1,
+        isShortsIncluded: subToExpose.plan?.isShortsIncluded,
+        timestamp_from: subToExpose.timestamp_from,
+        timestamp_to: subToExpose.timestamp_to,
+        payment_status: subToExpose.payment_status,
+        payment_method: subToExpose.payment_method || null,
+        payment_details: subToExpose.payment_details || null,
+        is_expired: isExpired,
+        is_active: isSubscribed,
       } : null,
     };
   }

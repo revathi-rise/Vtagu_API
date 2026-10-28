@@ -82,23 +82,25 @@ export class ScenesService {
       if (activeSub) {
         const fromSec = Number(activeSub.timestamp_from) || 0;
         const toSec = Number(activeSub.timestamp_to) || 0;
-        const isPaid =
-          Number(activeSub.payment_status) === 2 ||
-          Number(activeSub.payment_status) === 1 ||
-          String(activeSub.payment_status) === '2' ||
-          String(activeSub.payment_status) === '1' ||
-          String(activeSub.payment_method).toUpperCase() === 'FREE' ||
-          String(activeSub.payment_status).toLowerCase() === 'completed' ||
-          String(activeSub.payment_status).toLowerCase() === 'active';
-        const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
 
-        if (isPaid && isValidDate) {
-          return true;
+        if (toSec > 0 && toSec < currentTimestamp) {
+          activeSub.status = 0;
+          await this.subscriptionRepository.save(activeSub);
+          if (Number(user.interactive_access) !== 0 || Number(user.standard_access) !== 0) {
+            user.interactive_access = 0;
+            user.standard_access = 0;
+            await this.userRepository.save(user);
+          }
+        } else {
+          const isPaid =
+            Number(activeSub.payment_status) === 2 ||
+            String(activeSub.payment_method).toUpperCase() === 'FREE';
+          const isValidDate = (fromSec === 0 || fromSec <= currentTimestamp) && (toSec === 0 || toSec >= currentTimestamp);
+
+          if (isPaid && isValidDate) {
+            return true;
+          }
         }
-      }
-
-      if (Number(user.interactive_access) === 1 || Number(user.standard_access) === 1) {
-        return true;
       }
     }
 

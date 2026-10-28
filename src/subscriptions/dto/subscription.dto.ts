@@ -169,6 +169,7 @@ export class SubscriptionResponseDto {
   price_amount: number;
   paid_amount: number;
   currency: string;
+  is_expired?: boolean;
   is_interactive_included?: number;
   isInteractiveIncluded?: number;
   is_standard_included?: number;

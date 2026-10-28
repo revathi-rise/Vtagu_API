@@ -249,6 +249,8 @@ export class UserResponseDto {
   is_locked: boolean;
   permissions?: string[];
   is_subscribed?: boolean;
+  is_expired?: boolean;
+  subscription_status?: string;
   active_subscription?: any;
 }
 
