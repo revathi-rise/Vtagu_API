@@ -62,7 +62,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { AuditLog } from './audit-logs/entities/audit-log.entity';
 import { CertificatesModule } from './certificates/certificates.module';
 import { Certificate } from './certificates/entities/certificate.entity';
-
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -155,6 +155,7 @@ import { Certificate } from './certificates/entities/certificate.entity';
     SvodRevenueModule,
     AuditLogsModule,
     CertificatesModule,
+    SearchModule,
   ],
 })
 export class AppModule {}
