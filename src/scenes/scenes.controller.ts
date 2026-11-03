@@ -58,6 +58,15 @@ export class ScenesController {
     };
   }
 
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    const scene = await this.scenesService.findOne(id);
+    return {
+      status: 'success',
+      data: scene,
+    };
+  }
+
   @Post()
   async create(@Body() createSceneDto: CreateSceneDto) {
     const scene = await this.scenesService.create(createSceneDto);

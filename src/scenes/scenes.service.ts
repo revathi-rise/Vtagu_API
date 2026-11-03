@@ -55,9 +55,7 @@ export class ScenesService {
     if (
       Number(movie.is_free) === 1 ||
       Boolean(movie.is_free) === true ||
-      String(movie.is_free) === '1' ||
-      Number(movie.price) === 0 ||
-      movie.price === 0
+      String(movie.is_free) === '1'
     ) {
       return true;
     }
@@ -127,61 +125,32 @@ export class ScenesService {
     // Determine if user has full access to all scenes
     const hasFullAccess = userId ? await this.checkFullAccess(movieId, userId) : await this.checkFullAccess(movieId);
 
-    // Free Preview: Supports 3 scenes in depth (Scene 1 -> Choice -> Scene 2 -> Choice -> Scene 3 -> Choice)
-    const previewSceneIds = new Set<number>();
-    if (scenes.length > 0) {
-      const startScene = scenes.find((s) => (s as any).is_start) || scenes[0];
-      const depth1 = new Set<number>([startScene.scene_id]);
-      const depth2 = new Set<number>();
-      const depth3 = new Set<number>();
-
-      for (const s of scenes) {
-        if (depth1.has(s.scene_id) && s.choices) {
-          for (const c of s.choices) {
-            if (c.target_scene) depth2.add(Number(c.target_scene));
-          }
-        }
-      }
-
-      for (const s of scenes) {
-        if (depth2.has(s.scene_id) && s.choices) {
-          for (const c of s.choices) {
-            if (c.target_scene) depth3.add(Number(c.target_scene));
-          }
-        }
-      }
-
-      for (const id of depth1) previewSceneIds.add(id);
-      for (const id of depth2) previewSceneIds.add(id);
-      for (const id of depth3) previewSceneIds.add(id);
-
-      // Ensure first 3 sequential scenes are also included as fallback
-      scenes.slice(0, 3).forEach((s) => previewSceneIds.add(s.scene_id));
-    }
-
-    // Transform to match PHP logic if needed, although ORM relations are cleaner
     return scenes.map((scene) => {
       const isExplicitlyFree =
         Number(scene.is_free) === 1 ||
         String(scene.is_free) === '1' ||
         String(scene.is_free).toLowerCase() === 'true' ||
         (scene.is_free as any) === true;
-      const isFreePreview = previewSceneIds.has(scene.scene_id);
-      const sceneIsFree = isExplicitlyFree || isFreePreview;
-      const canAccessScene = isAdmin || hasFullAccess || sceneIsFree;
+
+      // In admin mode, is_locked reflects whether the scene is locked for standard viewers (!isExplicitlyFree).
+      // For regular users, scene is locked if user does not have full access and the scene itself is not free.
+      const isLocked = isAdmin ? !isExplicitlyFree : (!hasFullAccess && !isExplicitlyFree);
+
+      // Media access: Admins, users with full movie access, or free scene viewers can access the media stream
+      const canAccessMedia = isAdmin || hasFullAccess || isExplicitlyFree;
 
       return {
         scene_id: scene.scene_id,
         movie_id: scene.movie_id,
         scene_text: scene.scene_name,
-        poster_url: canAccessScene ? scene.scene_url : '',
-        scene_url: canAccessScene ? scene.scene_url : '',
+        poster_url: canAccessMedia ? scene.scene_url : '',
+        scene_url: canAccessMedia ? scene.scene_url : '',
         is_ending: Boolean(scene.is_ending),
         end_text: scene.end_text || null,
         show_choices_on: scene.show_choices_on,
-        subtitles: canAccessScene ? (scene.subtitles || []) : [],
-        is_free: sceneIsFree,
-        is_locked: !canAccessScene,
+        subtitles: canAccessMedia ? (scene.subtitles || []) : [],
+        is_free: isExplicitlyFree,
+        is_locked: isLocked,
         choices: scene.choices.map((choice) => ({
           choice_id: choice.choice_id,
           choice_text: choice.button_text,
@@ -202,16 +171,24 @@ export class ScenesService {
     if (!scene) {
       throw new NotFoundException(`Scene with ID ${id} not found`);
     }
+    const isExplicitlyFree =
+      Number(scene.is_free) === 1 ||
+      String(scene.is_free) === '1' ||
+      String(scene.is_free).toLowerCase() === 'true' ||
+      (scene.is_free as any) === true;
+
     return {
       scene_id: scene.scene_id,
       movie_id: scene.movie_id,
       scene_text: scene.scene_name,
       poster_url: scene.scene_url,
+      scene_url: scene.scene_url,
       is_ending: Boolean(scene.is_ending),
       end_text: scene.end_text || null,
       show_choices_on: scene.show_choices_on,
       subtitles: scene.subtitles || [],
-      is_free: Number(scene.is_free) === 1,
+      is_free: isExplicitlyFree,
+      is_locked: !isExplicitlyFree,
       choices: scene.choices.map((choice) => ({
         choice_id: choice.choice_id,
         choice_text: choice.button_text,
