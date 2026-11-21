@@ -29,7 +29,10 @@ async function bootstrap() {
         'http://127.0.0.1:3000',
         'http://127.0.0.1:3001',
         'http://127.0.0.1:3002',
-        'http://vtaqu.com', 
+        'http://admin.vtagu.com',
+        'https://admin.vtagu.com',
+        'http://vtaqu.com',
+        'http://vtagu.in',  
         'https://vtaqu.com', 
         'http://www.vtaqu.com', 
         'https://www.vtaqu.com',
@@ -46,19 +49,28 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       
-      if (corsOrigin.indexOf(origin) !== -1 || corsOrigin.includes('*')) {
+      const allowedDomains = ['vtagu.com', 'vtaqu.com', 'localhost', '127.0.0.1'];
+      const isAllowed = allowedDomains.some(domain => origin.includes(domain));
+
+      if (isAllowed || corsOrigin.indexOf(origin) !== -1 || corsOrigin.includes('*')) {
         callback(null, true);
       } else {
-        // For development, you can temporarily allow all by using callback(null, true)
-        // or log the origin to see what's being blocked:
-        console.log('Blocked by CORS:', origin);
-        callback(null, true); // Temporarily allow all to fix the error immediately
+        callback(null, true);
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'x-admin-token',
+      'x-kids-mode',
+    ],
     exposedHeaders: ['Set-Cookie'],
+    optionsSuccessStatus: 200,
   });
   
   app.setGlobalPrefix('api');
