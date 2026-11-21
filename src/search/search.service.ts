@@ -130,9 +130,15 @@ export class SearchService {
       });
     }
 
-    // Category genre matching
+    // Category genre matching or explicit genre parameter
     let targetGenreId: string | null = null;
-    if (isGenreCategory) {
+    const rawGenre = (queryDto.genre || '').trim().toLowerCase();
+    if (rawGenre) {
+      const g = allGenres.find(
+        (item) => item.name.toLowerCase() === rawGenre || String(item.genre_id) === rawGenre,
+      );
+      if (g) targetGenreId = String(g.genre_id);
+    } else if (isGenreCategory) {
       const g = allGenres.find((item) => item.name.toLowerCase() === category);
       if (g) targetGenreId = String(g.genre_id);
     }
@@ -165,11 +171,24 @@ export class SearchService {
       }
 
       if (rawQuery) {
+        let genreLikeClause = '';
+        const genreLikeParams: Record<string, string> = {};
+        if (matchedGenreIds.length > 0) {
+          const conditions: string[] = ['movie.genre_id IN (:...matchedGenreIds)'];
+          matchedGenreIds.forEach((gid, i) => {
+            conditions.push(
+              `movie.genre_id LIKE :mgS${i} OR movie.genre_id LIKE :mgM${i} OR movie.genre_id LIKE :mgE${i}`,
+            );
+            genreLikeParams[`mgS${i}`] = `${gid},%`;
+            genreLikeParams[`mgM${i}`] = `%,${gid},%`;
+            genreLikeParams[`mgE${i}`] = `%,${gid}`;
+          });
+          genreLikeClause = ` OR (${conditions.join(' OR ')})`;
+        }
+
         qb.andWhere(
-          '(movie.title LIKE :term OR movie.actors LIKE :term OR movie.director LIKE :term OR movie.description_short LIKE :term OR movie.description_long LIKE :term OR movie.languages LIKE :term OR movie.genre_id LIKE :term' +
-            (matchedGenreIds.length > 0 ? ' OR movie.genre_id IN (:...matchedGenreIds)' : '') +
-            ')',
-          { term, matchedGenreIds },
+          `(movie.title LIKE :term OR movie.actors LIKE :term OR movie.director LIKE :term OR movie.description_short LIKE :term OR movie.description_long LIKE :term OR movie.languages LIKE :term OR movie.genre_id LIKE :term${genreLikeClause})`,
+          { term, matchedGenreIds, ...genreLikeParams },
         );
       }
 
@@ -235,11 +254,24 @@ export class SearchService {
       }
 
       if (rawQuery) {
+        let genreLikeClause = '';
+        const genreLikeParams: Record<string, string> = {};
+        if (matchedGenreIds.length > 0) {
+          const conditions: string[] = ['series.genre_id IN (:...matchedGenreIds)'];
+          matchedGenreIds.forEach((gid, i) => {
+            conditions.push(
+              `series.genre_id LIKE :sgS${i} OR series.genre_id LIKE :sgM${i} OR series.genre_id LIKE :sgE${i}`,
+            );
+            genreLikeParams[`sgS${i}`] = `${gid},%`;
+            genreLikeParams[`sgM${i}`] = `%,${gid},%`;
+            genreLikeParams[`sgE${i}`] = `%,${gid}`;
+          });
+          genreLikeClause = ` OR (${conditions.join(' OR ')})`;
+        }
+
         qb.andWhere(
-          '(series.title LIKE :term OR series.actors LIKE :term OR series.description_short LIKE :term OR series.description_long LIKE :term OR series.genre_id LIKE :term' +
-            (matchedGenreIds.length > 0 ? ' OR series.genre_id IN (:...matchedGenreIds)' : '') +
-            ')',
-          { term, matchedGenreIds },
+          `(series.title LIKE :term OR series.actors LIKE :term OR series.description_short LIKE :term OR series.description_long LIKE :term OR series.genre_id LIKE :term${genreLikeClause})`,
+          { term, matchedGenreIds, ...genreLikeParams },
         );
       }
 
@@ -323,11 +355,24 @@ export class SearchService {
       }
 
       if (rawQuery) {
+        let genreLikeClause = '';
+        const genreLikeParams: Record<string, string> = {};
+        if (matchedGenreIds.length > 0) {
+          const conditions: string[] = ['im.genre_id IN (:...matchedGenreIds)'];
+          matchedGenreIds.forEach((gid, i) => {
+            conditions.push(
+              `im.genre_id LIKE :igS${i} OR im.genre_id LIKE :igM${i} OR im.genre_id LIKE :igE${i}`,
+            );
+            genreLikeParams[`igS${i}`] = `${gid},%`;
+            genreLikeParams[`igM${i}`] = `%,${gid},%`;
+            genreLikeParams[`igE${i}`] = `%,${gid}`;
+          });
+          genreLikeClause = ` OR (${conditions.join(' OR ')})`;
+        }
+
         qb.andWhere(
-          '(im.title LIKE :term OR im.description LIKE :term OR im.director LIKE :term OR im.actors LIKE :term OR im.languages LIKE :term OR im.genre_id LIKE :term' +
-            (matchedGenreIds.length > 0 ? ' OR im.genre_id IN (:...matchedGenreIds)' : '') +
-            ')',
-          { term, matchedGenreIds },
+          `(im.title LIKE :term OR im.description LIKE :term OR im.director LIKE :term OR im.actors LIKE :term OR im.languages LIKE :term OR im.genre_id LIKE :term${genreLikeClause})`,
+          { term, matchedGenreIds, ...genreLikeParams },
         );
       }
 

@@ -67,9 +67,20 @@ export class ScenesController {
     };
   }
 
+  private extractAuditContext(req?: any): { userId?: number; userEmail?: string; ipAddress?: string } {
+    const rawIp = req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || req?.ip || '127.0.0.1';
+    const ipAddress = Array.isArray(rawIp) ? rawIp[0] : String(rawIp).split(',')[0].trim();
+    let userEmail = 'admin@vtagu.com';
+    let userId = 1;
+    if (req?.user?.email) userEmail = req.user.email;
+    if (req?.user?.userId || req?.user?.id) userId = req.user.userId || req.user.id;
+    return { userId, userEmail, ipAddress };
+  }
+
   @Post()
-  async create(@Body() createSceneDto: CreateSceneDto) {
-    const scene = await this.scenesService.create(createSceneDto);
+  async create(@Body() createSceneDto: CreateSceneDto, @Req() req?: any) {
+    const context = this.extractAuditContext(req);
+    const scene = await this.scenesService.create(createSceneDto, context);
     return {
       status: 'success',
       data: scene,
@@ -77,8 +88,9 @@ export class ScenesController {
   }
 
   @Put(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateSceneDto: UpdateSceneDto) {
-    const scene = await this.scenesService.update(id, updateSceneDto);
+  async update(@Param('id', ParseIntPipe) id: number, @Body() updateSceneDto: UpdateSceneDto, @Req() req?: any) {
+    const context = this.extractAuditContext(req);
+    const scene = await this.scenesService.update(id, updateSceneDto, context);
     return {
       status: 'success',
       data: scene,
@@ -86,8 +98,9 @@ export class ScenesController {
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    await this.scenesService.remove(id);
+  async remove(@Param('id', ParseIntPipe) id: number, @Req() req?: any) {
+    const context = this.extractAuditContext(req);
+    await this.scenesService.remove(id, context);
     return {
       status: 'success',
       message: 'Scene deleted successfully',

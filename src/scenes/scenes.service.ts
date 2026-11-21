@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Scene } from './entities/scene.entity';
@@ -9,6 +9,7 @@ import { UserInteractiveMoviePurchase } from '../interactive-movies/entities/use
 import { User } from '../users/entities/user.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Plan } from '../plans/entities/plan.entity';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 const parseBoolToNum = (val: any): number => val === true || val === 'true' || val === 1 || val === '1' ? 1 : 0;
 
@@ -29,6 +30,8 @@ export class ScenesService {
     private subscriptionRepository: Repository<Subscription>,
     @InjectRepository(Plan)
     private planRepository: Repository<Plan>,
+    @Optional()
+    private auditLogsService?: AuditLogsService,
   ) {}
 
   async getUserBySessionToken(token: string): Promise<User | null> {
@@ -200,7 +203,7 @@ export class ScenesService {
     };
   }
 
-  async create(dto: CreateSceneDto): Promise<any> {
+  async create(dto: CreateSceneDto, context?: { userId?: number; userEmail?: string; ipAddress?: string }): Promise<any> {
     const scene = this.scenesRepository.create({
       movie_id: dto.movie_id,
       scene_name: dto.scene_name,
@@ -212,10 +215,35 @@ export class ScenesService {
       is_free: dto.is_free !== undefined ? parseBoolToNum(dto.is_free) : 0,
     });
     const saved = await this.scenesRepository.save(scene);
+
+    if (this.auditLogsService) {
+      this.auditLogsService.createLog({
+        userId: context?.userId,
+        userEmail: context?.userEmail || 'admin@vtagu.com',
+        ipAddress: context?.ipAddress,
+        action: 'CREATE_SCENE',
+        module: 'Interactive',
+        resourceId: String(saved.scene_id),
+        details: {
+          scene_id: saved.scene_id,
+          movie_id: saved.movie_id,
+          scene_name: saved.scene_name,
+          is_free: Boolean(saved.is_free),
+          is_ending: Boolean(saved.is_ending),
+          show_choices_on: saved.show_choices_on,
+        },
+      }).catch((err) => console.error('Failed to log audit for scene create:', err));
+    }
+
     return this.findOne(saved.scene_id);
   }
 
-  async update(id: number, dto: UpdateSceneDto): Promise<any> {
+  async update(id: number, dto: UpdateSceneDto, context?: { userId?: number; userEmail?: string; ipAddress?: string }): Promise<any> {
+    const existing = await this.scenesRepository.findOne({ where: { scene_id: id } });
+    if (!existing) {
+      throw new NotFoundException(`Scene with ID ${id} not found`);
+    }
+
     const updateData: any = {
       ...(dto.scene_name !== undefined && { scene_name: dto.scene_name }),
       ...(dto.scene_url !== undefined && { scene_url: dto.scene_url }),
@@ -226,10 +254,36 @@ export class ScenesService {
       ...(dto.is_free !== undefined && { is_free: parseBoolToNum(dto.is_free) }),
     };
     await this.scenesRepository.update(id, updateData);
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+
+    if (this.auditLogsService) {
+      this.auditLogsService.createLog({
+        userId: context?.userId,
+        userEmail: context?.userEmail || 'admin@vtagu.com',
+        ipAddress: context?.ipAddress,
+        action: 'UPDATE_SCENE',
+        module: 'Interactive',
+        resourceId: String(id),
+        details: {
+          scene_id: id,
+          movie_id: existing.movie_id,
+          scene_name: updated.scene_text,
+          previous_is_free: Number(existing.is_free) === 1,
+          new_is_free: Boolean(updated.is_free),
+          changes: updateData,
+        },
+      }).catch((err) => console.error('Failed to log audit for scene update:', err));
+    }
+
+    return updated;
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, context?: { userId?: number; userEmail?: string; ipAddress?: string }): Promise<void> {
+    const existing = await this.scenesRepository.findOne({ where: { scene_id: id } });
+    if (!existing) {
+      throw new NotFoundException(`Scene with ID ${id} not found`);
+    }
+
     // Delete choices in the scene first to avoid foreign key constraints
     await this.choicesRepository.delete({ scene_id: id });
     // Set target_scene reference to null for choices pointing to this scene
@@ -238,6 +292,22 @@ export class ScenesService {
     const result = await this.scenesRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Scene with ID ${id} not found`);
+    }
+
+    if (this.auditLogsService) {
+      this.auditLogsService.createLog({
+        userId: context?.userId,
+        userEmail: context?.userEmail || 'admin@vtagu.com',
+        ipAddress: context?.ipAddress,
+        action: 'DELETE_SCENE',
+        module: 'Interactive',
+        resourceId: String(id),
+        details: {
+          scene_id: id,
+          movie_id: existing.movie_id,
+          scene_name: existing.scene_name,
+        },
+      }).catch((err) => console.error('Failed to log audit for scene delete:', err));
     }
   }
 
