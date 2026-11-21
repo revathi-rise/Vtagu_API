@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Param, Patch, Delete,
+  Controller, Get, Post, Put, Body, Param, Patch, Delete,
   Query, HttpCode, HttpStatus, ParseIntPipe, Req,
 } from '@nestjs/common';
 import { EpisodesService } from './episodes.service';
@@ -76,6 +76,7 @@ export class EpisodesController {
   }
 
   @Patch(':id')
+  @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateEpisodeDto) {
     try {
       const data = await this.episodesService.update(Number(id), dto);

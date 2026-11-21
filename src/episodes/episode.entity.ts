@@ -88,8 +88,8 @@ export class Episode {
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon: boolean;
 
-  @Column({ name: 'kids_restriction', default: false })
-  kids_restriction: boolean;
+  // Note: kids_restriction is a series-level attribute in MySQL database
+  kids_restriction?: boolean;
 
   @Column({ name: 'view_count', default: 0 })
   view_count: number;

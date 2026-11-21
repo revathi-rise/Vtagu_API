@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { SeriesService } from './series.service';
 import { CreateSeriesDto, UpdateSeriesDto } from './dto/series.dto';
 
@@ -63,6 +63,7 @@ export class SeriesController {
     }
   }
 
+  @Patch(':id')
   @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateSeriesDto) {
     try {

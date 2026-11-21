@@ -13,13 +13,11 @@ export class CreateSeriesDto {
   @IsOptional()
   description_long?: string;
 
-  @IsString()
   @IsOptional()
-  genre_id?: string;
+  genre_id?: number | string;
 
-  @IsString()
   @IsOptional()
-  age_group?: string;
+  age_group?: string | number;
 
   @IsString()
   @IsOptional()
@@ -37,6 +35,10 @@ export class CreateSeriesDto {
   @IsOptional()
   country_id?: number;
 
+  @IsString()
+  @IsOptional()
+  quality?: string;
+
   @IsNumber()
   @IsOptional()
   rating?: number;
@@ -46,7 +48,31 @@ export class CreateSeriesDto {
   featured?: number;
 
   @IsOptional()
-  kids_restriction?: boolean;
+  free?: string | boolean;
+
+  @IsOptional()
+  kids_restriction?: boolean | number;
+
+  @IsOptional()
+  age_restriction?: string;
+
+  @IsOptional()
+  episodes?: string;
+
+  @IsString()
+  @IsOptional()
+  duration?: string;
+
+  @IsString()
+  @IsOptional()
+  trailer_url?: string;
+
+  @IsString()
+  @IsOptional()
+  series_image?: string;
+
+  @IsOptional()
+  is_coming_soon?: boolean | number;
 
   @IsNumber()
   @IsOptional()
@@ -57,4 +83,85 @@ export class CreateSeriesDto {
   certificateId?: number;
 }
 
-export class UpdateSeriesDto extends CreateSeriesDto {}
+export class UpdateSeriesDto {
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  description_short?: string;
+
+  @IsString()
+  @IsOptional()
+  description_long?: string;
+
+  @IsOptional()
+  genre_id?: number | string;
+
+  @IsOptional()
+  age_group?: string | number;
+
+  @IsString()
+  @IsOptional()
+  actors?: string;
+
+  @IsNumber()
+  @IsOptional()
+  director?: number;
+
+  @IsNumber()
+  @IsOptional()
+  year?: number;
+
+  @IsNumber()
+  @IsOptional()
+  country_id?: number;
+
+  @IsString()
+  @IsOptional()
+  quality?: string;
+
+  @IsNumber()
+  @IsOptional()
+  rating?: number;
+
+  @IsNumber()
+  @IsOptional()
+  featured?: number;
+
+  @IsOptional()
+  free?: string | boolean;
+
+  @IsOptional()
+  kids_restriction?: boolean | number;
+
+  @IsOptional()
+  age_restriction?: string;
+
+  @IsOptional()
+  episodes?: string;
+
+  @IsString()
+  @IsOptional()
+  duration?: string;
+
+  @IsString()
+  @IsOptional()
+  trailer_url?: string;
+
+  @IsString()
+  @IsOptional()
+  series_image?: string;
+
+  @IsOptional()
+  is_coming_soon?: boolean | number;
+
+  @IsNumber()
+  @IsOptional()
+  certificate_id?: number;
+
+  @IsNumber()
+  @IsOptional()
+  certificateId?: number;
+}

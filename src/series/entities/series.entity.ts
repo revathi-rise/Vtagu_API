@@ -15,8 +15,8 @@ export class Series {
   @Column({ name: 'description_long', type: 'text', nullable: true })
   description_long: string;
 
-  @Column({ name: 'genre_id', type: 'varchar', nullable: true })
-  genre_id: string;
+  @Column({ name: 'genre_id', nullable: true })
+  genre_id: any;
 
   @Column({ name: 'age_group', nullable: true })
   age_group: string;
@@ -33,7 +33,7 @@ export class Series {
   @Column({ name: 'country_id', nullable: true })
   country_id: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 'HD' })
   quality: string;
 
   @Column({ name: 'certificate_id', nullable: true })
@@ -49,8 +49,26 @@ export class Series {
   @Column({ default: 0 })
   featured: number;
 
+  @Column({ name: 'free', type: 'char', length: 2, default: 'N', nullable: true })
+  free: string;
+
   @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
   kids_restriction: boolean;
+
+  @Column({ name: 'age_restriction', type: 'char', length: 2, default: 'N', nullable: true })
+  age_restriction: string;
+
+  @Column({ name: 'episodes', type: 'text', nullable: true })
+  episodes: string;
+
+  @Column({ name: 'duration', length: 12, nullable: true })
+  duration: string;
+
+  @Column({ name: 'trailer_url', type: 'longtext', nullable: true })
+  trailer_url: string;
+
+  @Column({ name: 'series_image', length: 250, nullable: true })
+  series_image: string;
 
   @Column({ name: 'is_coming_soon', default: false })
   is_coming_soon: boolean;

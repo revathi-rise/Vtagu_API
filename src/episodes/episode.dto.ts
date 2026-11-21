@@ -200,6 +200,14 @@ export class UpdateEpisodeDto {
 
   @IsInt()
   @IsOptional()
+  series_id?: number;
+
+  @IsInt()
+  @IsOptional()
+  seriesId?: number;
+
+  @IsInt()
+  @IsOptional()
   episode_number?: number;
 
   @IsString()
@@ -325,11 +333,14 @@ export class UpdateEpisodeDto {
 export class EpisodeResponseDto {
   id: number;
   season_id: number;
+  series_id?: number;
   episode_number: number;
   title: string;
   slug: string;
   shortDescription: string;
   longDescription: string;
+  description_short?: string;
+  description_long?: string;
   duration: string;
   quality?: string;
   play_quality?: string;
@@ -338,6 +349,8 @@ export class EpisodeResponseDto {
   rating: number;
   isFeatured: boolean;
   isFree: boolean;
+  free?: boolean;
+  featured?: boolean;
   isComingSoon: boolean;
   is_coming_soon: boolean;
   kids_restriction: boolean;
@@ -350,6 +363,7 @@ export class EpisodeResponseDto {
   price: number;
   currency: string;
   viewCount: number;
+  view_count?: number;
   certificate_id?: number;
   certificateId?: number;
   certificate?: {
@@ -360,6 +374,13 @@ export class EpisodeResponseDto {
     maturity_level?: string;
     badge_color?: string;
   } | null;
+  url?: string;
+  image?: string;
+  poster_image?: string;
+  card_image?: string;
+  trailer_url?: string;
+  trailer_alt?: string;
+  poster_alt?: string;
   media: {
     image: { url: string; alt: string };
     poster_image: { url: string; alt: string };
