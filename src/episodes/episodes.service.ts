@@ -28,6 +28,44 @@ export class EpisodesService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  private mapRawToEntity(row: any): Episode {
+    const e = new Episode();
+    e.episode_id = row.episode_id !== undefined ? Number(row.episode_id) : (row.id !== undefined ? Number(row.id) : 0);
+    e.season_id = row.season_id !== undefined ? Number(row.season_id) : (row.series_id !== undefined ? Number(row.series_id) : 0);
+    e.episode_number = row.episode_number !== undefined ? Number(row.episode_number) : (row.episode_no !== undefined ? Number(row.episode_no) : null as any);
+    e.slug = row.slug ? String(row.slug) : String(e.episode_id);
+    e.title = row.title ? String(row.title) : '';
+    e.description_short = row.description_short ?? row.description ?? '';
+    e.description_long = row.description_long ?? '';
+    e.duration = row.duration ?? null as any;
+    e.quality = row.quality ?? null as any;
+    e.url = row.url ?? row.video_url ?? '';
+    e.trailer_url = row.trailer_url ?? null as any;
+    e.trailer_alt = row.trailer_alt ?? null as any;
+    e.image = row.image ?? null as any;
+    e.poster_image = row.poster_image ?? null as any;
+    e.card_image = row.card_image ?? null as any;
+    e.poster_alt = row.poster_alt ?? null as any;
+    e.languages = row.languages ?? null as any;
+    e.rating = row.rating !== undefined && row.rating !== null ? parseFloat(String(row.rating)) : null as any;
+    e.featured = row.featured !== undefined ? parseBool(row.featured) : false;
+    e.free = row.free !== undefined ? parseBool(row.free) : false;
+    e.is_revenue_managed = row.is_revenue_managed !== undefined ? parseBool(row.is_revenue_managed) : false;
+    e.is_svod_eligible = row.is_svod_eligible !== undefined ? parseBool(row.is_svod_eligible) : false;
+    e.revenue_share_percent = row.revenue_share_percent !== undefined && row.revenue_share_percent !== null ? parseFloat(String(row.revenue_share_percent)) : null as any;
+    e.price = row.price !== undefined && row.price !== null ? parseFloat(String(row.price)) : null as any;
+    e.currency = row.currency ?? null as any;
+    e.is_coming_soon = row.is_coming_soon !== undefined ? parseBool(row.is_coming_soon) : false;
+    e.kids_restriction = row.kids_restriction !== undefined ? parseBool(row.kids_restriction) : false;
+    e.view_count = row.view_count !== undefined ? Number(row.view_count) : 0;
+    e.certificate_id = row.certificate_id ? Number(row.certificate_id) : null as any;
+    e.subtitles = row.subtitles ?? null;
+    e.audio_tracks = row.audio_tracks ?? null;
+    e.created_at = row.created_at ?? row.createdon ?? null;
+    e.updated_at = row.updated_at ?? null;
+    return e;
+  }
+
   async create(dto: CreateEpisodeDto): Promise<EpisodeResponseDto> {
     // Auto-generate slug if not provided
     if (!dto.slug && dto.title) {
@@ -104,7 +142,33 @@ export class EpisodesService {
       order: { season_id: 'ASC', episode_number: 'ASC' },
     };
     if (limit) options.take = limit;
-    let episodes = await this.episodeRepository.find(options);
+
+    let episodes: Episode[] = [];
+    try {
+      episodes = await this.episodeRepository.find(options);
+    } catch (err: any) {
+      console.warn('Episode find with relations failed, retrying without relations:', err?.message);
+      try {
+        const fallbackOptions = { ...options };
+        delete fallbackOptions.relations;
+        episodes = await this.episodeRepository.find(fallbackOptions);
+      } catch (err2: any) {
+        console.warn('Episode find without relations failed, falling back to raw SQL query:', err2?.message);
+        try {
+          const sqlWhere = seasonId ? 'WHERE season_id = ?' : '';
+          const sqlLimit = limit ? `LIMIT ${limit}` : '';
+          const rawRows = await this.episodeRepository.query(
+            `SELECT * FROM \`episode\` ${sqlWhere} ORDER BY episode_id ASC ${sqlLimit}`,
+            seasonId ? [seasonId] : [],
+          );
+          episodes = rawRows.map((r: any) => this.mapRawToEntity(r));
+        } catch (err3: any) {
+          console.error('Episode raw query also failed:', err3);
+          throw err2;
+        }
+      }
+    }
+
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode) {
       episodes = episodes.filter(e => parseBool(e.kids_restriction));
@@ -149,18 +213,18 @@ export class EpisodesService {
         if (isPaid && isValidDate) {
           let expectedStandard = 0;
           let expectedInteractive = 0;
-          if (Number(activeSub.plan.unlimited) === 1) {
-            expectedStandard = 1;
-            expectedInteractive = 1;
-          } else {
-            expectedStandard = Number(activeSub.plan.isStandardAccess) === 1 ? 1 : 0;
-            expectedInteractive = Number(activeSub.plan.isInteractiveIncluded) === 1 ? 1 : 0;
-          }
 
-          if (Number(user.standard_access) !== expectedStandard || Number(user.interactive_access) !== expectedInteractive) {
-            user.standard_access = expectedStandard;
-            user.interactive_access = expectedInteractive;
-            await this.userRepository.save(user);
+          const p = activeSub.plan as any;
+          const planName = (p.name || '').toLowerCase();
+          const pFeatures = (p.features || '').toLowerCase();
+          const pDesc = (p.description || '').toLowerCase();
+          const combined = `${planName} ${pFeatures} ${pDesc}`;
+
+          if (combined.includes('interactive') || combined.includes('branching') || p.plan_id === 2 || p.planId === 2) {
+            expectedInteractive = 1;
+            expectedStandard = 1;
+          } else {
+            expectedStandard = 1;
           }
 
           return expectedStandard === 1;
@@ -187,18 +251,48 @@ export class EpisodesService {
     kidsHeaderFlag?: boolean | string,
   ): Promise<EpisodeResponseDto> {
     const isAdmin = await this.checkIsAdminUser(isAdminQuery, authHeader, originHeader);
-    let episode: Episode;
-    if (typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug))) {
-      episode = await this.episodeRepository.findOne({
-        where: { episode_id: Number(idOrSlug) },
-        relations: ['certificate'],
-      });
-    } else {
-      episode = await this.episodeRepository.findOne({
-        where: { slug: String(idOrSlug) },
-        relations: ['certificate'],
-      });
+    let episode: Episode | null = null;
+    const isNum = typeof idOrSlug === 'number' || !isNaN(Number(idOrSlug));
+
+    try {
+      if (isNum) {
+        episode = await this.episodeRepository.findOne({
+          where: { episode_id: Number(idOrSlug) },
+          relations: ['certificate'],
+        });
+      } else {
+        episode = await this.episodeRepository.findOne({
+          where: { slug: String(idOrSlug) },
+          relations: ['certificate'],
+        });
+      }
+    } catch (err: any) {
+      console.warn('Episode findOne with relations failed, retrying without relations:', err?.message);
+      try {
+        if (isNum) {
+          episode = await this.episodeRepository.findOne({ where: { episode_id: Number(idOrSlug) } });
+        } else {
+          episode = await this.episodeRepository.findOne({ where: { slug: String(idOrSlug) } });
+        }
+      } catch (err2: any) {
+        console.warn('Episode findOne fallback to raw query:', err2?.message);
+        try {
+          const rows = await this.episodeRepository.query(
+            isNum
+              ? 'SELECT * FROM `episode` WHERE episode_id = ? LIMIT 1'
+              : 'SELECT * FROM `episode` WHERE slug = ? OR episode_id = ? LIMIT 1',
+            isNum ? [Number(idOrSlug)] : [String(idOrSlug), Number(idOrSlug) || 0],
+          );
+          if (rows && rows.length > 0) {
+            episode = this.mapRawToEntity(rows[0]);
+          }
+        } catch (err3: any) {
+          console.error('Episode findOne raw query failed:', err3);
+          throw err2;
+        }
+      }
     }
+
     if (!episode) throw new NotFoundException('Episode not found');
     const isKidsMode = await this.isKidsModeActive(userId, authHeader, kidsQueryFlag, kidsHeaderFlag);
     if (isKidsMode && !parseBool(episode.kids_restriction)) {
@@ -228,14 +322,15 @@ export class EpisodesService {
     delete (updateData as any).updatedAt;
     delete (updateData as any).created_at;
     delete (updateData as any).updated_at;
+
     await this.episodeRepository.update({ episode_id: id }, updateData);
     return this.findOne(id, undefined, true);
-
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.episodeRepository.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Episode not found');
+    const episode = await this.episodeRepository.findOneBy({ episode_id: id });
+    if (!episode) throw new NotFoundException('Episode not found');
+    await this.episodeRepository.delete(id);
   }
 
   async incrementView(id: number): Promise<void> {
@@ -304,30 +399,30 @@ export class EpisodesService {
       id: e.episode_id,
       season_id: e.season_id,
       episode_number: e.episode_number,
-      title: e.title,
-      slug: e.slug,
-      shortDescription: e.description_short,
-      longDescription: e.description_long,
-      duration: e.duration,
-      quality: e.quality || null,
-      play_quality: e.quality || null,
-      video_quality: e.quality || null,
-      languages: e.languages,
-      rating: e.rating ? parseFloat(e.rating.toString()) : null,
+      title: e.title || '',
+      slug: e.slug || String(e.episode_id),
+      shortDescription: e.description_short || '',
+      longDescription: e.description_long || '',
+      duration: e.duration || null as any,
+      quality: e.quality || null as any,
+      play_quality: e.quality || null as any,
+      video_quality: e.quality || null as any,
+      languages: e.languages || null as any,
+      rating: e.rating !== null && e.rating !== undefined ? parseFloat(e.rating.toString()) : null as any,
       isFeatured: isFeaturedBool,
       isFree: isFreeBool,
-      isComingSoon: e.is_coming_soon,
-      is_coming_soon: e.is_coming_soon,
+      isComingSoon: Boolean(e.is_coming_soon),
+      is_coming_soon: Boolean(e.is_coming_soon),
       kids_restriction: parseBool(e.kids_restriction),
       kidsRestriction: parseBool(e.kids_restriction),
       is_revenue_managed: parseBool(e.is_revenue_managed),
       is_svod_eligible: parseBool(e.is_svod_eligible),
-      revenue_share_percent: e.revenue_share_percent ? parseFloat(e.revenue_share_percent.toString()) : null,
-      price: e.price ? parseFloat(e.price.toString()) : null,
-      currency: e.currency,
-      viewCount: e.view_count,
-      subtitles: e.subtitles,
-      audio_tracks: e.audio_tracks,
+      revenue_share_percent: e.revenue_share_percent !== null && e.revenue_share_percent !== undefined ? parseFloat(e.revenue_share_percent.toString()) : null as any,
+      price: e.price !== null && e.price !== undefined ? parseFloat(e.price.toString()) : null as any,
+      currency: e.currency || null as any,
+      viewCount: e.view_count || 0,
+      subtitles: e.subtitles || null,
+      audio_tracks: e.audio_tracks || null,
       certificate_id: e.certificate_id || (e.certificate ? e.certificate.id : null),
       certificateId: e.certificate_id || (e.certificate ? e.certificate.id : null),
       certificate: e.certificate ? {
@@ -345,8 +440,8 @@ export class EpisodesService {
         video: { url: e.url || '', alt: '' },
         trailer: { url: e.trailer_url || '', alt: e.trailer_alt || '' },
       },
-      createdAt: e.created_at,
-      updatedAt: e.updated_at,
+      createdAt: e.created_at || null as any,
+      updatedAt: e.updated_at || null as any,
     };
   }
 }
