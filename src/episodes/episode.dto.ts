@@ -43,7 +43,16 @@ class MediaDto {
 
 export class CreateEpisodeDto {
   @IsInt()
-  season_id: number;
+  @IsOptional()
+  season_id?: number;
+
+  @IsInt()
+  @IsOptional()
+  series_id?: number;
+
+  @IsInt()
+  @IsOptional()
+  seriesId?: number;
 
   @IsInt()
   @IsOptional()

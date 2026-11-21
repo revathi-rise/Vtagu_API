@@ -43,6 +43,16 @@ export class SeriesController {
     }
   }
 
+  @Get(':id/episodes')
+  async findEpisodes(@Param('id') id: string) {
+    try {
+      const data = await this.service.findEpisodes(+id);
+      return { status: true, message: 'Series episodes fetched successfully', data };
+    } catch (error: any) {
+      return { status: false, message: error.message || 'An error occurred', data: [] };
+    }
+  }
+
   @Post()
   async create(@Body() dto: CreateSeriesDto) {
     try {

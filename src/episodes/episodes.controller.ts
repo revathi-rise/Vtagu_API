@@ -23,18 +23,20 @@ export class EpisodesController {
   @Get()
   async findAll(
     @Query('season_id') seasonId?: string,
+    @Query('series_id') seriesId?: string,
     @Query('userId') userId?: string,
     @Query('admin') admin?: string,
     @Query('limit') limit?: string,
     @Req() req?: any,
   ) {
     try {
+      const targetSeriesId = seasonId || seriesId;
       const isAdminQuery = admin === 'true' || admin === '1';
       const parsedLimit = limit ? Math.min(parseInt(limit, 10), 500) : undefined;
       const authHeader = req?.headers?.['authorization'] || req?.headers?.['x-admin-token'];
       const originHeader = req?.headers?.['origin'] || req?.headers?.['referer'];
       const data = await this.episodesService.findAll(
-        seasonId ? Number(seasonId) : undefined,
+        targetSeriesId ? Number(targetSeriesId) : undefined,
         userId ? Number(userId) : undefined,
         isAdminQuery,
         authHeader,

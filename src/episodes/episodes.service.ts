@@ -341,6 +341,21 @@ export class EpisodesService {
     const { media, free, isFree, is_free, featured, isFeatured, is_featured, is_revenue_managed, isRevenueManaged, is_revenue_shared, isRevenueShared, ...rest } = dto as any;
     const episode: Partial<Episode> = { ...rest };
 
+    const rawSeasonId = (dto as any).season_id ?? (dto as any).series_id ?? (dto as any).seriesId ?? (dto as any).seasonId;
+    if (rawSeasonId !== undefined && rawSeasonId !== null && rawSeasonId !== '') {
+      episode.season_id = Number(rawSeasonId);
+    }
+
+    const rawEpNum = (dto as any).episode_number ?? (dto as any).episode_no ?? (dto as any).episodeNumber ?? (dto as any).ep_number;
+    if (rawEpNum !== undefined && rawEpNum !== null && rawEpNum !== '') {
+      episode.episode_number = Number(rawEpNum);
+    }
+
+    const rawUrl = (dto as any).url ?? (dto as any).video_url ?? (dto as any).videoUrl;
+    if (rawUrl !== undefined && rawUrl !== null && typeof rawUrl === 'string') {
+      episode.url = rawUrl;
+    }
+
     const revenueManagedInput = is_revenue_managed !== undefined ? is_revenue_managed : (isRevenueManaged !== undefined ? isRevenueManaged : (is_revenue_shared !== undefined ? is_revenue_shared : isRevenueShared));
     if (revenueManagedInput !== undefined) {
       episode.is_revenue_managed = parseBool(revenueManagedInput);

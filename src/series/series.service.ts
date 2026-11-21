@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Series } from './entities/series.entity';
 import { CreateSeriesDto, UpdateSeriesDto } from './dto/series.dto';
 import { User } from '../users/entities/user.entity';
+import { Episode } from '../episodes/episode.entity';
 
 const parseBool = (val: any): boolean => {
   if (val === true || val === false) return val;
@@ -19,6 +20,8 @@ export class SeriesService {
     private repository: Repository<Series>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Episode)
+    private episodeRepository: Repository<Episode>,
   ) {}
 
   async isKidsModeActive(
@@ -106,5 +109,23 @@ export class SeriesService {
   async remove(id: number): Promise<void> {
     const series = await this.findOne(id);
     await this.repository.remove(series);
+  }
+
+  async findEpisodes(seriesId: number): Promise<Episode[]> {
+    try {
+      return await this.episodeRepository.find({
+        where: { season_id: seriesId },
+        order: { episode_number: 'ASC' },
+      });
+    } catch (err: any) {
+      try {
+        return await this.episodeRepository.query(
+          'SELECT * FROM `episode` WHERE season_id = ? ORDER BY episode_id ASC',
+          [seriesId],
+        );
+      } catch (err2) {
+        return [];
+      }
+    }
   }
 }

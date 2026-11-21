@@ -4,9 +4,10 @@ import { SeriesService } from './series.service';
 import { SeriesController } from './series.controller';
 import { Series } from './entities/series.entity';
 import { User } from '../users/entities/user.entity';
+import { Episode } from '../episodes/episode.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Series, User])],
+  imports: [TypeOrmModule.forFeature([Series, User, Episode])],
   controllers: [SeriesController],
   providers: [SeriesService],
   exports: [SeriesService],
