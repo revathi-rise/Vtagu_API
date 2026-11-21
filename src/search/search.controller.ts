@@ -26,15 +26,13 @@ export class SearchController {
         message: error.message || 'An error occurred during search',
         data: {
           results: [],
+          total: 0,
           meta: {
             total: 0,
             query: query.q || '',
             category: query.category || 'all',
             counts: { all: 0, movie: 0, series: 0, interactive: 0, short: 0, video: 0 },
           },
-          trendingSearches: [],
-          recommended: [],
-          categories: ['All'],
         },
       };
     }

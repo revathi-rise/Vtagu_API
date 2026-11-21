@@ -63,7 +63,7 @@ export class SearchService {
     const parsedUserId = queryDto.userId ? parseInt(queryDto.userId, 10) : undefined;
     const isKids = await this.isKidsModeActive(parsedUserId, authHeader, queryDto.kidsMode, kidsHeader);
 
-    // 1. Fetch all genres for name mapping and dynamic filter pills
+    // 1. Fetch all genres from database for dynamic name mapping
     const allGenres = await this.genreRepo.find({ order: { genre_id: 'ASC' } });
     const genreMap = new Map<string, string>();
     allGenres.forEach((g) => {
@@ -75,24 +75,7 @@ export class SearchService {
       }
     });
 
-    const categoriesList = [
-      'All',
-      'Action',
-      'Sci-Fi',
-      'Interactive',
-      'Shorts',
-      'Drama',
-      'Comedy',
-      ...allGenres
-        .filter((g) => g && g.name)
-        .map((g) => g.name)
-        .filter(
-          (name) =>
-            !['Action', 'Sci-Fi', 'Interactive', 'Shorts', 'Drama', 'Comedy', 'All'].includes(name),
-        ),
-    ];
-
-    // Helper to safely extract genres list from comma-separated string, number, or array
+    // Helper to safely extract genre names from database value (string, number, array)
     const resolveGenres = (rawGenreIds?: any): string[] => {
       if (rawGenreIds === null || rawGenreIds === undefined || rawGenreIds === '') return [];
       let parts: string[] = [];
@@ -106,13 +89,12 @@ export class SearchService {
       return parts.map((p) => genreMap.get(p) || genreMap.get(p.toLowerCase()) || p);
     };
 
-    // 2. Perform multi-entity search if query is provided
+    // 2. Determine target entities based on category filter
     let movieResults: SearchResultItem[] = [];
     let seriesResults: SearchResultItem[] = [];
     let interactiveResults: SearchResultItem[] = [];
     let shortResults: SearchResultItem[] = [];
 
-    // Check if category matches specific content types or genre filter
     const isStandardType = [
       'all',
       'movie',
@@ -153,7 +135,7 @@ export class SearchService {
       category === 'videos' ||
       isGenreCategory;
 
-    // Search term and matching genre ID detection
+    // Search term and matching genre ID detection from DB genres
     const term = `%${rawQuery}%`;
     const matchedGenreIds: string[] = [];
     if (rawQuery) {
@@ -178,7 +160,7 @@ export class SearchService {
     }
 
     // -------------------------------------------------------------
-    // Query Movies
+    // Query Movies from Database
     // -------------------------------------------------------------
     if (shouldSearchMovies) {
       const qb = this.movieRepo
@@ -242,13 +224,13 @@ export class SearchService {
 
         return {
           id: m.movie_id,
-          title: m.title || 'Untitled Movie',
+          title: m.title || '',
           type: (isVideoType ? 'video' : 'movie') as 'movie' | 'video',
           slug: m.slug || String(m.movie_id),
           image: m.card_image || m.movie_image || '',
           card_image: m.card_image || m.movie_image || '',
           description: m.description_short || m.description_long || '',
-          year: m.year,
+          year: m.year || null,
           rating: m.rating ? parseFloat(m.rating.toString()) : null,
           duration: m.duration || null,
           languages: m.languages || null,
@@ -275,7 +257,7 @@ export class SearchService {
     }
 
     // -------------------------------------------------------------
-    // Query Series
+    // Query Series from Database
     // -------------------------------------------------------------
     if (shouldSearchSeries) {
       const qb = this.seriesRepo
@@ -350,15 +332,15 @@ export class SearchService {
 
       seriesResults = seriesList.map((s) => ({
         id: s.series_id,
-        title: s.title || 'Untitled Series',
-        type: 'series',
+        title: s.title || '',
+        type: 'series' as const,
         slug: String(s.series_id),
         image: episodeImagesMap.get(s.series_id) || '',
         card_image: episodeImagesMap.get(s.series_id) || '',
         description: s.description_short || s.description_long || '',
-        year: s.year,
+        year: s.year || null,
         rating: s.rating ? parseFloat(s.rating.toString()) : null,
-        duration: 'Series',
+        duration: null,
         languages: null,
         director: s.director ? String(s.director) : null,
         actors: s.actors || null,
@@ -382,7 +364,7 @@ export class SearchService {
     }
 
     // -------------------------------------------------------------
-    // Query Interactive Movies
+    // Query Interactive Movies from Database
     // -------------------------------------------------------------
     if (shouldSearchInteractive) {
       const qb = this.interactiveRepo
@@ -439,15 +421,15 @@ export class SearchService {
       const interactiveList = await qb.getMany();
       interactiveResults = interactiveList.map((im) => ({
         id: im.interactive_movie_id,
-        title: im.title || 'Untitled Interactive',
-        type: 'interactive',
+        title: im.title || '',
+        type: 'interactive' as const,
         slug: String(im.interactive_movie_id),
         image: im.card_image || im.banner_image || '',
         card_image: im.card_image || im.banner_image || '',
         description: im.description || '',
-        year: im.year || 2026,
-        rating: 9.2,
-        duration: im.duration || 'Interactive Story',
+        year: im.year || null,
+        rating: null,
+        duration: im.duration || null,
         languages: im.languages || null,
         director: im.director || null,
         actors: im.actors || null,
@@ -455,7 +437,7 @@ export class SearchService {
         genreIds: im.genre_id !== null && im.genre_id !== undefined ? String(im.genre_id) : null,
         isFree: Number(im.is_free) === 1 || im.price === 0,
         isComingSoon: Boolean(im.is_coming_soon),
-        quality: im.quality || '4K ULTRA HD',
+        quality: im.quality || null,
         certificate: im.certificate
           ? {
               id: im.certificate.id,
@@ -466,12 +448,12 @@ export class SearchService {
             }
           : null,
         href: `/interactive/${im.interactive_movie_id}`,
-        viewCount: 100,
+        viewCount: 0,
       }));
     }
 
     // -------------------------------------------------------------
-    // Query Shorts (Reels / Short Videos)
+    // Query Shorts (Reels / Short Videos) from Database
     // -------------------------------------------------------------
     if (shouldSearchShorts) {
       const qb = this.shortRepo.createQueryBuilder('short').where('short.is_active = 1');
@@ -502,13 +484,13 @@ export class SearchService {
       const shortsList = await qb.getMany();
       shortResults = shortsList.map((sh) => ({
         id: sh.short_id,
-        title: sh.title || 'Short Reel',
-        type: 'short',
+        title: sh.title || '',
+        type: 'short' as const,
         slug: sh.slug || String(sh.short_id),
         image: sh.thumbnail_url || '',
         card_image: sh.thumbnail_url || '',
         description: sh.description || '',
-        duration: sh.duration || 'Short',
+        duration: sh.duration || null,
         languages: sh.languages || null,
         genres: resolveGenres(sh.genre_id),
         genreIds: sh.genre_id !== null && sh.genre_id !== undefined ? String(sh.genre_id) : null,
@@ -518,12 +500,12 @@ export class SearchService {
       }));
     }
 
-    // Categorize movies and videos
+    // Categorize movies and videos from database
     const pureMovies = movieResults.filter((m) => m.type === 'movie');
     const videoMovies = movieResults.filter((m) => m.type === 'video');
     const allVideos = [...shortResults, ...videoMovies];
 
-    // Combine and sort results
+    // Combine results based on category filter
     let combinedResults = [
       ...interactiveResults,
       ...movieResults,
@@ -531,7 +513,6 @@ export class SearchService {
       ...shortResults,
     ];
 
-    // Filter by category if strictly specified (and not already filtered)
     if (category === 'movie' || category === 'movies') {
       combinedResults = pureMovies;
     } else if (category === 'video' || category === 'videos') {
@@ -544,117 +525,24 @@ export class SearchService {
       combinedResults = shortResults;
     }
 
-    // 3. Recommended items for initial search landing or empty query
-    const recommendedQb = this.movieRepo
-      .createQueryBuilder('movie')
-      .leftJoinAndSelect('movie.certificate', 'certificate');
-
-    if (isKids) {
-      recommendedQb.andWhere('(movie.kids_restriction = 1 OR movie.kids_only = 1)');
-    } else {
-      recommendedQb.andWhere('(movie.kids_only IS NULL OR movie.kids_only = 0)');
-    }
-
-    recommendedQb
-      .orderBy('movie.featured', 'DESC')
-      .addOrderBy('movie.view_count', 'DESC')
-      .take(8);
-
-    const recommendedMovies = await recommendedQb.getMany();
-    const recommendedItems: SearchResultItem[] = recommendedMovies.map((m) => {
-      const isVideoType =
-        (m.movie_type && String(m.movie_type).toLowerCase() === 'video') ||
-        (m.type && String(m.type).toLowerCase() === 'video');
-
-      return {
-        id: m.movie_id,
-        title: m.title || 'Featured Movie',
-        type: (isVideoType ? 'video' : 'movie') as 'movie' | 'video',
-        slug: m.slug || String(m.movie_id),
-        image: m.card_image || m.movie_image || '',
-        card_image: m.card_image || m.movie_image || '',
-        description: m.description_short || '',
-        year: m.year,
-        rating: m.rating ? parseFloat(m.rating.toString()) : null,
-        duration: m.duration || null,
-        languages: m.languages || null,
-        genres: resolveGenres(m.genre_id),
-        genreIds: m.genre_id !== null && m.genre_id !== undefined ? String(m.genre_id) : null,
-        isFree: parseBool(m.free),
-        isComingSoon: parseBool(m.is_coming_soon),
-        quality: m.quality || null,
-        certificate: m.certificate
-          ? {
-              id: m.certificate.id,
-              code: m.certificate.code,
-              name: m.certificate.name,
-              badge_color: m.certificate.badge_color,
-            }
-          : null,
-        href: `/movies/${m.slug || m.movie_id}`,
-      };
-    });
-
-    // Add interactive original to recommendations if exists
-    const topInteractive = await this.interactiveRepo.find({ take: 1, order: { interactive_movie_id: 'DESC' } });
-    if (topInteractive.length > 0) {
-      const im = topInteractive[0];
-      const imGenres = resolveGenres(im.genre_id);
-      recommendedItems.unshift({
-        id: im.interactive_movie_id,
-        title: im.title,
-        type: 'interactive',
-        slug: String(im.interactive_movie_id),
-        image: im.card_image || im.banner_image || '',
-        card_image: im.card_image || im.banner_image || '',
-        description: im.description || '',
-        year: im.year || 2026,
-        rating: 9.5,
-        duration: im.duration || 'Interactive Story',
-        genres: imGenres.length > 0 ? imGenres : ['Interactive Original'],
-        genreIds: im.genre_id !== null && im.genre_id !== undefined ? String(im.genre_id) : null,
-        isFree: Number(im.is_free) === 1,
-        quality: im.quality || '4K ULTRA HD',
-        href: `/interactive/${im.interactive_movie_id}`,
-      });
-    }
-
-    // 4. Trending Searches dynamic tags
-    const trendingSearches: string[] = [];
-    if (topInteractive.length > 0 && topInteractive[0].title) {
-      trendingSearches.push(topInteractive[0].title);
-    }
-    recommendedMovies.slice(0, 3).forEach((m) => {
-      if (m.title && !trendingSearches.includes(m.title)) {
-        trendingSearches.push(m.title);
-      }
-    });
-    ['Action Thriller', 'Interactive Originals', 'Shorts Series', 'Sci-Fi Action', 'Tamil Cinema'].forEach(
-      (term) => {
-        if (!trendingSearches.includes(term) && trendingSearches.length < 8) {
-          trendingSearches.push(term);
-        }
-      },
-    );
+    const counts = {
+      all: combinedResults.length,
+      movie: pureMovies.length,
+      series: seriesResults.length,
+      interactive: interactiveResults.length,
+      short: shortResults.length,
+      video: allVideos.length,
+    };
 
     return {
-      results: rawQuery || isGenreCategory || (category !== 'all') ? combinedResults : [],
+      results: combinedResults,
+      total: combinedResults.length,
       meta: {
         total: combinedResults.length,
         query: rawQuery,
         category,
-        counts: {
-          all: combinedResults.length,
-          movie: pureMovies.length,
-          series: seriesResults.length,
-          interactive: interactiveResults.length,
-          short: shortResults.length,
-          video: allVideos.length,
-        },
+        counts,
       },
-      trendingSearches,
-      recommended: recommendedItems,
-      categories: categoriesList,
     };
   }
 }

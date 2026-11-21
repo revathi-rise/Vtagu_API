@@ -39,6 +39,7 @@ export interface SearchResultItem {
 
 export interface SearchResponseData {
   results: SearchResultItem[];
+  total: number;
   meta: {
     total: number;
     query: string;
@@ -49,10 +50,7 @@ export interface SearchResponseData {
       series: number;
       interactive: number;
       short: number;
-      video?: number;
+      video: number;
     };
   };
-  trendingSearches: string[];
-  recommended: SearchResultItem[];
-  categories: string[];
 }
