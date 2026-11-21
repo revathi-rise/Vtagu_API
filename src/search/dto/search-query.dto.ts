@@ -10,7 +10,7 @@ export class SearchQueryDto {
 export interface SearchResultItem {
   id: number | string;
   title: string;
-  type: 'movie' | 'series' | 'episode' | 'interactive' | 'short';
+  type: 'movie' | 'series' | 'episode' | 'interactive' | 'short' | 'video';
   slug?: string;
   image: string;
   card_image?: string;
@@ -49,6 +49,7 @@ export interface SearchResponseData {
       series: number;
       interactive: number;
       short: number;
+      video?: number;
     };
   };
   trendingSearches: string[];
