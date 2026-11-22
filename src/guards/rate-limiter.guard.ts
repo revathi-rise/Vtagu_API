@@ -13,6 +13,11 @@ export class RateLimiterGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
+    // Allow preflight OPTIONS requests without consuming rate limit quota
+    if (request.method === 'OPTIONS') {
+      return true;
+    }
+
     const clientIp = this.getClientIp(request);
     const route = request.route?.path || request.url;
     const key = `${clientIp}:${route}`;
