@@ -15,45 +15,45 @@ export class Series {
   @Column({ name: 'description_long', type: 'text', nullable: true })
   description_long: string;
 
-  @Column({ name: 'genre_id', nullable: true })
-  genre_id: any;
+  @Column({ name: 'genre_id', type: 'int', nullable: true, default: 0 })
+  genre_id: number;
 
-  @Column({ name: 'age_group', nullable: true })
-  age_group: string;
+  @Column({ name: 'age_group', type: 'int', nullable: true, default: 0 })
+  age_group: number;
 
   @Column({ type: 'text', nullable: true })
   actors: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   director: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   year: number;
 
-  @Column({ name: 'country_id', nullable: true })
+  @Column({ name: 'country_id', type: 'int', nullable: true })
   country_id: number;
 
   @Column({ nullable: true, default: 'HD' })
   quality: string;
 
-  @Column({ name: 'certificate_id', nullable: true })
+  @Column({ name: 'certificate_id', type: 'int', nullable: true })
   certificate_id: number;
 
   @ManyToOne(() => Certificate, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'certificate_id' })
   certificate?: Certificate;
 
-  @Column({ type: 'decimal', precision: 3, scale: 1, nullable: true })
+  @Column({ type: 'int', nullable: true, default: 0 })
   rating: number;
 
-  @Column({ default: 0 })
+  @Column({ type: 'int', default: 0 })
   featured: number;
 
   @Column({ name: 'free', type: 'char', length: 2, default: 'N', nullable: true })
   free: string;
 
-  @Column({ name: 'kids_restriction', type: 'tinyint', default: 0 })
-  kids_restriction: boolean;
+  @Column({ name: 'kids_restriction', type: 'int', default: 0 })
+  kids_restriction: number;
 
   @Column({ name: 'age_restriction', type: 'char', length: 2, default: 'N', nullable: true })
   age_restriction: string;
